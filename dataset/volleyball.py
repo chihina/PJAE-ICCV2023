@@ -321,6 +321,7 @@ class VolleyBallDataset(Dataset):
         batch['rgb_img'] = rgb_tensor
         batch['saliency_img'] = rgb_tensor
         batch['att_inside_flag'] = att_inside_flag
+        batch['rgb_path'] = img_file_path
 
         return batch
 
