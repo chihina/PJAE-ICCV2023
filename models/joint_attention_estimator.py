@@ -693,32 +693,26 @@ class JointAttentionEstimatorTransformer(nn.Module):
             loss_regress_coef = 0
 
         batch_size, people_num, img_height, img_width = img_mid_pred.shape
-        img_gt_mid_each = img_gt[:, None, :, :].expand(batch_size, people_num, img_height, img_width)
-
-        if self.people_feat_aggregation_type != 'no_use':
-            img_mid_pred_each = img_mid_pred.expand(batch_size, people_num, img_height, img_width)
-        else:
-            img_mid_pred_each = img_mid_pred
-            img_gt_mid_each = img_gt_mid_each * att_inside_flag[:, :, None, None]
 
         # calculate mid gaze map loss
-        loss_map_gaze = self.loss_func_joint_attention(img_mid_mean_pred, img_gt)
+        img_mid_mean_gt = torch.sum(img_gt, dim=1)/torch.sum(att_inside_flag, dim=-1)
+        loss_map_gaze = self.loss_func_joint_attention(img_mid_mean_pred.float(), img_mid_mean_gt.float())
         loss_map_gaze = loss_map_gaze_coef * loss_map_gaze
 
         # calculate final map loss
-        loss_map = self.loss_func_joint_attention(img_pred, img_gt)
+        img_pred_gt = torch.sum(img_gt, dim=1)/torch.sum(att_inside_flag, dim=-1)
+        loss_map = self.loss_func_joint_attention(img_pred.float(), img_gt.float())
         loss_map = loss_map_coef * loss_map
 
         # calculate each map loss
-        loss_map_gaze_each = self.loss_func_joint_attention(img_mid_pred_each, img_gt_mid_each)
+        img_mid_pred = img_mid_pred * att_inside_flag[:, :, None, None]
+        img_mid_gt = img_gt * att_inside_flag[:, :, None, None]
+        loss_map_gaze_each = self.loss_func_joint_attention(img_mid_pred.float(), img_mid_gt.float())
         loss_map_gaze_each = loss_map_gaze_each_coef * loss_map_gaze_each
 
         # calculate regression loss
         distance_mean_xy = head_tensor[:, :, 3:5]
         distance_sigma = head_tensor[:, :, 6]
-
-        if self.people_feat_aggregation_type != 'no_use':
-            distance_mean_xy = distance_mean_xy[:, 0, :][:, None, :]
 
         gt_box_x_mid = (gt_box[:, :, 0]+gt_box[:, :, 2])/2/self.resize_width
         gt_box_y_mid = (gt_box[:, :, 1]+gt_box[:, :, 3])/2/self.resize_height

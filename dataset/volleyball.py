@@ -267,6 +267,8 @@ class VolleyBallDataset(Dataset):
         img_gt = self.load_gt_imgs_ball(img_width, img_height, bbox, self.gaussian_sigma_head)
         x_min, y_min, x_max, y_max = map(int, gt_box)
         x_mid, y_mid = (x_min+x_max)/2, (y_min+y_max)/2
+        gt_box_expand = gt_box[None, :]
+        gt_box_expand = np.tile(gt_box_expand, (self.max_num_people, 1))
 
         head_img = torch.zeros(self.max_num_people, 3, self.resize_head_height, self.resize_head_width)
         head_vector_gt_tensor = torch.zeros(self.max_num_people, 2)
@@ -315,7 +317,7 @@ class VolleyBallDataset(Dataset):
         batch['head_feature'] = head_feature_tensor
         batch['head_vector_gt'] = head_vector_gt_tensor
         batch['img_gt'] = img_gt
-        batch['gt_box'] = gt_box
+        batch['gt_box'] = gt_box_expand
         batch['rgb_img'] = rgb_tensor
         batch['saliency_img'] = rgb_tensor
         batch['att_inside_flag'] = att_inside_flag
