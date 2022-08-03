@@ -1,0 +1,308 @@
+# deep learning
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+from torch.autograd import Variable
+from torch.utils.data import DataLoader
+
+# general module
+import argparse
+import sys
+import os
+import shutil
+import yaml
+import numpy as np
+from addict import Dict
+import wandb
+from tqdm import tqdm
+from collections import OrderedDict
+import warnings
+warnings.filterwarnings("ignore") 
+
+# original module
+from dataset.dataset_selector import dataset_generator
+from models.model_selector import model_generator
+
+parser = argparse.ArgumentParser(description="parameters for training")
+parser.add_argument("config", type=str, help="configuration yaml file path")
+args = parser.parse_args()
+cfg = Dict(yaml.safe_load(open(args.config)))
+print(cfg)
+
+def process_epoch(epoch, wandb_log, data_set, mode):
+    data_length = len(data_set)
+    epoch_loss_dic = {}
+
+    if mode == 'train':
+        if cfg.exp_params.freeze_head_pose_estimator:
+            model_head.eval()
+        else:
+            model_head.train()
+        model_attention.train()
+    else:
+        model_head.eval()
+        model_attention.eval()
+
+    for iteration, batch in enumerate(data_set, 1):
+        head_img = batch['head_tensor']
+        head_feature = batch['head_feature_tensor']
+        head_vector_gt = batch['head_vector_gt_tensor']
+        img_gt = batch['gt_img']
+        gt_box = batch['gt_box']
+        rgb_img = batch['rgb_tensor']
+        saliency_img = batch['saliency_tensor']
+        att_inside_flag = batch['att_inside_flag']
+
+        batch_size, num_people = head_img.shape[0], head_img.shape[1]
+
+        optimizer_attention.zero_grad()
+        if cfg.exp_params.freeze_head_pose_estimator:
+            pass
+        else:
+            optimizer_head.zero_grad()
+
+        # init heatmaps
+        x_axis_map = torch.arange(0, cfg.exp_set.resize_width, device=f'cuda:{gpus_list[0]}').reshape(1, -1)/(cfg.exp_set.resize_width)
+        x_axis_map = torch.tile(x_axis_map, (cfg.exp_set.resize_height, 1))
+        y_axis_map = torch.arange(0, cfg.exp_set.resize_height, device=f'cuda:{gpus_list[0]}').reshape(-1, 1)/(cfg.exp_set.resize_height)
+        y_axis_map = torch.tile(y_axis_map, (1, cfg.exp_set.resize_width))
+        xy_axis_map = torch.cat((x_axis_map[None, :, :], y_axis_map[None, :, :]))[None, None, :, :, :]
+        xy_axis_map = torch.tile(xy_axis_map, (batch_size, num_people, 1, 1, 1))
+        head_x_map = torch.ones((batch_size, num_people, 1, cfg.exp_set.resize_height, cfg.exp_set.resize_width), device=f'cuda:{gpus_list[0]}')
+        head_y_map = torch.ones((batch_size, num_people, 1, cfg.exp_set.resize_height, cfg.exp_set.resize_width), device=f'cuda:{gpus_list[0]}')
+        head_xy_map = torch.cat((head_x_map, head_y_map), 2)
+        gaze_x_map = torch.ones((batch_size, num_people, 1, cfg.exp_set.resize_height, cfg.exp_set.resize_width), device=f'cuda:{gpus_list[0]}')
+        gaze_y_map = torch.ones((batch_size, num_people, 1, cfg.exp_set.resize_height, cfg.exp_set.resize_width), device=f'cuda:{gpus_list[0]}')
+        gaze_xy_map = torch.cat((gaze_x_map, gaze_y_map), 2)
+        xy_axis_map = xy_axis_map.float()
+        head_xy_map = head_xy_map.float()
+        gaze_xy_map = gaze_xy_map.float()
+
+        if cuda:
+            head_img = Variable(head_img).cuda(gpus_list[0])
+            head_feature = Variable(head_feature).cuda(gpus_list[0])
+            head_vector_gt = Variable(head_vector_gt).cuda(gpus_list[0])
+            img_gt = Variable(img_gt).cuda(gpus_list[0])
+            xy_axis_map = Variable(xy_axis_map).cuda(gpus_list[0])
+            head_xy_map = Variable(head_xy_map).cuda(gpus_list[0])
+            gaze_xy_map = Variable(gaze_xy_map).cuda(gpus_list[0])
+            gt_box = Variable(gt_box).cuda(gpus_list[0])
+            rgb_img = Variable(rgb_img).cuda(gpus_list[0])
+            saliency_img = Variable(saliency_img).cuda(gpus_list[0])
+            att_inside_flag = Variable(att_inside_flag).cuda(gpus_list[0])
+
+        # change position inputs
+        if cfg.model_params.use_position:
+            input_feature = head_feature.clone() 
+        else:
+            input_feature = head_feature.clone()
+            input_feature[:, :, :2] = input_feature[:, :, :2] * 0
+
+        inp = {}
+        inp['head_img'] = head_img
+
+        # head pose estimation
+        out_head = model_head(inp)
+        head_vector = out_head['head_vector']
+        head_enc_map = out_head['head_enc_map']
+
+        if cfg.exp_params.use_gt_gaze:
+            head_vector = head_vector_gt
+
+        # change position inputs
+        if cfg.model_params.use_gaze:
+            input_gaze = head_vector.clone() 
+        else:
+            input_gaze = head_vector.clone() * 0
+
+        inp['head_enc_map'] = head_enc_map
+        inp['input_feature'] = input_feature
+        inp['input_gaze'] = input_gaze
+        inp['head_feature'] = head_feature
+        inp['head_vector'] = head_vector
+        inp['head_vector_gt'] = head_vector_gt
+        inp['xy_axis_map'] = xy_axis_map
+        inp['head_xy_map'] = head_xy_map
+        inp['gaze_xy_map'] = gaze_xy_map
+        inp['rgb_img'] = rgb_img
+        inp['saliency_img'] = saliency_img
+        inp['att_inside_flag'] = att_inside_flag
+        inp['img_gt'] = img_gt
+        inp['gt_box'] = gt_box
+
+        out_attention = model_attention(inp)
+
+        loss_set_head = model_head.calc_loss(inp, out_head)
+        loss_set_attention = model_attention.calc_loss(inp, out_attention)
+        loss_set = {**loss_set_head, **loss_set_attention}
+
+        # accumulate all loss
+        for loss_idx, loss_val in enumerate(loss_set.values()):
+            if loss_idx == 0:
+                loss = loss_val
+            else:
+                loss = loss + loss_val
+        loss_set['loss'] = loss
+
+        if mode == 'train':
+            loss.backward()
+
+            optimizer_attention.step()
+            if cfg.exp_params.freeze_head_pose_estimator:
+                pass
+            else:
+                optimizer_head.step()
+
+        for loss_name, loss_val in loss_set.items():
+            if iteration == 1:
+                epoch_loss_dic[f'epoch_{loss_name}'] = loss_val.item()
+            else:
+                epoch_loss_dic[f'epoch_{loss_name}'] += loss_val.item()
+
+        # print iteration log
+        print(f"{mode} Epoch: [{epoch}/{cfg.exp_params.nEpochs}] [{iteration}/{data_length}]  loss: {loss.item():.8f}")
+
+    # print epoch log
+    print(f"===> Epoch {mode} Complete: Avg {mode} Loss: {epoch_loss_dic['epoch_loss'] / data_length}")
+
+    # logging for wandb
+    if wandb_log:
+        for loss_name, loss_val in epoch_loss_dic.items():
+            wandb.log({f"{mode} {loss_name}": loss_val / data_length}, step=epoch)
+
+    average_loss = epoch_loss_dic['epoch_loss'] / data_length
+    return average_loss
+
+# save a model in a check point
+def checkpoint(epoch):
+    weights_save_dir = os.path.join(cfg.exp_set.save_folder, cfg.data.name, cfg.exp_set.wandb_name)
+    model_head_out_path = os.path.join(weights_save_dir, f"model_head_epoch_{epoch}.pth")
+    model_attention_out_path = os.path.join(weights_save_dir, f"model_gaussian_epoch_{epoch}.pth")
+    torch.save(model_head.state_dict(), model_head_out_path)
+    torch.save(model_attention.state_dict(), model_attention_out_path)
+    print(f"Checkpoint saved to {weights_save_dir}")
+
+# save a model in a bast score
+def best_checkpoint(epoch):
+    weights_save_dir = os.path.join(cfg.exp_set.save_folder, cfg.data.name, cfg.exp_set.wandb_name)
+    model_head_out_path = os.path.join(weights_save_dir, "model_head_best.pth.tar")
+    model_attention_out_path = os.path.join(weights_save_dir, "model_gaussian_best.pth.tar")
+    torch.save(model_head.state_dict(), model_head_out_path)
+    torch.save(model_attention.state_dict(), model_attention_out_path)
+    print(f"Best Checkpoint saved to {weights_save_dir}")
+
+def load_multi_gpu_models(state_dict):
+    new_state_dict = OrderedDict()
+    for k, v in state_dict.items():
+        name = k
+        if name.startswith('module.'):
+            name = name[7:]  # remove 'module.' of dataparallel
+        new_state_dict[name] = v
+    return new_state_dict
+
+# fix some seeds for reproduction
+np.random.seed(cfg.exp_set.seed_num)
+torch.manual_seed(cfg.exp_set.seed_num)
+torch.backends.cudnn.benchmark=True
+torch.backends.cudnn.deterministic=True
+torch.use_deterministic_algorithms=True
+
+# save setting files
+saved_weights_dir = os.path.join(cfg.exp_set.save_folder, cfg.data.name, cfg.exp_set.wandb_name)
+if not os.path.exists(saved_weights_dir):
+    os.mkdir(saved_weights_dir)
+shutil.copy(args.config, os.path.join(saved_weights_dir, args.config.split('/')[-1]))
+
+print("===> Setting gpu numbers")
+cuda = cfg.exp_set.gpu_mode
+gpus_list = range(cfg.exp_set.gpu_start, cfg.exp_set.gpu_finish+1)
+
+print("===> Loading datasets")
+train_set = dataset_generator(cfg, 'train')
+
+training_data_loader = DataLoader(dataset=train_set,
+                                batch_size=cfg.exp_set.batch_size,
+                                shuffle=True, 
+                                num_workers=cfg.exp_set.num_workers,
+                                pin_memory=False)
+
+val_set = dataset_generator(cfg, 'valid')
+validation_data_loader = DataLoader(dataset=val_set,
+                                batch_size=cfg.exp_set.batch_size,
+                                shuffle=False,
+                                num_workers=cfg.exp_set.num_workers,
+                                pin_memory=False)
+
+print('{} Train samples found'.format(len(train_set)))
+print('{} Test samples found'.format(len(val_set)))
+
+print("===> Building model")
+model_head, model_attention, cfg = model_generator(cfg)
+
+if cfg.exp_params.use_pretrained_head_pose_estimator:
+    print("===> Load pretrained model (head pose estimator)")
+    model_name = cfg.exp_params.pretrained_head_pose_estimator_name
+    model_weight_path = os.path.join(cfg.exp_params.pretrained_models_dir, cfg.data.name, model_name, "model_head_best.pth.tar")
+    fixed_model_state_dict = load_multi_gpu_models(torch.load(model_weight_path,  map_location='cuda:'+str(gpus_list[0])))
+    model_head.load_state_dict(fixed_model_state_dict)
+
+if cfg.exp_params.use_pretrained_joint_attention_estimator:
+    print("===> Load pretrained model (joint attention estimator)")
+    model_name = cfg.pretrained_joint_attention_estimator_name
+    model_weight_path = os.path.join(cfg.pretrained_model_dir, cfg.data.name, model_name, "model_gaussian_best.pth.tar")
+    fixed_model_state_dict = load_multi_gpu_models(torch.load(model_weight_path,  map_location='cuda:'+str(gpus_list[0])))
+    model_attention.load_state_dict(fixed_model_state_dict)
+
+# scheduling learning rate 
+optimizer_head = optim.Adam(model_head.parameters(), lr=cfg.exp_params.lr)
+optimizer_attention = optim.Adam(model_attention.parameters(), lr=cfg.exp_params.lr)
+
+scheduler_head = optim.lr_scheduler.MultiStepLR(optimizer_head, 
+                                           milestones=[i for i in range(cfg.exp_params.scheduler_start, cfg.exp_params.nEpochs, cfg.exp_params.scheduler_iter)],
+                                           gamma=0.1)
+scheduler_attention = optim.lr_scheduler.MultiStepLR(optimizer_attention, 
+                                           milestones=[i for i in range(cfg.exp_params.scheduler_start, cfg.exp_params.nEpochs, cfg.exp_params.scheduler_iter)],
+                                           gamma=0.1)
+
+if cuda:
+    if (cfg.exp_set.gpu_finish - cfg.exp_set.gpu_start) >= 1:
+        print("===> Use multiple GPUs")
+        model_head = torch.nn.DataParallel(model_head, device_ids=gpus_list)
+        model_attention = torch.nn.DataParallel(model_attention, device_ids=gpus_list)
+
+    else:
+        print("===> Use single GPU")
+    
+    model_head = model_head.cuda(gpus_list[0])
+    model_attention = model_attention.cuda(gpus_list[0])
+
+if cfg.exp_set.wandb_log:
+    print("===> Generate wandb system")
+    wandb.login()
+    wandb.init(project="config-action-aware-joint-attention-estimation", name=cfg.exp_set.wandb_name, config=cfg)
+    wandb.watch(model_head)
+    wandb.watch(model_attention)
+
+# Training
+best_loss = 10000000000.0
+print("===> Start training")
+for epoch in range(cfg.exp_params.start_iter, cfg.exp_params.nEpochs + 1):
+    _ = process_epoch(epoch, cfg.exp_set.wandb_log, training_data_loader, 'train')
+
+    # schedule learning rate
+    scheduler_attention.step()
+    if cfg.exp_params.use_pretrained_head_pose_estimator:
+        pass
+    else:
+        scheduler_head.step()
+
+    current_val_loss = process_epoch(epoch, cfg.exp_set.wandb_log, training_data_loader, 'valid')
+
+    if current_val_loss < best_loss:
+        best_loss = current_val_loss
+        best_checkpoint(epoch+1)
+        print("Save Best Loss : {}".format(best_loss))
+
+    if (epoch+1) % (cfg.exp_params.snapshots) == 0:
+        checkpoint(epoch+1)
