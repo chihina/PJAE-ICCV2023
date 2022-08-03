@@ -714,8 +714,8 @@ class JointAttentionEstimatorTransformer(nn.Module):
         distance_mean_xy = head_tensor[:, :, 3:5]
         distance_sigma = head_tensor[:, :, 6]
 
-        gt_box_x_mid = (gt_box[:, :, 0]+gt_box[:, :, 2])/2/self.resize_width
-        gt_box_y_mid = (gt_box[:, :, 1]+gt_box[:, :, 3])/2/self.resize_height
+        gt_box_x_mid = (gt_box[:, :, 0]+gt_box[:, :, 2])/2
+        gt_box_y_mid = (gt_box[:, :, 1]+gt_box[:, :, 3])/2
         gt_box_xy_mid = torch.cat([gt_box_x_mid[:, :, None], gt_box_y_mid[:, :, None]], dim=-1)
         loss_regress_xy = ((gt_box_xy_mid-distance_mean_xy) ** 2)
         loss_regress_euc = (torch.sum(loss_regress_xy, dim=-1))

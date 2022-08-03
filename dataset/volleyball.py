@@ -269,6 +269,8 @@ class VolleyBallDataset(Dataset):
         x_mid, y_mid = (x_min+x_max)/2, (y_min+y_max)/2
         gt_box_expand = gt_box[None, :]
         gt_box_expand = np.tile(gt_box_expand, (self.max_num_people, 1))
+        gt_box_expand[:, ::2] /= img_width
+        gt_box_expand[:, 1::2] /= img_height
 
         head_img = torch.zeros(self.max_num_people, 3, self.resize_head_height, self.resize_head_width)
         head_vector_gt_tensor = torch.zeros(self.max_num_people, 2)

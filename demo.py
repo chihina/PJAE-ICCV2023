@@ -32,14 +32,17 @@ from models.model_selector import model_generator
 
 # generate data id
 def data_id_generator(img_path, cfg):
+    data_id = 'unknown'
     if cfg.data.name == 'volleyball':
         video_num, seq_num, img_name = img_path.split('/')[-3:]
         img_num = img_name.split('.')[0]
         data_id = f'{video_num}_{seq_num}_{img_num}'
+    elif cfg.data.name == 'videocoatt':
+        mode, seq_num, img_name = img_path.split('/')[-3:]
+        img_num = img_name.split('.')[0]
+        data_id = f'{mode}_{seq_num}_{img_num}'
 
-        return data_id
-    else:
-        return 'data_id_unknown'
+    return data_id
 
 # normalize heatmap
 def norm_heatmap(img_heatmap):
@@ -233,7 +236,6 @@ for iteration, batch in enumerate(test_data_loader,1):
         os.makedirs(os.path.join(save_image_dir_person_all, data_type_id))
     if not os.path.exists(os.path.join(save_image_dir_scene_feat, data_type_id)):
         os.makedirs(os.path.join(save_image_dir_scene_feat, data_type_id))
-    save_image(img_gt, os.path.join(save_image_dir_gt, data_type_id, f'{mode}_{data_id}_gt.png'))
     save_image(img_pred, os.path.join(save_image_dir, data_type_id, f'{mode}_{data_id}_pred.png'))
     save_image(img_mid_mean_pred, os.path.join(save_image_dir_person_all, data_type_id, f'{mode}_{data_id}_pred.png'))
     save_image(saliency_img, os.path.join(save_image_dir_scene_feat, data_type_id, f'{mode}_{data_id}_pred.png'))
@@ -264,10 +266,12 @@ for iteration, batch in enumerate(test_data_loader,1):
         img_mid_pred_person = img_mid_pred[person_idx]
         angle_dist_person = angle_dist[person_idx]
         distance_dist_person = distance_dist[person_idx]
+        img_gt_person = img_gt[person_idx]
 
         save_image(img_mid_pred_person, os.path.join(save_image_dir_person, data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_pred.png'))
         save_image(angle_dist_person, os.path.join(save_image_dir_person_angle, data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_pred.png'))
         save_image(distance_dist_person, os.path.join(save_image_dir_person_distance, data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_pred.png'))
+        save_image(img_gt_person, os.path.join(save_image_dir_gt, data_type_id, f'{mode}_{data_id}_{person_idx}_gt.png'))
 
     # plot multi head attention weights
     # plt.figure(figsize=(8, 6))
@@ -354,7 +358,7 @@ for iteration, batch in enumerate(test_data_loader,1):
         diff_dis = np.power(np.power(peak_x_diff, 2) + np.power(peak_y_diff, 2), 0.5)
         cv2.circle(superimposed_image, (peak_x_mid_pred, peak_y_mid_pred), 10, (128, 0, 128), thickness=-1)
 
-        print(f'[Bbox] Dis={diff_dis:.0f}, GT=({peak_x_mid_gt:.0f},{peak_y_mid_gt:.0f}), peak=({peak_x_mid_pred:.0f},{peak_y_mid_pred:.0f})')
+        print(f'Dis={diff_dis:.0f}, GT=({peak_x_mid_gt:.0f},{peak_y_mid_gt:.0f}), peak=({peak_x_mid_pred:.0f},{peak_y_mid_pred:.0f})')
 
         # transform float to int
         peak_x_min_gt, peak_y_min_gt, peak_x_max_gt, peak_y_max_gt  = map(int, [peak_x_min_gt, peak_y_min_gt, peak_x_max_gt, peak_y_max_gt])

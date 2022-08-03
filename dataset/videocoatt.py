@@ -32,7 +32,6 @@ class VideoCoAttDataset(Dataset):
         self.test_heads_type = cfg.exp_params.test_heads_type
         self.det_heads_model = cfg.exp_params.det_heads_model
         self.test_heads_conf = cfg.exp_params.test_heads_conf
-        self.test_heads_size = cfg.exp_params.test_heads_size
 
         # exp set
         self.resize_width = cfg.exp_set.resize_width
@@ -49,7 +48,6 @@ class VideoCoAttDataset(Dataset):
         # make dataset
         if self.mode in ['train', 'validate']:
             self.generate_train_dataset_list()
-            self.set_random_sample()
         elif self.mode == 'test':
             self.generate_test_dataset_list()
         else:
@@ -114,7 +112,9 @@ class VideoCoAttDataset(Dataset):
         # zero padding for mini-batch training
         bboxes = np.zeros((self.max_num_people, 4))
         bboxes[:len(bboxes_ori), :] = bboxes_ori
-
+        bboxes[:, ::2] /= img_width
+        bboxes[:, 1::2] /= img_height
+        
         # initialize tensors
         head_img = torch.zeros(self.max_num_people, 3, self.resize_head_height, self.resize_head_width)
         head_vector_gt_tensor = torch.zeros(self.max_num_people, 2)
@@ -141,13 +141,16 @@ class VideoCoAttDataset(Dataset):
 
         head_feature_tensor[:, 0] /= img_width
         head_feature_tensor[:, 1] /= img_height
+
+        gt_img_pad = torch.zeros(self.max_num_people, self.resize_height, self.resize_width)
         gt_img = torch.tensor(gt_img).float()
 
         # transform tensor 
         if self.transforms_rgb:
             rgb_tensor = self.transforms_rgb(Image.open(img_file_path))
         if self.transforms_gt:
-            gt_img = self.transforms_gt(gt_img)[0, :, :]
+            gt_img = self.transforms_gt(gt_img)
+            gt_img_pad[:gt_img.shape[0], :, :] = gt_img
         if self.transforms_saliency:
             saliency_tensor = self.transforms_saliency(Image.open(saliency_file_path))
 
@@ -156,11 +159,12 @@ class VideoCoAttDataset(Dataset):
         batch['head_img'] = head_img
         batch['head_feature'] = head_feature_tensor
         batch['head_vector_gt'] = head_vector_gt_tensor
-        batch['img_gt'] = gt_img
+        batch['img_gt'] = gt_img_pad
         batch['gt_box'] = bboxes
         batch['rgb_img'] = rgb_tensor
         batch['saliency_img'] = saliency_tensor
         batch['att_inside_flag'] = torch.sum(torch.tensor(bboxes), dim=-1)!=0
+        batch['rgb_path'] = img_file_path
 
         return batch
 
@@ -205,36 +209,33 @@ class VideoCoAttDataset(Dataset):
                         det_bbox_conf = self.read_det_file(det_file_path, self.mode)
                         det_bbox, det_conf = det_bbox_conf[:, :-1], det_bbox_conf[:, -1]
                         use_head_boxes_dets = np.array(det_bbox)
-                        use_head_boxes_gt = np.array(sum(ann_info['head_bbox_list'], []), dtype=np.int32).reshape(-1, 4)
+                        use_head_boxes_gt = np.array(ann_info['head_bbox_list'], dtype=np.int32).reshape(-1, 4)
+
                         if use_head_boxes_dets.shape[0] == 0:
                             use_head_boxes = np.concatenate([use_head_boxes_gt], 0)
                         else:
                             use_head_boxes = np.concatenate([use_head_boxes_dets, use_head_boxes_gt], 0)
-
                         use_head_boxes, _, _ = self.nms_fast(use_head_boxes, np.ones(use_head_boxes.shape[0]), np.ones(use_head_boxes.shape[0]), 0.1)
-
                     else:
-                        use_head_boxes = np.array(sum(ann_info['head_bbox_list'], []), dtype=np.int32).reshape(-1, 4)
+                        use_head_boxes = np.array(ann_info['head_bbox_list'], dtype=np.int32).reshape(-1, 4)
 
-                    for co_att_idx in range(len(ann_info['co_att_bbox_list'])):
-                        co_att_bbox = np.array(ann_info['co_att_bbox_list'][co_att_idx], dtype=np.int32).reshape(1, 4)
-                        use_head_boxes = np.array(ann_info['head_bbox_list'][co_att_idx], dtype=np.int32).reshape(-1, 4)
+                    co_att_bbox = np.array(ann_info['co_att_bbox_list'], dtype=np.int32).reshape(-1, 4)
 
-                        # calculate each person head position
-                        use_head_feature = np.zeros((use_head_boxes.shape[0], 2))
-                        if use_head_boxes.shape[0] != 0:
-                            use_head_feature[:, 0] = (use_head_boxes[:, 0] + use_head_boxes[:, 2]) / 2
-                            use_head_feature[:, 1] = (use_head_boxes[:, 1] + use_head_boxes[:, 3]) / 2
+                    # calculate each person head position
+                    use_head_feature = np.zeros((use_head_boxes.shape[0], 2))
+                    if use_head_boxes.shape[0] != 0:
+                        use_head_feature[:, 0] = (use_head_boxes[:, 0] + use_head_boxes[:, 2]) / 2
+                        use_head_feature[:, 1] = (use_head_boxes[:, 1] + use_head_boxes[:, 3]) / 2
 
-                        self.gt_bbox.append(co_att_bbox)
-                        self.rgb_path_list.append(rgb_img_file_path)
-                        self.saliency_path_list.append(saliency_file_path)
-                        self.head_bbox_list.append(use_head_boxes)
-                        self.feature_list.append(use_head_feature)
-                        seq_cnt += 1
+                    self.gt_bbox.append(co_att_bbox)
+                    self.rgb_path_list.append(rgb_img_file_path)
+                    self.saliency_path_list.append(saliency_file_path)
+                    self.head_bbox_list.append(use_head_boxes)
+                    self.feature_list.append(use_head_feature)
+                    seq_cnt += 1
 
-                        if self.wandb_name == 'demo' and seq_cnt > 1:
-                            break
+                    if self.wandb_name == 'demo' and seq_cnt > 1:
+                        break
 
                 # if self.mode == 'validate' and seq_cnt > 5:
                     # break
@@ -319,31 +320,15 @@ class VideoCoAttDataset(Dataset):
             if self.wandb_name == 'demo' and video_cnt > 40:
                 break
 
-    def set_random_sample(self):
-        iteration_num = len(self.gt_bbox)
-        self.gt_bbox_ymin_array = np.zeros((iteration_num))
-        for gt_bbox_idx in range(iteration_num):
-            self.gt_bbox_ymin_array[gt_bbox_idx] = np.min(self.gt_bbox[gt_bbox_idx][:, 1])
-
-    def get_random_sample(self):
-        gt_ymin_array = self.gt_bbox_ymin_array
-        y_cls_num = 3
-        y_cls = random.randint(0, y_cls_num-1)
-        y_range_min = y_cls * (self.resize_height//y_cls_num)
-        y_range_max = (y_cls+1) * (self.resize_height//y_cls_num)
-        gt_ymin_array_split = np.where((gt_ymin_array > y_range_min) & (gt_ymin_array < y_range_max))[0]
-        idx = np.random.choice(gt_ymin_array_split.shape[0], 1, replace=False)[0]
-        return idx
-
     # generage gt imgs for probability heatmap
     def load_gt_imgs(self, img_width, img_height, bbox, gamma):
-        gt_gaussian = np.zeros((1, img_height, img_width), dtype=np.float32)
         co_bbox_num = bbox.shape[0]
+        gt_gaussian = np.zeros((co_bbox_num, img_height, img_width), dtype=np.float32)
         for co_idx in range(co_bbox_num):
             x_min, y_min, x_max, y_max = map(int, bbox[co_idx])
             x_center, y_center = int((x_max + x_min)//2), int((y_max + y_min)//2)
-            gt_gaussian += self.generate_2d_gaussian(img_height, img_width, (x_center, y_center), gamma)
-    
+            gt_gaussian[co_idx, :, :] = self.generate_2d_gaussian(img_height, img_width, (x_center, y_center), gamma)
+        
         return gt_gaussian
 
     # get a ball location
@@ -364,9 +349,10 @@ class VideoCoAttDataset(Dataset):
                 ann_dic[int(frame_id)]['co_att_bbox_list'] = []
                 ann_dic[int(frame_id)]['head_bbox_list'] = []
 
-            ann_dic[int(frame_id)][f'co_att_id_list'].append(co_att_id)
-            ann_dic[int(frame_id)][f'co_att_bbox_list'].append(co_att_bbox)
-            ann_dic[int(frame_id)][f'head_bbox_list'].append(head_bbox)
+            for head_idx in range(len(head_bbox)//4):
+                ann_dic[int(frame_id)][f'co_att_bbox_list'].append(co_att_bbox)
+                ann_dic[int(frame_id)][f'co_att_id_list'].append(co_att_id)
+                ann_dic[int(frame_id)][f'head_bbox_list'].append(head_bbox[head_idx*4:head_idx*4+4])
 
         return ann_dic
 

@@ -143,7 +143,6 @@ def process_epoch(epoch, data_set, mode):
     # logging for wandb
     if cfg.exp_set.wandb_log:
         for loss_name, loss_val in epoch_loss_dic.items():
-            print('wand_log')
             wandb.log({f"{mode} {loss_name}": loss_val / data_length}, step=epoch)
 
     average_loss = epoch_loss_dic['epoch_loss'] / data_length
