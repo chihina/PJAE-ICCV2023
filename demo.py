@@ -35,12 +35,13 @@ def data_id_generator(img_path, cfg):
     if cfg.data.name == 'volleyball':
         video_num, seq_num, img_name = img_path.split('/')[-3:]
         img_num = img_name.split('.')[0]
-        data_id = f'{video_num}_{seq_num}_{img_name}'
+        data_id = f'{video_num}_{seq_num}_{img_num}'
 
         return data_id
     else:
         return 'data_id_unknown'
 
+# normalize heatmap
 def norm_heatmap(img_heatmap):
     if np.min(img_heatmap) == np.max(img_heatmap):
         img_heatmap[:, :] = 0
@@ -50,11 +51,10 @@ def norm_heatmap(img_heatmap):
 
     return img_heatmap
 
+print("===> Getting configuration")
 parser = argparse.ArgumentParser(description="parameters for training")
 parser.add_argument("config", type=str, help="configuration yaml file path")
 args = parser.parse_args()
-
-print("===> Getting configuration")
 cfg_arg = Dict(yaml.safe_load(open(args.config)))
 saved_yaml_file_path = os.path.join(cfg_arg.exp_set.save_folder, cfg_arg.data.name, cfg_arg.exp_set.model_name, 'train.yaml')
 cfg = Dict(yaml.safe_load(open(saved_yaml_file_path)))
@@ -64,11 +64,11 @@ print(cfg)
 print("===> Building model")
 model_head, model_attention, cfg = model_generator(cfg)
 
-# set gpus number I can use
+print("===> Building gpu configuration")
 cuda = cfg.exp_set.gpu_mode
 gpus_list = range(cfg.exp_set.gpu_start, cfg.exp_set.gpu_finish+1)
 
-# fix seed
+print("===> Building seed configuration")
 np.random.seed(cfg.exp_set.seed_num)
 torch.manual_seed(cfg.exp_set.seed_num)
 torch.backends.cudnn.benchmark=True
@@ -101,20 +101,20 @@ print('{} demo samples found'.format(len(test_set)))
 print("===> Make directories to save results")
 if cfg.exp_set.test_gt_gaze:
     model_name = model_name + f'_use_gt_gaze'
-result_save_dir = os.path.join('results', cfg.data.name)
-save_image_dir = os.path.join(result_save_dir, 'demo_output', model_name)
-save_image_dir_person = os.path.join(result_save_dir, 'demo_output_person', model_name)
-save_image_dir_person_all_superimposed = os.path.join(result_save_dir, 'demo_output_person_all_superimposed', model_name)
-save_image_dir_person_all = os.path.join(result_save_dir, 'demo_output_person_all', model_name)
-save_image_dir_person_angle = os.path.join(result_save_dir, 'demo_output_person_angle', model_name)
-save_image_dir_person_distance = os.path.join(result_save_dir, 'demo_output_person_distance', model_name)
-save_image_dir_person_att_map = os.path.join(result_save_dir, 'demo_output_person_att_map', model_name)
-save_image_dir_superimposed = os.path.join(result_save_dir, 'demo_output_superimposed', model_name)
-save_image_dir_gt = os.path.join(result_save_dir, 'demo_output_gt', model_name)
-save_image_dir_scene_feat = os.path.join(result_save_dir, 'demo_output_scene_feat', model_name)
-save_image_dir_scene_feat_superimposed = os.path.join(result_save_dir, 'demo_output_scene_feat_superimposed', model_name)
-save_image_dir_superimposed_concat = os.path.join(result_save_dir, 'demo_output_superimposed_concat', model_name)
-save_image_dir_mha_weights = os.path.join(result_save_dir, 'demo_output_mha_weights', model_name)
+result_save_dir = os.path.join('results', cfg.data.name, model_name)
+save_image_dir = os.path.join(result_save_dir, 'demo_output')
+save_image_dir_person = os.path.join(result_save_dir, 'demo_output_person')
+save_image_dir_person_all_superimposed = os.path.join(result_save_dir, 'demo_output_person_all_superimposed')
+save_image_dir_person_all = os.path.join(result_save_dir, 'demo_output_person_all')
+save_image_dir_person_angle = os.path.join(result_save_dir, 'demo_output_person_angle')
+save_image_dir_person_distance = os.path.join(result_save_dir, 'demo_output_person_distance')
+save_image_dir_person_att_map = os.path.join(result_save_dir, 'demo_output_person_att_map')
+save_image_dir_superimposed = os.path.join(result_save_dir, 'demo_output_superimposed')
+save_image_dir_gt = os.path.join(result_save_dir, 'demo_output_gt')
+save_image_dir_scene_feat = os.path.join(result_save_dir, 'demo_output_scene_feat')
+save_image_dir_scene_feat_superimposed = os.path.join(result_save_dir, 'demo_output_scene_feat_superimposed')
+save_image_dir_superimposed_concat = os.path.join(result_save_dir, 'demo_output_superimposed_concat')
+save_image_dir_mha_weights = os.path.join(result_save_dir, 'demo_output_mha_weights')
 
 if not os.path.exists(save_image_dir):
     os.makedirs(save_image_dir)
@@ -203,7 +203,6 @@ for iteration, batch in enumerate(test_data_loader,1):
 
         out = {**out_head, **out_attention, **batch}
 
-
     img_gt = out['img_gt'].to('cpu').detach()[0]
     img_pred = out['img_pred'].to('cpu').detach()[0]
     img_mid_pred = out['img_mid_pred'].to('cpu').detach()[0]
@@ -219,7 +218,6 @@ for iteration, batch in enumerate(test_data_loader,1):
     mha_weights = out['mha_weights'].to('cpu').detach()[0]
     gt_box = out['gt_box'].to('cpu').detach()[0]
     att_inside_flag = out['att_inside_flag'].to('cpu').detach()[0]
-
     img_path = out['rgb_path'][0]
 
     # define data id
@@ -331,10 +329,10 @@ for iteration, batch in enumerate(test_data_loader,1):
         # cv2.circle(superimposed_image_scene_feat_heatmap, (peak_x_min_pred, peak_y_min_pred), 10, (0, 255 ,0), thickness=-1)
         # cv2.circle(superimposed_image, (peak_x_min_pred, peak_y_min_pred), 10, (0, 255 ,0), thickness=-1)
 
+    # calc distances for each co att box
+    gt_box_num = torch.sum(att_inside_flag)
     print(f'GT bbox:{gt_box_num}, Max:{np.max(img_heatmap):.1f}, Min:{np.min(img_heatmap):.1f}')
 
-    # calc distances for each co att box
-    gt_box_num = np.sum(np.sum(gt_box, axis=1)!=0)
     for gt_box_idx in range(gt_box_num):
         # calc a center of gt bbox
         peak_x_min_gt, peak_y_min_gt, peak_x_max_gt, peak_y_max_gt = gt_box[gt_box_idx]
@@ -342,13 +340,8 @@ for iteration, batch in enumerate(test_data_loader,1):
 
         # calc centers of pred bboxes
         if cfg.model_params.dynamic_distance_type == 'gaussian':
-            no_pad_idx = np.sum(np.sum(head_feature!=0, axis=1)!=0)
-            if cfg.use_gaze_variance:
-                peak_x_mid_pred_all, peak_y_mid_pred_all = head_tensor[:no_pad_idx, 4], head_tensor[:no_pad_idx, 5]
-            else:
-                peak_x_mid_pred_all, peak_y_mid_pred_all = head_tensor[:no_pad_idx, 3], head_tensor[:no_pad_idx, 4]
-
-            peak_x_mid_pred, peak_y_mid_pred = np.mean(peak_x_mid_pred_all), np.mean(peak_y_mid_pred_all) 
+            peak_x_mid_pred_all, peak_y_mid_pred_all = head_tensor[:gt_box_num, 3], head_tensor[:gt_box_num, 4]
+            peak_x_mid_pred, peak_y_mid_pred = torch.mean(peak_x_mid_pred_all), torch.mean(peak_y_mid_pred_all) 
             peak_x_mid_pred, peak_y_mid_pred = int(peak_x_mid_pred*cfg.exp_set.resize_width), int(peak_y_mid_pred*cfg.exp_set.resize_height)
         else:
             peak_y_mid_pred, peak_x_mid_pred = np.unravel_index(np.argmax(img_heatmap), img_heatmap.shape)
@@ -358,21 +351,15 @@ for iteration, batch in enumerate(test_data_loader,1):
         peak_y_min_pred, peak_y_max_pred = peak_y_mid_pred-20, peak_y_mid_pred+20
 
         peak_x_diff, peak_y_diff = peak_x_mid_pred-peak_x_mid_gt, peak_y_mid_pred-peak_y_mid_gt
-        peak_euc_diff = np.power(np.power(peak_x_diff, 2) + np.power(peak_y_diff, 2), 0.5)
-
-        diff_dis = peak_euc_diff
+        diff_dis = np.power(np.power(peak_x_diff, 2) + np.power(peak_y_diff, 2), 0.5)
         cv2.circle(superimposed_image, (peak_x_mid_pred, peak_y_mid_pred), 10, (128, 0, 128), thickness=-1)
 
         print(f'[Bbox] Dis={diff_dis:.0f}, GT=({peak_x_mid_gt:.0f},{peak_y_mid_gt:.0f}), peak=({peak_x_mid_pred:.0f},{peak_y_mid_pred:.0f})')
 
         # transform float to int
         peak_x_min_gt, peak_y_min_gt, peak_x_max_gt, peak_y_max_gt  = map(int, [peak_x_min_gt, peak_y_min_gt, peak_x_max_gt, peak_y_max_gt])
-        peak_x_mid_gt, peak_y_mid_gt = (peak_x_min_gt+peak_x_max_gt)//2, (peak_y_min_gt+peak_y_max_gt)//2
-        
-        if cfg.eval_method == 'bbox':
-            cv2.rectangle(superimposed_image, (peak_x_min_gt, peak_y_min_gt), (peak_x_max_gt, peak_y_max_gt), (0, 255, 0), thickness=4)
-        elif cfg.eval_method == 'peak':
-            cv2.circle(superimposed_image, (peak_x_mid_gt, peak_y_mid_gt), 10, (0, 255, 0), thickness=-1)
+        peak_x_mid_gt, peak_y_mid_gt = (peak_x_min_gt+peak_x_max_gt)//2, (peak_y_min_gt+peak_y_max_gt)//2        
+        cv2.circle(superimposed_image, (peak_x_mid_gt, peak_y_mid_gt), 10, (0, 255, 0), thickness=-1)
 
         # plot gt box and pred box
         # cv2.rectangle(superimposed_image_gaze, (peak_x_min_gt, peak_y_min_gt), (peak_x_max_gt, peak_y_max_gt), (0, 255, 0), thickness=4)
@@ -389,88 +376,80 @@ for iteration, batch in enumerate(test_data_loader,1):
         # cv2.circle(superimposed_image, (peak_x_min_pred, peak_y_min_pred), 10, (0, 255 ,0), thickness=-1)
 
     for person_idx in range(people_num):
-        not_pad_flag = (np.sum(head_feature, axis=1) != 0)[person_idx]
-        if not_pad_flag:
-            for i in range(cfg.rgb_people_trans_enc_num):
+        if att_inside_flag[person_idx]:
+            for i in range(cfg.model_params.rgb_people_trans_enc_num):
                 att_map_enc = cv2.imread(os.path.join(save_image_dir_person_att_map, data_type_id, f'{data_id}', f'{mode}_{data_id}_p{person_idx}_{i}_pred.png'), cv2.IMREAD_GRAYSCALE)
                 att_map_enc = att_map_enc.astype(np.uint8)
                 att_map_enc = cv2.applyColorMap(cv2.resize(att_map_enc, (img.shape[1], img.shape[0])), cv2.COLORMAP_JET)
                 superimposed_att_map_enc = cv2.addWeighted(img, 0.5, att_map_enc, 0.5, 0)
                 cv2.imwrite(os.path.join(save_image_dir_person_att_map, data_type_id, f'{data_id}', f'{mode}_{data_id}_p{person_idx}_{i}_pred.png'), superimposed_att_map_enc)
 
-    for person_idx in range(people_num):
-        not_pad_flag = (np.sum(head_feature, axis=1) != 0)[person_idx]
+            head_tensor_person = head_tensor[person_idx]
+            head_feature_person = head_feature[person_idx]
+            person_atn_weight = float(person_atn[person_idx])
 
-        head_tensor_person = head_tensor[person_idx]
-        head_feature_person = head_feature[person_idx]
-        person_atn_weight = float(person_atn[person_idx])
+            head_x, head_y = head_feature_person[0:2]
+            head_x, head_y = int(head_x*cfg.exp_set.resize_width), int(head_y*cfg.exp_set.resize_height)
 
-        head_x, head_y = head_feature_person[0:2]
-        head_x, head_y = int(head_x*cfg.exp_set.resize_width), int(head_y*cfg.exp_set.resize_height)
+            head_vec_x, head_vec_y = head_tensor_person[0:2]
+            scale_factor = 30
+            pred_x = int(head_vec_x*scale_factor + head_x)
+            pred_y = int(head_vec_y*scale_factor + head_y)
 
-        head_vec_x, head_vec_y = head_tensor_person[0:2]
-        scale_factor = 30
-        pred_x = int(head_vec_x*scale_factor + head_x)
-        pred_y = int(head_vec_y*scale_factor + head_y)
+            # plot predict gaze direction (Red)
+            atn_weight_set = (0, 0, 255)
+            # arrow_set = (255, 255, 255)
+            arrow_set = (0, 0, 0)
 
-        # plot predict gaze direction (Red)
-        atn_weight_set = (0, 0, 255)
-        # arrow_set = (255, 255, 255)
-        arrow_set = (0, 0, 0)
-
-        if not_pad_flag:
             superimposed_image= cv2.arrowedLine(superimposed_image, (head_x, head_y), (pred_x, pred_y), arrow_set, thickness=3)
             superimposed_image_gaze= cv2.arrowedLine(superimposed_image_gaze, (head_x, head_y), (pred_x, pred_y), arrow_set, thickness=3)
 
-    for person_idx in range(img_mid_pred.shape[0]):
-        not_pad_flag = (np.sum(head_feature, axis=1) != 0)[person_idx]
-        img_heatmap_person = cv2.imread(os.path.join(save_image_dir_person, data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_pred.png'), cv2.IMREAD_GRAYSCALE)
-        img_heatmap_angle = cv2.imread(os.path.join(save_image_dir_person_angle, data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_pred.png'), cv2.IMREAD_GRAYSCALE)
-        img_heatmap_distance = cv2.imread(os.path.join(save_image_dir_person_distance, data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_pred.png'), cv2.IMREAD_GRAYSCALE)
+            img_heatmap_person = cv2.imread(os.path.join(save_image_dir_person, data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_pred.png'), cv2.IMREAD_GRAYSCALE)
+            img_heatmap_angle = cv2.imread(os.path.join(save_image_dir_person_angle, data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_pred.png'), cv2.IMREAD_GRAYSCALE)
+            img_heatmap_distance = cv2.imread(os.path.join(save_image_dir_person_distance, data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_pred.png'), cv2.IMREAD_GRAYSCALE)
 
-        img_heatmap_person = norm_heatmap(img_heatmap_person)
+            img_heatmap_person = norm_heatmap(img_heatmap_person)
 
-        img_heatmap_person = img_heatmap_person.astype(np.uint8)
-        img_heatmap_angle = img_heatmap_angle.astype(np.uint8)
-        img_heatmap_distance = img_heatmap_distance.astype(np.uint8)
+            img_heatmap_person = img_heatmap_person.astype(np.uint8)
+            img_heatmap_angle = img_heatmap_angle.astype(np.uint8)
+            img_heatmap_distance = img_heatmap_distance.astype(np.uint8)
 
-        img_heatmap_person = cv2.applyColorMap(cv2.resize(img_heatmap_person, (img.shape[1], img.shape[0])), cv2.COLORMAP_JET)
-        img_heatmap_angle = cv2.applyColorMap(cv2.resize(img_heatmap_angle, (img.shape[1], img.shape[0])), cv2.COLORMAP_JET)
-        img_heatmap_distance = cv2.applyColorMap(cv2.resize(img_heatmap_distance, (img.shape[1], img.shape[0])), cv2.COLORMAP_JET)
+            img_heatmap_person = cv2.applyColorMap(cv2.resize(img_heatmap_person, (img.shape[1], img.shape[0])), cv2.COLORMAP_JET)
+            img_heatmap_angle = cv2.applyColorMap(cv2.resize(img_heatmap_angle, (img.shape[1], img.shape[0])), cv2.COLORMAP_JET)
+            img_heatmap_distance = cv2.applyColorMap(cv2.resize(img_heatmap_distance, (img.shape[1], img.shape[0])), cv2.COLORMAP_JET)
 
-        if cfg.dynamic_distance_type == 'gaussian':
-            superimposed_image_person = cv2.addWeighted(img, 1.0, img_heatmap_person, 0, 0)
-        elif cfg.dynamic_distance_type == 'generator':
-            superimposed_image_person = cv2.addWeighted(img, 0.5, img_heatmap_person, 0.5, 0)
-        else:
-            superimposed_image_person = cv2.addWeighted(img, 0.5, img_heatmap_person, 0.5, 0)
+            if cfg.dynamic_distance_type == 'gaussian':
+                superimposed_image_person = cv2.addWeighted(img, 1.0, img_heatmap_person, 0, 0)
+            elif cfg.dynamic_distance_type == 'generator':
+                superimposed_image_person = cv2.addWeighted(img, 0.5, img_heatmap_person, 0.5, 0)
+            else:
+                superimposed_image_person = cv2.addWeighted(img, 0.5, img_heatmap_person, 0.5, 0)
 
-        # superimposed_image_person = cv2.addWeighted(img, 0.5, img_heatmap_person, 0.5, 0)
-        superimposed_image_angle = cv2.addWeighted(img, 0.5, img_heatmap_angle, 0.5, 0)
-        superimposed_image_distance = cv2.addWeighted(img, 0.5, img_heatmap_distance, 0.5, 0)
+            # superimposed_image_person = cv2.addWeighted(img, 0.5, img_heatmap_person, 0.5, 0)
+            superimposed_image_angle = cv2.addWeighted(img, 0.5, img_heatmap_angle, 0.5, 0)
+            superimposed_image_distance = cv2.addWeighted(img, 0.5, img_heatmap_distance, 0.5, 0)
 
-        # cv2.rectangle(superimposed_image_person, (x_min_ball, y_min_ball), (x_max_ball, y_max_ball), (0, 255, 0), thickness=4)
-        # cv2.rectangle(superimposed_image_angle, (x_min_ball, y_min_ball), (x_max_ball, y_max_ball), (0, 255, 0), thickness=4)
-        # cv2.rectangle(superimposed_image_distance, (x_min_ball, y_min_ball), (x_max_ball, y_max_ball), (0, 255, 0), thickness=4)
+            # cv2.rectangle(superimposed_image_person, (x_min_ball, y_min_ball), (x_max_ball, y_max_ball), (0, 255, 0), thickness=4)
+            # cv2.rectangle(superimposed_image_angle, (x_min_ball, y_min_ball), (x_max_ball, y_max_ball), (0, 255, 0), thickness=4)
+            # cv2.rectangle(superimposed_image_distance, (x_min_ball, y_min_ball), (x_max_ball, y_max_ball), (0, 255, 0), thickness=4)
 
-        head_tensor_person = head_tensor[person_idx]
-        head_feature_person = head_feature[person_idx]
-        person_atn_weight = float(person_atn[person_idx])
+            head_tensor_person = head_tensor[person_idx]
+            head_feature_person = head_feature[person_idx]
+            person_atn_weight = float(person_atn[person_idx])
 
-        head_x, head_y = head_feature_person[0:2]
-        head_x, head_y = int(head_x*cfg.exp_set.resize_width), int(head_y*cfg.exp_set.resize_height)
+            head_x, head_y = head_feature_person[0:2]
+            head_x, head_y = int(head_x*cfg.exp_set.resize_width), int(head_y*cfg.exp_set.resize_height)
 
-        head_vec_x, head_vec_y = head_tensor_person[0:2]
-        scale_factor = 30
-        pred_x = int(head_vec_x*scale_factor + head_x)
-        pred_y = int(head_vec_y*scale_factor + head_y)
+            head_vec_x, head_vec_y = head_tensor_person[0:2]
+            scale_factor = 30
+            pred_x = int(head_vec_x*scale_factor + head_x)
+            pred_y = int(head_vec_y*scale_factor + head_y)
 
-        # plot predict gaze direction (Red)
-        atn_weight_set = (0, 0, 255)
-        # arrow_set = (255, 255, 255)
-        arrow_set = (0, 0, 0)
+            # plot predict gaze direction (Red)
+            atn_weight_set = (0, 0, 255)
+            # arrow_set = (255, 255, 255)
+            arrow_set = (0, 0, 0)
 
-        if not_pad_flag:
             superimposed_image_person = cv2.arrowedLine(superimposed_image_person, (head_x, head_y), (pred_x, pred_y), arrow_set, thickness=3)
             superimposed_image_angle = cv2.arrowedLine(superimposed_image_angle, (head_x, head_y), (pred_x, pred_y), arrow_set, thickness=3)
             superimposed_image_distance = cv2.arrowedLine(superimposed_image_distance, (head_x, head_y), (pred_x, pred_y), arrow_set, thickness=3)
@@ -479,14 +458,12 @@ for iteration, batch in enumerate(test_data_loader,1):
             peak_x_mid_pred, peak_y_mid_pred = int(peak_x_mid_pred_all[person_idx]*cfg.exp_set.resize_width), int(peak_y_mid_pred_all[person_idx]*cfg.exp_set.resize_height)
             cv2.circle(superimposed_image_person, (peak_x_mid_pred, peak_y_mid_pred), 10, (128, 0, 128), thickness=-1)
 
-        # plot person weight
-        # cv2.putText(superimposed_image_person, f'{person_atn_weight:.2f}', (30, 30), cv2.FONT_HERSHEY_PLAIN, 3, atn_weight_set, 3, cv2.LINE_AA)
-        # cv2.putText(superimposed_image_angle, f'{person_atn_weight:.2f}', (30, 30), cv2.FONT_HERSHEY_PLAIN, 3, atn_weight_set, 3, cv2.LINE_AA)
-        # cv2.putText(superimposed_image_distance, f'{person_atn_weight:.2f}', (30, 30), cv2.FONT_HERSHEY_PLAIN, 3, atn_weight_set, 3, cv2.LINE_AA)
-        # cv2.putText(superimposed_image, f'{person_atn_weight:.2f}', (head_x-10, head_y-10), cv2.FONT_HERSHEY_PLAIN, 2, atn_weight_set, 2, cv2.LINE_AA)
+            # plot person weight
+            # cv2.putText(superimposed_image_person, f'{person_atn_weight:.2f}', (30, 30), cv2.FONT_HERSHEY_PLAIN, 3, atn_weight_set, 3, cv2.LINE_AA)
+            # cv2.putText(superimposed_image_angle, f'{person_atn_weight:.2f}', (30, 30), cv2.FONT_HERSHEY_PLAIN, 3, atn_weight_set, 3, cv2.LINE_AA)
+            # cv2.putText(superimposed_image_distance, f'{person_atn_weight:.2f}', (30, 30), cv2.FONT_HERSHEY_PLAIN, 3, atn_weight_set, 3, cv2.LINE_AA)
+            # cv2.putText(superimposed_image, f'{person_atn_weight:.2f}', (head_x-10, head_y-10), cv2.FONT_HERSHEY_PLAIN, 2, atn_weight_set, 2, cv2.LINE_AA)
 
-        # plot person iar label
-        if not_pad_flag:
             save_txt_angle = os.path.join(save_image_dir_person_angle, data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_pred.txt')
             save_txt_distance = os.path.join(save_image_dir_person_distance, data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_pred.txt')
 
@@ -516,15 +493,15 @@ for iteration, batch in enumerate(test_data_loader,1):
             #     if head_tensor_person.shape[0] > 10:
             #         f.write(f'Gaze var:{gaze_var}\n')
 
-        #     cv2.putText(superimposed_image_person, f'{iar_label}', (30, 50), cv2.FONT_HERSHEY_PLAIN, 3, atn_weight_set, 3, cv2.LINE_AA)
-        #     cv2.putText(superimposed_image_angle, f'{iar_label}', (30, 50), cv2.FONT_HERSHEY_PLAIN, 3, atn_weight_set, 3, cv2.LINE_AA)
-        #     cv2.putText(superimposed_image_distance, f'{iar_label}', (30, 50), cv2.FONT_HERSHEY_PLAIN, 3, atn_weight_set, 3, cv2.LINE_AA)
-        #     cv2.putText(superimposed_image, f'{person_idx}:{iar_label}', (head_x-10, head_y-20), cv2.FONT_HERSHEY_PLAIN, 2, atn_weight_set, 2, cv2.LINE_AA)
+            #     cv2.putText(superimposed_image_person, f'{iar_label}', (30, 50), cv2.FONT_HERSHEY_PLAIN, 3, atn_weight_set, 3, cv2.LINE_AA)
+            #     cv2.putText(superimposed_image_angle, f'{iar_label}', (30, 50), cv2.FONT_HERSHEY_PLAIN, 3, atn_weight_set, 3, cv2.LINE_AA)
+            #     cv2.putText(superimposed_image_distance, f'{iar_label}', (30, 50), cv2.FONT_HERSHEY_PLAIN, 3, atn_weight_set, 3, cv2.LINE_AA)
+            #     cv2.putText(superimposed_image, f'{person_idx}:{iar_label}', (head_x-10, head_y-20), cv2.FONT_HERSHEY_PLAIN, 2, atn_weight_set, 2, cv2.LINE_AA)
 
-        # save images
-        cv2.imwrite(os.path.join(save_image_dir_person, data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_pred.png'), superimposed_image_person)
-        cv2.imwrite(os.path.join(save_image_dir_person_angle, data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_pred.png'), superimposed_image_angle)
-        cv2.imwrite(os.path.join(save_image_dir_person_distance, data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_pred.png'), superimposed_image_distance)
+            # save images
+            cv2.imwrite(os.path.join(save_image_dir_person, data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_pred.png'), superimposed_image_person)
+            cv2.imwrite(os.path.join(save_image_dir_person_angle, data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_pred.png'), superimposed_image_angle)
+            cv2.imwrite(os.path.join(save_image_dir_person_distance, data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_pred.png'), superimposed_image_distance)
 
     # save image
     if not os.path.exists(os.path.join(save_image_dir_person_all_superimposed, data_type_id)):
@@ -539,10 +516,10 @@ for iteration, batch in enumerate(test_data_loader,1):
 
     # concat all images
     fig = plt.figure(figsize=(6, 4))
-    not_pad_num = np.sum((np.sum(head_feature, axis=1) != 0))
+    not_pad_num = torch.sum(att_inside_flag)
     columns, rows = max(3, not_pad_num), 4
     
-    if cfg.model_type == 'snl' and cfg.people_feat_aggregation_type == 'max_pool':
+    if cfg.model_params.people_feat_aggregation_type == 'max_pool':
         pass
     else:
         for person_idx in range(1, not_pad_num+1, 1):

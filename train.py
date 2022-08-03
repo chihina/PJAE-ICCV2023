@@ -53,7 +53,7 @@ def process_epoch(epoch, data_set, mode):
             optimizer_head.zero_grad()
 
         # init heatmaps
-        num_people = batch['head_img'].shape[1]
+        cfg.exp_set.batch_size, num_people = batch['head_img'].shape[0:2]
         x_axis_map = torch.arange(0, cfg.exp_set.resize_width, device=f'cuda:{gpus_list[0]}').reshape(1, -1)/(cfg.exp_set.resize_width)
         x_axis_map = torch.tile(x_axis_map, (cfg.exp_set.resize_height, 1))
         y_axis_map = torch.arange(0, cfg.exp_set.resize_height, device=f'cuda:{gpus_list[0]}').reshape(-1, 1)/(cfg.exp_set.resize_height)
@@ -76,7 +76,8 @@ def process_epoch(epoch, data_set, mode):
         # move data into gpu
         if cuda:
             for key, val in batch.items():
-                batch[key] = Variable(val).cuda(gpus_list[0])
+                if key != 'rgb_path':
+                    batch[key] = Variable(val).cuda(gpus_list[0])
 
         head_feature = batch['head_feature']
         if cfg.model_params.use_position:
@@ -103,6 +104,7 @@ def process_epoch(epoch, data_set, mode):
             input_gaze = head_vector.clone() * 0
         batch['input_gaze'] = input_gaze
 
+        # joint attention estimation
         out_attention = model_attention(batch)
 
         loss_set_head = model_head.calc_loss(batch, out_head)
@@ -270,7 +272,7 @@ for epoch in range(cfg.exp_params.start_iter, cfg.exp_params.nEpochs + 1):
     else:
         scheduler_head.step()
 
-    current_val_loss = process_epoch(epoch, training_data_loader, 'valid')
+    current_val_loss = process_epoch(epoch, validation_data_loader, 'valid')
 
     if current_val_loss < best_loss:
         best_loss = current_val_loss

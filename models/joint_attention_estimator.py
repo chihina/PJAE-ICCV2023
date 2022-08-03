@@ -21,11 +21,11 @@ class JointAttentionEstimatorTransformer(nn.Module):
         ## exp settings
         self.resize_width = cfg.exp_set.resize_width
         self.resize_height = cfg.exp_set.resize_height
-        self.scale_factor = cfg.exp_set.scale_factor
 
         self.gpu_list = range(cfg.exp_set.gpu_start, cfg.exp_set.gpu_finish+1)
         self.device = torch.device(f"cuda:{self.gpu_list[0]}")
         self.wandb_name = cfg.exp_set.wandb_name
+        self.batch_size = cfg.exp_set.batch_size
 
         ## model params
         # position
@@ -339,7 +339,7 @@ class JointAttentionEstimatorTransformer(nn.Module):
         torch.autograd.set_detect_anomaly(True)
         
         # get usuful variable
-        batch_size, people_num, _, img_height, img_width = xy_axis_map.shape
+        self.batch_size, people_num, _, img_height, img_width = xy_axis_map.shape
 
         # position and action info handing
         head_position = torch.cat([input_feature[:, :, :2]], dim=-1)
@@ -349,9 +349,9 @@ class JointAttentionEstimatorTransformer(nn.Module):
         if self.gaze_type == 'vector':
             head_gaze = torch.cat([input_gaze[:, :, :2]], dim=-1)
         elif self.gaze_type == 'feature':
-            head_enc_map = head_enc_map.view(batch_size*people_num, -1)
+            head_enc_map = head_enc_map.view(self.batch_size*people_num, -1)
             head_gaze = self.gaze_feat_embeding(head_enc_map)
-            head_gaze = head_gaze.view(batch_size, people_num, -1)
+            head_gaze = head_gaze.view(self.batch_size, people_num, -1)
 
         if self.use_position and self.use_gaze and self.use_action:
             if self.use_position_enc_person:
@@ -387,7 +387,7 @@ class JointAttentionEstimatorTransformer(nn.Module):
             head_info_params = head_info_params + head_position_encoding
 
         # multi head atttention
-        mha_weights = torch.zeros(batch_size, people_num, people_num, device=self.device, dtype=torch.float32)
+        mha_weights = torch.zeros(self.batch_size, people_num, people_num, device=self.device, dtype=torch.float32)
 
         # generate position map
         head_xy_map_vis = head_xy_map * head_feature[:, :, :2, None, None]
@@ -395,7 +395,7 @@ class JointAttentionEstimatorTransformer(nn.Module):
         distance_dist_x = torch.pow(xy_axis_map_dif_head[:, :, 0, :, :], 2)/(2*0.001)
         distance_dist_y = torch.pow(xy_axis_map_dif_head[:, :, 1, :, :], 2)/(2*0.001)
         input_position_map = torch.exp(-(distance_dist_x+distance_dist_y))
-        input_position_map = input_position_map.view(batch_size, people_num, 1, img_height, img_width)
+        input_position_map = input_position_map.view(self.batch_size, people_num, 1, img_height, img_width)
 
         # generate head xy map
         head_xy_map = head_xy_map * head_feature[:, :, :2, None, None]
@@ -438,21 +438,21 @@ class JointAttentionEstimatorTransformer(nn.Module):
         else:
             rgb_feat = self.rgb_feat_extractor(rgb_img)
 
-        att_map = torch.zeros(batch_size, self.rgb_people_trans_enc_num, people_num, 1, 1, device=self.device, dtype=torch.float32)
+        att_map = torch.zeros(self.batch_size, self.rgb_people_trans_enc_num, people_num, 1, 1, device=self.device, dtype=torch.float32)
         if self.rgb_cnn_extractor_type != 'no_use':
             # extract rgb position encoding
             rgb_feat_channel, rgb_feat_height, rgb_feat_width = rgb_feat.shape[-3:]
-            rgb_feat_patch = rgb_feat.view(batch_size, rgb_feat_channel, -1)
+            rgb_feat_patch = rgb_feat.view(self.batch_size, rgb_feat_channel, -1)
             rgb_feat_patch = torch.transpose(rgb_feat_patch, 1, 2)
             rgb_feat_patch_pos = rgb_feat_patch + self.pe_generator_rgb.pos_embedding
 
             if self.rgb_people_trans_type == 'concat' or self.rgb_people_trans_type == 'concat_conv_upsample':
-                rgb_feat_patch_pos_expand = rgb_feat_patch_pos.view(batch_size, 1, -1, self.rgb_embeding_dim)
-                rgb_feat_patch_expand = rgb_feat_patch.view(batch_size, 1, -1, self.rgb_embeding_dim)
-                rgb_feat_patch_pos_expand = rgb_feat_patch_pos_expand.expand(batch_size, people_num, rgb_feat_patch.shape[1], self.rgb_embeding_dim)
-                rgb_feat_patch_expand = rgb_feat_patch_expand.expand(batch_size, people_num, rgb_feat_patch.shape[1], self.rgb_embeding_dim)
-                head_info_params_expand = head_info_params.view(batch_size, people_num, 1, self.people_feat_dim)
-                head_info_params_expand = head_info_params_expand.expand(batch_size, people_num, rgb_feat_patch.shape[1], self.people_feat_dim)
+                rgb_feat_patch_pos_expand = rgb_feat_patch_pos.view(self.batch_size, 1, -1, self.rgb_embeding_dim)
+                rgb_feat_patch_expand = rgb_feat_patch.view(self.batch_size, 1, -1, self.rgb_embeding_dim)
+                rgb_feat_patch_pos_expand = rgb_feat_patch_pos_expand.expand(self.batch_size, people_num, rgb_feat_patch.shape[1], self.rgb_embeding_dim)
+                rgb_feat_patch_expand = rgb_feat_patch_expand.expand(self.batch_size, people_num, rgb_feat_patch.shape[1], self.rgb_embeding_dim)
+                head_info_params_expand = head_info_params.view(self.batch_size, people_num, 1, self.people_feat_dim)
+                head_info_params_expand = head_info_params_expand.expand(self.batch_size, people_num, rgb_feat_patch.shape[1], self.people_feat_dim)
                 
                 if self.use_img:
                     rgb_people_feat_all_pos = torch.cat([rgb_feat_patch_pos_expand, head_info_params_expand], dim=-1)
@@ -461,8 +461,8 @@ class JointAttentionEstimatorTransformer(nn.Module):
                     rgb_people_feat_all_pos = head_info_params_expand
                     rgb_people_feat_all = head_info_params_expand
 
-                rgb_people_feat_all_pos = rgb_people_feat_all_pos.view(batch_size*people_num, -1, self.rgb_embeding_dim+self.people_feat_dim)
-                rgb_people_feat_all = rgb_people_feat_all.view(batch_size*people_num, -1, self.rgb_embeding_dim+self.people_feat_dim)
+                rgb_people_feat_all_pos = rgb_people_feat_all_pos.view(self.batch_size*people_num, -1, self.rgb_embeding_dim+self.people_feat_dim)
+                rgb_people_feat_all = rgb_people_feat_all.view(self.batch_size*people_num, -1, self.rgb_embeding_dim+self.people_feat_dim)
             elif self.rgb_people_trans_type == 'concat_paralell':
                 if self.use_img:
                     rgb_people_feat_all_pos = torch.cat([rgb_feat_patch_pos, head_info_params], dim=-2)
@@ -489,16 +489,16 @@ class JointAttentionEstimatorTransformer(nn.Module):
                 rgb_people_feat_all = rgb_people_feat_feed_res
 
                 if self.rgb_people_trans_type == 'concat':
-                    att_map_i = torch.zeros(batch_size, people_num, 1, rgb_feat_height, rgb_feat_width)
+                    att_map_i = torch.zeros(self.batch_size, people_num, 1, rgb_feat_height, rgb_feat_width)
                 elif self.rgb_people_trans_type == 'concat_paralell':
                     if self.use_img:
                         rgb_people_trans_weights_people = rgb_people_trans_weights[:, (rgb_feat_height*rgb_feat_width):, :(rgb_feat_height*rgb_feat_width)]
-                        att_map_i = rgb_people_trans_weights_people.view(batch_size, people_num, 1, rgb_feat_height, rgb_feat_width)
+                        att_map_i = rgb_people_trans_weights_people.view(self.batch_size, people_num, 1, rgb_feat_height, rgb_feat_width)
                         att_map_i = (att_map_i - torch.min(att_map_i)) / (torch.max(att_map_i)-torch.min(att_map_i))
                     else:
-                        att_map_i = torch.zeros(batch_size, people_num, 1, rgb_feat_height, rgb_feat_width)
+                        att_map_i = torch.zeros(self.batch_size, people_num, 1, rgb_feat_height, rgb_feat_width)
                 else:
-                    att_map_i = rgb_people_trans_weights.view(batch_size, people_num, 1, rgb_feat_height, rgb_feat_width)
+                    att_map_i = rgb_people_trans_weights.view(self.batch_size, people_num, 1, rgb_feat_height, rgb_feat_width)
                     att_map_i = (att_map_i - torch.min(att_map_i)) / (torch.max(att_map_i)-torch.min(att_map_i))
                 
                 if i == 0:
@@ -519,7 +519,7 @@ class JointAttentionEstimatorTransformer(nn.Module):
         if self.people_feat_aggregation_type == 'max_pool':
             no_pad_idx = torch.sum((torch.sum(head_feature, dim=2) != 0), dim=1)
             no_pad_idx = torch.where(no_pad_idx==0, no_pad_idx+1, no_pad_idx)
-            for batch_idx in range(batch_size):
+            for batch_idx in range(self.batch_size):
                 rgb_people_feat_all_batch = rgb_people_feat_all[batch_idx, :, :]
                 rgb_people_feat_all_batch_no_pad = rgb_people_feat_all_batch[:no_pad_idx[batch_idx], :][None, :, :]
                 rgb_people_feat_all_batch_no_pad = rgb_people_feat_all_batch_no_pad.permute(0, 2, 1)
@@ -541,7 +541,7 @@ class JointAttentionEstimatorTransformer(nn.Module):
             # estimate gaze map parameters
             head_vector_params = self.gaze_map_estimator(rgb_people_feat_all_pool)
 
-        head_vector_params = head_vector_params.view(batch_size, people_num, self.dynamic_gaussian_num, self.estimate_param_num_base)
+        head_vector_params = head_vector_params.view(self.batch_size, people_num, self.dynamic_gaussian_num, self.estimate_param_num_base)
         head_vector_params[:, :, :, 3] = torch.exp(head_vector_params[:, :, :, 3].clone())
         head_vector_params[:, :, :, 4] = torch.exp(head_vector_params[:, :, :, 4].clone())
         head_vector_params[:, :, :, 5] = self.dynamic_distance_softmax(head_vector_params[:, :, :, 5].clone())
@@ -591,22 +591,22 @@ class JointAttentionEstimatorTransformer(nn.Module):
 
         elif self.dynamic_distance_type == 'generator':
             if self.rgb_people_trans_type == 'concat':
-                distance_dist = rgb_people_feat_all_pool.view(batch_size, rgb_feat_width, rgb_feat_height, -1)
+                distance_dist = rgb_people_feat_all_pool.view(self.batch_size, rgb_feat_width, rgb_feat_height, -1)
                 distance_dist = torch.transpose(distance_dist, 1, 3)
                 distance_dist = F.interpolate(distance_dist, (self.resize_height, self.resize_width), mode='bilinear')
                 distance_dist = self.distance_map_generator(distance_dist)
             elif self.rgb_people_trans_type == 'concat_conv_upsample':
-                distance_dist = rgb_people_feat_all_pool.view(batch_size, rgb_feat_width, rgb_feat_height, -1)
+                distance_dist = rgb_people_feat_all_pool.view(self.batch_size, rgb_feat_width, rgb_feat_height, -1)
                 distance_dist = torch.transpose(distance_dist, 1, 3)
                 distance_dist = self.distance_map_generator(distance_dist)
             elif self.rgb_people_trans_type == 'concat_paralell':
                 distance_dist_mini = self.distance_map_generator(rgb_people_feat_all_pool)
-                distance_dist_mini = distance_dist_mini.view(batch_size, people_num, self.resize_height//(2**2), self.resize_width//(2**2))
+                distance_dist_mini = distance_dist_mini.view(self.batch_size, people_num, self.resize_height//(2**2), self.resize_width//(2**2))
                 distance_dist = F.interpolate(distance_dist_mini, (self.resize_height, self.resize_width), mode='bilinear')
-                distance_dist = distance_dist.view(batch_size, people_num, self.resize_height, self.resize_width)
+                distance_dist = distance_dist.view(self.batch_size, people_num, self.resize_height, self.resize_width)
             else:
                 distance_dist = self.distance_map_generator(rgb_people_feat_all_pool)
-                distance_dist = distance_dist.view(batch_size, people_num, self.resize_height, self.resize_width)
+                distance_dist = distance_dist.view(self.batch_size, people_num, self.resize_height, self.resize_width)
 
         # multiply zero to padding maps
         distance_dist = distance_dist * (torch.sum(head_feature, dim=2) != 0)[:, :, None, None]
@@ -634,7 +634,7 @@ class JointAttentionEstimatorTransformer(nn.Module):
             sys.exit()
 
         # layer for person attention
-        person_atn = torch.zeros(batch_size, people_num, 1, device=self.device, dtype=torch.float32)
+        person_atn = torch.zeros(self.batch_size, people_num, 1, device=self.device, dtype=torch.float32)
 
         # people aggregation
         no_pad_idx = torch.sum((torch.sum(head_feature, dim=2) != 0), dim=1)[:, None, None, None]
@@ -645,7 +645,7 @@ class JointAttentionEstimatorTransformer(nn.Module):
         x_final = x_final[:, 0, :, :]
 
         # concat two features to return
-        head_vector_params = head_vector_params.view(batch_size, people_num, self.dynamic_gaussian_num*self.estimate_param_num_base)
+        head_vector_params = head_vector_params.view(self.batch_size, people_num, self.dynamic_gaussian_num*self.estimate_param_num_base)
         head_tensor = torch.cat([head_vector, head_vector_params], dim=2)
 
         data = {}
@@ -692,16 +692,16 @@ class JointAttentionEstimatorTransformer(nn.Module):
         else:
             loss_regress_coef = 0
 
-        batch_size, people_num, img_height, img_width = img_mid_pred.shape
+        batch_size, people_num, _, _ = img_mid_pred.shape
 
         # calculate mid gaze map loss
-        img_mid_mean_gt = torch.sum(img_gt, dim=1)/torch.sum(att_inside_flag, dim=-1)
+        img_mid_mean_gt = torch.sum(img_gt, dim=1)/torch.sum(att_inside_flag, dim=-1)[:, None, None]
         loss_map_gaze = self.loss_func_joint_attention(img_mid_mean_pred.float(), img_mid_mean_gt.float())
         loss_map_gaze = loss_map_gaze_coef * loss_map_gaze
 
         # calculate final map loss
-        img_pred_gt = torch.sum(img_gt, dim=1)/torch.sum(att_inside_flag, dim=-1)
-        loss_map = self.loss_func_joint_attention(img_pred.float(), img_gt.float())
+        img_gt_att = torch.sum(img_gt, dim=1)/torch.sum(att_inside_flag, dim=-1)[:, None, None]
+        loss_map = self.loss_func_joint_attention(img_pred.float(), img_gt_att.float())
         loss_map = loss_map_coef * loss_map
 
         # calculate each map loss
@@ -717,7 +717,6 @@ class JointAttentionEstimatorTransformer(nn.Module):
         gt_box_x_mid = (gt_box[:, :, 0]+gt_box[:, :, 2])/2/self.resize_width
         gt_box_y_mid = (gt_box[:, :, 1]+gt_box[:, :, 3])/2/self.resize_height
         gt_box_xy_mid = torch.cat([gt_box_x_mid[:, :, None], gt_box_y_mid[:, :, None]], dim=-1)
-
         loss_regress_xy = ((gt_box_xy_mid-distance_mean_xy) ** 2)
         loss_regress_euc = (torch.sum(loss_regress_xy, dim=-1))
         loss_regress_all = loss_regress_euc * att_inside_flag

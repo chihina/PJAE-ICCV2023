@@ -54,9 +54,9 @@ class VolleyBallDataset(Dataset):
                            35, 37, 43, 44, 45, 47]
 
         if self.wandb_name == 'debug':
-            self.train_video = [1]
-            self.valid_video = [0]
-            self.test_video = [4]
+            self.train_video = [1, 3, 6]
+            self.valid_video = [0, 2, 8]
+            self.test_video = [4, 5, 9]
 
         if mode == 'train':
             self.use_video_list = self.train_video
@@ -248,7 +248,7 @@ class VolleyBallDataset(Dataset):
                     self.head_radius_list.append(self.head_radius_img)
 
                 # one seq in demo mode
-                if 'debug' in self.wandb_name :
+                if 'debug' in self.wandb_name:
                     break
                 if self.wandb_name == 'demo' and seq_cnt > 3:
                     break
@@ -309,7 +309,8 @@ class VolleyBallDataset(Dataset):
             rgb_tensor = self.transforms_rgb(img)
         if self.transforms_gt:
             img_gt = torch.tensor(img_gt).float()
-            img_gt = self.transforms_gt(img_gt)[0, :, :]
+            img_gt = self.transforms_gt(img_gt)
+            img_gt = img_gt.expand(self.max_num_people, self.resize_height, self.resize_width)
 
         # pack one data into a dict
         batch = {}
@@ -334,10 +335,10 @@ class VolleyBallDataset(Dataset):
 
         # no ball image
         if x_min < 0:
-            return np.zeros((1, img_height, img_width))
+            return np.zeros((self.max_num_people, img_height, img_width))
 
         gt_gaussian = self.generate_2d_gaussian(img_height, img_width, (x_center, y_center), gamma)
-        
+
         return gt_gaussian
 
     # get a ball location
