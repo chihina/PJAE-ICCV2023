@@ -720,14 +720,13 @@ class JointAttentionEstimatorTransformer(nn.Module):
         if self.people_feat_aggregation_type != 'no_use':
             distance_mean_xy = distance_mean_xy[:, 0, :][:, None, :]
 
-        gt_box_x_mid = (gt_box[:, 0]+gt_box[:, 2])/2/self.resize_width
-        gt_box_y_mid = (gt_box[:, 1]+gt_box[:, 3])/2/self.resize_height
-        gt_box_xy_mid = torch.cat([gt_box_x_mid[:, None], gt_box_y_mid[:, None]], dim=-1)
-        gt_box_xy_mid = gt_box_xy_mid.view(batch_size, 1, 2)
-        gt_box_xy_mid = gt_box_xy_mid.expand(batch_size, people_num, 2)
+        gt_box_x_mid = (gt_box[:, :, 0]+gt_box[:, :, 2])/2/self.resize_width
+        gt_box_y_mid = (gt_box[:, :, 1]+gt_box[:, :, 3])/2/self.resize_height
+        gt_box_xy_mid = torch.cat([gt_box_x_mid[:, :, None], gt_box_y_mid[:, :, None]], dim=-1)
+
         loss_regress_xy = ((gt_box_xy_mid-distance_mean_xy) ** 2)
         loss_regress_euc = (torch.sum(loss_regress_xy, dim=-1))
-        loss_regress_all = loss_regress_euc
+        loss_regress_all = loss_regress_euc * att_inside_flag
         loss_regress = torch.sum(loss_regress_all) / (batch_size*people_num)
         loss_regress = loss_regress_coef * loss_regress
 

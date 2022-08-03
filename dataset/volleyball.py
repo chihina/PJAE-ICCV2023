@@ -264,11 +264,11 @@ class VolleyBallDataset(Dataset):
 
         bbox = self.gt_bbox[idx]
         gt_box = np.array(bbox)
-        gt_img = self.load_gt_imgs_ball(img_width, img_height, bbox, self.gaussian_sigma_head)
+        img_gt = self.load_gt_imgs_ball(img_width, img_height, bbox, self.gaussian_sigma_head)
         x_min, y_min, x_max, y_max = map(int, gt_box)
         x_mid, y_mid = (x_min+x_max)/2, (y_min+y_max)/2
 
-        head_tensor = torch.zeros(self.max_num_people, 3, self.resize_head_height, self.resize_head_width)
+        head_img = torch.zeros(self.max_num_people, 3, self.resize_head_height, self.resize_head_width)
         head_vector_gt_tensor = torch.zeros(self.max_num_people, 2)
         head_feature_tensor = torch.zeros(self.max_num_people, 2+9)
         att_inside_flag = torch.zeros(self.max_num_people, dtype=torch.bool)
@@ -293,7 +293,7 @@ class VolleyBallDataset(Dataset):
             if self.transforms_head:
                 croped_head = self.transforms_head(croped_head)
 
-            head_tensor[head_idx, :, :, :] = croped_head
+            head_img[head_idx, :, :, :] = croped_head
             head_feature_tensor[head_idx, :2] = torch.tensor(self.feature_list[idx][head_idx][:2])
             head_feature_tensor[head_idx, 2:11] = torch.tensor(self.feature_list[idx][head_idx][2:11])
             head_vector_gt_tensor[head_idx, :] = torch.tensor([head_ball_vec_x, head_ball_vec_y])
@@ -306,18 +306,18 @@ class VolleyBallDataset(Dataset):
         if self.transforms_rgb:
             rgb_tensor = self.transforms_rgb(img)
         if self.transforms_gt:
-            gt_img = torch.tensor(gt_img).float()
-            gt_img = self.transforms_gt(gt_img)[0, :, :]
+            img_gt = torch.tensor(img_gt).float()
+            img_gt = self.transforms_gt(img_gt)[0, :, :]
 
         # pack one data into a dict
         batch = {}
-        batch['head_tensor'] = head_tensor
-        batch['head_feature_tensor'] = head_feature_tensor
-        batch['head_vector_gt_tensor'] = head_vector_gt_tensor
-        batch['gt_img'] = gt_img
+        batch['head_img'] = head_img
+        batch['head_feature'] = head_feature_tensor
+        batch['head_vector_gt'] = head_vector_gt_tensor
+        batch['img_gt'] = img_gt
         batch['gt_box'] = gt_box
-        batch['rgb_tensor'] = rgb_tensor
-        batch['saliency_tensor'] = rgb_tensor
+        batch['rgb_img'] = rgb_tensor
+        batch['saliency_img'] = rgb_tensor
         batch['att_inside_flag'] = att_inside_flag
 
         return batch

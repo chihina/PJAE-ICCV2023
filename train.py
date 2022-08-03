@@ -30,7 +30,7 @@ args = parser.parse_args()
 cfg = Dict(yaml.safe_load(open(args.config)))
 print(cfg)
 
-def process_epoch(epoch, wandb_log, data_set, mode):
+def process_epoch(epoch, data_set, mode):
     data_length = len(data_set)
     epoch_loss_dic = {}
 
@@ -45,17 +45,7 @@ def process_epoch(epoch, wandb_log, data_set, mode):
         model_attention.eval()
 
     for iteration, batch in enumerate(data_set, 1):
-        head_img = batch['head_tensor']
-        head_feature = batch['head_feature_tensor']
-        head_vector_gt = batch['head_vector_gt_tensor']
-        img_gt = batch['gt_img']
-        gt_box = batch['gt_box']
-        rgb_img = batch['rgb_tensor']
-        saliency_img = batch['saliency_tensor']
-        att_inside_flag = batch['att_inside_flag']
-
-        batch_size, num_people = head_img.shape[0], head_img.shape[1]
-
+        # init graph
         optimizer_attention.zero_grad()
         if cfg.exp_params.freeze_head_pose_estimator:
             pass
@@ -63,78 +53,60 @@ def process_epoch(epoch, wandb_log, data_set, mode):
             optimizer_head.zero_grad()
 
         # init heatmaps
+        num_people = batch['head_img'].shape[1]
         x_axis_map = torch.arange(0, cfg.exp_set.resize_width, device=f'cuda:{gpus_list[0]}').reshape(1, -1)/(cfg.exp_set.resize_width)
         x_axis_map = torch.tile(x_axis_map, (cfg.exp_set.resize_height, 1))
         y_axis_map = torch.arange(0, cfg.exp_set.resize_height, device=f'cuda:{gpus_list[0]}').reshape(-1, 1)/(cfg.exp_set.resize_height)
         y_axis_map = torch.tile(y_axis_map, (1, cfg.exp_set.resize_width))
         xy_axis_map = torch.cat((x_axis_map[None, :, :], y_axis_map[None, :, :]))[None, None, :, :, :]
-        xy_axis_map = torch.tile(xy_axis_map, (batch_size, num_people, 1, 1, 1))
-        head_x_map = torch.ones((batch_size, num_people, 1, cfg.exp_set.resize_height, cfg.exp_set.resize_width), device=f'cuda:{gpus_list[0]}')
-        head_y_map = torch.ones((batch_size, num_people, 1, cfg.exp_set.resize_height, cfg.exp_set.resize_width), device=f'cuda:{gpus_list[0]}')
+        xy_axis_map = torch.tile(xy_axis_map, (cfg.exp_set.batch_size, num_people, 1, 1, 1))
+        head_x_map = torch.ones((cfg.exp_set.batch_size, num_people, 1, cfg.exp_set.resize_height, cfg.exp_set.resize_width), device=f'cuda:{gpus_list[0]}')
+        head_y_map = torch.ones((cfg.exp_set.batch_size, num_people, 1, cfg.exp_set.resize_height, cfg.exp_set.resize_width), device=f'cuda:{gpus_list[0]}')
         head_xy_map = torch.cat((head_x_map, head_y_map), 2)
-        gaze_x_map = torch.ones((batch_size, num_people, 1, cfg.exp_set.resize_height, cfg.exp_set.resize_width), device=f'cuda:{gpus_list[0]}')
-        gaze_y_map = torch.ones((batch_size, num_people, 1, cfg.exp_set.resize_height, cfg.exp_set.resize_width), device=f'cuda:{gpus_list[0]}')
+        gaze_x_map = torch.ones((cfg.exp_set.batch_size, num_people, 1, cfg.exp_set.resize_height, cfg.exp_set.resize_width), device=f'cuda:{gpus_list[0]}')
+        gaze_y_map = torch.ones((cfg.exp_set.batch_size, num_people, 1, cfg.exp_set.resize_height, cfg.exp_set.resize_width), device=f'cuda:{gpus_list[0]}')
         gaze_xy_map = torch.cat((gaze_x_map, gaze_y_map), 2)
         xy_axis_map = xy_axis_map.float()
         head_xy_map = head_xy_map.float()
         gaze_xy_map = gaze_xy_map.float()
+        batch['xy_axis_map'] = xy_axis_map
+        batch['head_xy_map'] = head_xy_map
+        batch['gaze_xy_map'] = gaze_xy_map
 
+        # move data into gpu
         if cuda:
-            head_img = Variable(head_img).cuda(gpus_list[0])
-            head_feature = Variable(head_feature).cuda(gpus_list[0])
-            head_vector_gt = Variable(head_vector_gt).cuda(gpus_list[0])
-            img_gt = Variable(img_gt).cuda(gpus_list[0])
-            xy_axis_map = Variable(xy_axis_map).cuda(gpus_list[0])
-            head_xy_map = Variable(head_xy_map).cuda(gpus_list[0])
-            gaze_xy_map = Variable(gaze_xy_map).cuda(gpus_list[0])
-            gt_box = Variable(gt_box).cuda(gpus_list[0])
-            rgb_img = Variable(rgb_img).cuda(gpus_list[0])
-            saliency_img = Variable(saliency_img).cuda(gpus_list[0])
-            att_inside_flag = Variable(att_inside_flag).cuda(gpus_list[0])
+            for key, val in batch.items():
+                batch[key] = Variable(val).cuda(gpus_list[0])
 
-        # change position inputs
+        head_feature = batch['head_feature']
         if cfg.model_params.use_position:
             input_feature = head_feature.clone() 
         else:
             input_feature = head_feature.clone()
             input_feature[:, :, :2] = input_feature[:, :, :2] * 0
-
-        inp = {}
-        inp['head_img'] = head_img
+        batch['input_feature'] = input_feature
 
         # head pose estimation
-        out_head = model_head(inp)
+        out_head = model_head(batch)
         head_vector = out_head['head_vector']
         head_enc_map = out_head['head_enc_map']
+        batch['head_enc_map'] = head_enc_map
 
         if cfg.exp_params.use_gt_gaze:
-            head_vector = head_vector_gt
+            head_vector = batch['head_vector_gt']
+        batch['head_vector'] = head_vector
 
         # change position inputs
         if cfg.model_params.use_gaze:
             input_gaze = head_vector.clone() 
         else:
             input_gaze = head_vector.clone() * 0
+        batch['input_gaze'] = input_gaze
 
-        inp['head_enc_map'] = head_enc_map
-        inp['input_feature'] = input_feature
-        inp['input_gaze'] = input_gaze
-        inp['head_feature'] = head_feature
-        inp['head_vector'] = head_vector
-        inp['head_vector_gt'] = head_vector_gt
-        inp['xy_axis_map'] = xy_axis_map
-        inp['head_xy_map'] = head_xy_map
-        inp['gaze_xy_map'] = gaze_xy_map
-        inp['rgb_img'] = rgb_img
-        inp['saliency_img'] = saliency_img
-        inp['att_inside_flag'] = att_inside_flag
-        inp['img_gt'] = img_gt
-        inp['gt_box'] = gt_box
+        out_attention = model_attention(batch)
 
-        out_attention = model_attention(inp)
-
-        loss_set_head = model_head.calc_loss(inp, out_head)
-        loss_set_attention = model_attention.calc_loss(inp, out_attention)
+        loss_set_head = model_head.calc_loss(batch, out_head)
+        loss_set_attention = model_attention.calc_loss(batch, out_attention)
         loss_set = {**loss_set_head, **loss_set_attention}
 
         # accumulate all loss
@@ -167,8 +139,9 @@ def process_epoch(epoch, wandb_log, data_set, mode):
     print(f"===> Epoch {mode} Complete: Avg {mode} Loss: {epoch_loss_dic['epoch_loss'] / data_length}")
 
     # logging for wandb
-    if wandb_log:
+    if cfg.exp_set.wandb_log:
         for loss_name, loss_val in epoch_loss_dic.items():
+            print('wand_log')
             wandb.log({f"{mode} {loss_name}": loss_val / data_length}, step=epoch)
 
     average_loss = epoch_loss_dic['epoch_loss'] / data_length
@@ -288,7 +261,7 @@ if cfg.exp_set.wandb_log:
 best_loss = 10000000000.0
 print("===> Start training")
 for epoch in range(cfg.exp_params.start_iter, cfg.exp_params.nEpochs + 1):
-    _ = process_epoch(epoch, cfg.exp_set.wandb_log, training_data_loader, 'train')
+    _ = process_epoch(epoch, training_data_loader, 'train')
 
     # schedule learning rate
     scheduler_attention.step()
@@ -297,7 +270,7 @@ for epoch in range(cfg.exp_params.start_iter, cfg.exp_params.nEpochs + 1):
     else:
         scheduler_head.step()
 
-    current_val_loss = process_epoch(epoch, cfg.exp_set.wandb_log, training_data_loader, 'valid')
+    current_val_loss = process_epoch(epoch, training_data_loader, 'valid')
 
     if current_val_loss < best_loss:
         best_loss = current_val_loss
