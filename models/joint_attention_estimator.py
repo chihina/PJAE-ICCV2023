@@ -304,10 +304,10 @@ class JointAttentionEstimatorTransformer(nn.Module):
             print(f'Use dynamic distance')
             if self.dynamic_distance_type == 'gaussian':
                 self.people_feat_pool = nn.AdaptiveMaxPool1d(output_size=1)
-                print(f'Use distance saliency field (gaussian)')
+                print(f'Use distance gaze map (gaussian)')
             elif self.dynamic_distance_type == 'generator':
                 self.people_feat_pool = nn.AdaptiveMaxPool1d(output_size=1)
-                print(f'Use distance saliency field (generator)')
+                print(f'Use distance gaze map (generator)')
             else:
                 print(f'Use correct distance saliency field')
                 sys.exit()
@@ -385,9 +385,6 @@ class JointAttentionEstimatorTransformer(nn.Module):
         if self.use_position and self.use_position_enc_person:
             head_position_encoding = self.person_positional_encoding(head_position)
             head_info_params = head_info_params + head_position_encoding
-
-        # multi head atttention
-        mha_weights = torch.zeros(self.batch_size, people_num, people_num, device=self.device, dtype=torch.float32)
 
         # generate position map
         head_xy_map_vis = head_xy_map * head_feature[:, :, :2, None, None]
@@ -489,30 +486,32 @@ class JointAttentionEstimatorTransformer(nn.Module):
                 rgb_people_feat_all = rgb_people_feat_feed_res
 
                 if self.rgb_people_trans_type == 'concat':
-                    att_map_i = torch.zeros(self.batch_size, people_num, 1, rgb_feat_height, rgb_feat_width)
+                    trans_att_people_rgb_i = torch.zeros(self.batch_size, people_num, 1, rgb_feat_height, rgb_feat_width)
+                    trans_att_people_people_i = torch.zeros(self.batch_size, 1, people_num, people_num)
+
                 elif self.rgb_people_trans_type == 'concat_paralell':
                     if self.use_img:
-                        rgb_people_trans_weights_people = rgb_people_trans_weights[:, (rgb_feat_height*rgb_feat_width):, :(rgb_feat_height*rgb_feat_width)]
-                        att_map_i = rgb_people_trans_weights_people.view(self.batch_size, people_num, 1, rgb_feat_height, rgb_feat_width)
-                        att_map_i = (att_map_i - torch.min(att_map_i)) / (torch.max(att_map_i)-torch.min(att_map_i))
+                        rgb_people_trans_weights_people_rgb = rgb_people_trans_weights[:, (rgb_feat_height*rgb_feat_width):, :(rgb_feat_height*rgb_feat_width)]
+                        rgb_people_trans_weights_people_people = rgb_people_trans_weights[:, (rgb_feat_height*rgb_feat_width):, (rgb_feat_height*rgb_feat_width):]
+                        trans_att_people_rgb_i = rgb_people_trans_weights_people_rgb.view(self.batch_size, people_num, 1, rgb_feat_height, rgb_feat_width)
+                        trans_att_people_people_i = rgb_people_trans_weights_people_people.view(self.batch_size, 1, people_num, people_num)
+                        trans_att_people_rgb_i = (trans_att_people_rgb_i - torch.min(trans_att_people_rgb_i)) / (torch.max(trans_att_people_rgb_i)-torch.min(trans_att_people_rgb_i))
                     else:
-                        att_map_i = torch.zeros(self.batch_size, people_num, 1, rgb_feat_height, rgb_feat_width)
-                else:
-                    att_map_i = rgb_people_trans_weights.view(self.batch_size, people_num, 1, rgb_feat_height, rgb_feat_width)
-                    att_map_i = (att_map_i - torch.min(att_map_i)) / (torch.max(att_map_i)-torch.min(att_map_i))
+                        trans_att_people_rgb_i = torch.zeros(self.batch_size, people_num, 1, rgb_feat_height, rgb_feat_width)
+                        trans_att_people_people_i = torch.zeros(self.batch_size, 1, people_num, people_num)
                 
                 if i == 0:
-                    att_map = att_map_i
+                    trans_att_people_rgb = trans_att_people_rgb_i
+                    trans_att_people_people = trans_att_people_people_i
                 else:
-                    att_map = torch.cat([att_map, att_map_i], dim=2)
+                    trans_att_people_rgb = torch.cat([trans_att_people_rgb, trans_att_people_rgb_i], dim=2)
+                    trans_att_people_people = torch.cat([trans_att_people_people, trans_att_people_people_i], dim=1)
             
             if self.rgb_people_trans_type == 'concat' or self.rgb_people_trans_type == 'concat_conv_upsample':
                 pass
             elif self.rgb_people_trans_type == 'concat_paralell':
                 if self.use_img:
                     rgb_people_feat_all = rgb_people_feat_all[:, (rgb_feat_height*rgb_feat_width):, :]
-            else:
-                pass
         else:
             rgb_people_feat_all = head_info_params
 
@@ -633,9 +632,6 @@ class JointAttentionEstimatorTransformer(nn.Module):
             print('please employ correct distributions fusion')
             sys.exit()
 
-        # layer for person attention
-        person_atn = torch.zeros(self.batch_size, people_num, 1, device=self.device, dtype=torch.float32)
-
         # people aggregation
         no_pad_idx = torch.sum((torch.sum(head_feature, dim=2) != 0), dim=1)[:, None, None, None]
         no_pad_idx = torch.where(no_pad_idx==0, no_pad_idx+1, no_pad_idx)
@@ -655,9 +651,8 @@ class JointAttentionEstimatorTransformer(nn.Module):
         data['head_tensor'] = head_tensor
         data['angle_dist'] = angle_dist
         data['distance_dist'] = distance_dist
-        data['person_atn'] = person_atn
-        data['mha_weights'] = mha_weights
-        data['att_map'] = att_map
+        data['trans_att_people_rgb'] = trans_att_people_rgb
+        data['trans_att_people_people'] = trans_att_people_people
 
         return data
 

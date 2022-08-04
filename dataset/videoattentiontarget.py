@@ -149,6 +149,7 @@ class VideoAttentionTargetDataset(Dataset):
         data['saliency_img'] = saliency_tensor
         data['head_bbox_tensor'] = head_bbox_tensor
         data['att_inside_flag'] = att_inside_flag
+        data['rgb_path'] = img_file_path
 
         return data
 
