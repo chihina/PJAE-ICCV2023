@@ -44,9 +44,7 @@ exp_params:
   # loss : bce
 
   # learning rate
-  lr : 0.001
-  # lr : 0.01
-  # lr : 0.1
+  lr : 0.00001
 
   # gt gaussian
   gaussian_sigma: 10

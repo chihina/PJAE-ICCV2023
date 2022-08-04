@@ -269,10 +269,6 @@ for iteration, batch in enumerate(test_data_loader,1):
             l2_dist = np.power(np.power(peak_x_diff, 2) + np.power(peak_y_diff, 2), 0.5)
             print(f'Dis={l2_dist:.0f}, GT=({peak_x_mid_gt:.0f},{peak_y_mid_gt:.0f}), peak=({peak_x_mid_pred:.0f},{peak_y_mid_pred:.0f})')
 
-            # plot ground-truth and predicted points
-            cv2.circle(superimposed_image, (peak_x_mid_pred, peak_y_mid_pred), 10, (128, 0, 128), thickness=-1)
-            cv2.circle(superimposed_image, (peak_x_mid_gt, peak_y_mid_gt), 10, (0, 255, 0), thickness=-1)
-
             # get head position and gaze direction
             head_tensor_person = head_tensor[person_idx]
             head_vec_x, head_vec_y = head_tensor_person[0:2]
@@ -308,20 +304,36 @@ for iteration, batch in enumerate(test_data_loader,1):
             img_heatmap_distance = cv2.applyColorMap(cv2.resize(img_heatmap_distance, (img.shape[1], img.shape[0])), cv2.COLORMAP_JET)
             superimposed_image_distance = cv2.addWeighted(img, 0.5, img_heatmap_distance, 0.5, 0)
 
+            # head pose arrow color
+            # arrow_set = (255, 255, 255)
+            arrow_set = (0, 0, 0)
+
             # save attention of people and rgb
             for i in range(cfg.model_params.rgb_people_trans_enc_num):            
                 people_rgb_att_one = cv2.imread(os.path.join(save_image_dir_dic['people_rgb_att'], data_type_id, f'{data_id}', f'{mode}_{data_id}_p{person_idx}_enc{i}_people_rgb_attention.png'), cv2.IMREAD_GRAYSCALE)
                 people_rgb_att_one = people_rgb_att_one.astype(np.uint8)
                 people_rgb_att_one = cv2.applyColorMap(cv2.resize(people_rgb_att_one, (img.shape[1], img.shape[0])), cv2.COLORMAP_JET)
                 superimposed_people_rgb_att_one = cv2.addWeighted(img, 0.5, people_rgb_att_one, 0.5, 0)
+                superimposed_people_rgb_att_one = cv2.arrowedLine(superimposed_people_rgb_att_one, (head_x, head_y), (pred_x, pred_y), arrow_set, thickness=3)
+                cv2.circle(superimposed_people_rgb_att_one, (peak_x_mid_pred, peak_y_mid_pred), 10, (128, 0, 128), thickness=-1)
+                cv2.circle(superimposed_people_rgb_att_one, (peak_x_mid_gt, peak_y_mid_gt), 10, (0, 255, 0), thickness=-1)
                 cv2.imwrite(os.path.join(save_image_dir_dic['people_rgb_att'], data_type_id, f'{data_id}', f'{mode}_{data_id}_p{person_idx}_enc{i}_people_rgb_attention.png'), superimposed_people_rgb_att_one)
 
-            # arrow_set = (255, 255, 255)
-            arrow_set = (0, 0, 0)
             superimposed_image= cv2.arrowedLine(superimposed_image, (head_x, head_y), (pred_x, pred_y), arrow_set, thickness=3)
             superimposed_image_person = cv2.arrowedLine(superimposed_image_person, (head_x, head_y), (pred_x, pred_y), arrow_set, thickness=3)
             superimposed_image_angle = cv2.arrowedLine(superimposed_image_angle, (head_x, head_y), (pred_x, pred_y), arrow_set, thickness=3)
             superimposed_image_distance = cv2.arrowedLine(superimposed_image_distance, (head_x, head_y), (pred_x, pred_y), arrow_set, thickness=3)
+
+            # plot ground-truth and predicted points
+            cv2.circle(superimposed_image, (peak_x_mid_pred, peak_y_mid_pred), 10, (128, 0, 128), thickness=-1)
+            cv2.circle(superimposed_image, (peak_x_mid_gt, peak_y_mid_gt), 10, (0, 255, 0), thickness=-1)
+            cv2.circle(superimposed_image_person, (peak_x_mid_pred, peak_y_mid_pred), 10, (128, 0, 128), thickness=-1)
+            cv2.circle(superimposed_image_person, (peak_x_mid_gt, peak_y_mid_gt), 10, (0, 255, 0), thickness=-1)
+            cv2.circle(superimposed_image_angle, (peak_x_mid_pred, peak_y_mid_pred), 10, (128, 0, 128), thickness=-1)
+            cv2.circle(superimposed_image_angle, (peak_x_mid_gt, peak_y_mid_gt), 10, (0, 255, 0), thickness=-1)
+            cv2.circle(superimposed_image_distance, (peak_x_mid_pred, peak_y_mid_pred), 10, (128, 0, 128), thickness=-1)
+            cv2.circle(superimposed_image_distance, (peak_x_mid_gt, peak_y_mid_gt), 10, (0, 255, 0), thickness=-1)
+
 
             # save attention of each person
             cv2.imwrite(os.path.join(save_image_dir_dic['attention'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_attention.png'), superimposed_image_person)
