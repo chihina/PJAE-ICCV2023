@@ -27,10 +27,44 @@ from dataset.dataset_selector import dataset_generator
 from models.model_selector import model_generator
 
 # generate data type
-def data_type_id_generator(cfg):
-    data_type_id = 'unknown'
+def data_type_id_generator(head_vector_gt, head_tensor, gt_box, cfg):
+    data_type_id = ''
+
     if cfg.data.name == 'volleyball':
         data_type_id = f'bbox_{cfg.exp_params.bbox_types}_gaze_{cfg.exp_params.gaze_types}_act_{cfg.exp_params.action_types}'
+    elif cfg.data.name == 'videocoatt':
+        dets_people_num = np.sum(np.sum(head_vector_gt, axis=-1) != 0)
+        # define data id of dets people
+        dets_people_num = np.sum(np.sum(head_vector_gt, axis=-1) != 0)
+        if dets_people_num <= 3:
+            dets_people_id = '0<peo<3'
+        else:
+            dets_people_id = '3<=peo'
+
+        # define data id of gaze estimation
+        head_vector_gt_cos = head_vector_gt[:dets_people_num, :]
+        head_vector_pred_cos = head_tensor[:dets_people_num, :2]
+        head_gt_pred_cos_sim = np.sum(head_vector_gt_cos * head_vector_pred_cos, axis=1)
+        head_gt_pred_cos_sim_ave = np.sum(head_gt_pred_cos_sim) / dets_people_num
+        if head_gt_pred_cos_sim_ave < 0.5:
+            gaze_error_id = '0_0<gaze<0_5'
+        else:
+            gaze_error_id = '0_5_gaze<1_0'
+
+        # define data id of joint attention size
+        gt_x_min, gt_y_min, gt_x_max, gt_y_max = gt_box[0, :]
+        gt_x_size, gt_y_size = gt_x_max-gt_x_min, gt_y_max-gt_y_min
+        gt_x_size /= cfg.exp_set.resize_width
+        gt_y_size /= cfg.exp_set.resize_height
+        gt_size = ((gt_x_size**2)+(gt_y_size**2))**0.5
+        if gt_size < 0.1:
+            gt_size_id = '0_0<size<0_1'
+        else:
+            gt_size_id = '0_1<size'
+
+        # data_type_id = f'{dets_people_id}:{gaze_error_id}:{gt_size_id}'
+        # data_type_id = f'{dets_people_id}:{gaze_error_id}'
+        data_type_id = ''
 
     return data_type_id
 
@@ -104,7 +138,7 @@ mode = cfg.exp_set.mode
 test_set = dataset_generator(cfg, mode)
 test_data_loader = DataLoader(dataset=test_set,
                                 batch_size=cfg.exp_set.batch_size,
-                                shuffle=False,
+                                shuffle=True,
                                 num_workers=cfg.exp_set.num_workers,
                                 pin_memory=True)
 print('{} demo samples found'.format(len(test_set)))
@@ -187,8 +221,8 @@ for iteration, batch in enumerate(test_data_loader,1):
     angle_dist = out['angle_dist'].to('cpu').detach()[0]
     distance_dist = out['distance_dist'].to('cpu').detach()[0]
     saliency_img = out['saliency_img'].to('cpu').detach()[0]
-    head_tensor = out['head_tensor'].to('cpu').detach()[0]
-    head_vector_gt = out['head_vector_gt'].to('cpu').detach()[0]
+    head_tensor = out['head_tensor'].to('cpu').detach()[0].numpy()
+    head_vector_gt = out['head_vector_gt'].to('cpu').detach()[0].numpy()
     head_feature = out['head_feature'].to('cpu').detach()[0]
     trans_att_people_rgb = out['trans_att_people_rgb'].to('cpu').detach()[0]
     trans_att_people_people = out['trans_att_people_people'].to('cpu').detach()[0].numpy()
@@ -197,9 +231,9 @@ for iteration, batch in enumerate(test_data_loader,1):
     img_path = out['rgb_path'][0]
 
     # define data id
-    data_type_id = data_type_id_generator(cfg)
+    data_type_id = data_type_id_generator(head_vector_gt, head_tensor, gt_box, cfg)
     data_id = data_id_generator(img_path, cfg)
-    print(f'Iter:{iteration}, {data_id}')
+    print(f'Iter:{iteration}, {data_id}, {data_type_id}')
 
     # expand directories
     for dir_name in ['joint_attention', 'joint_attention_superimposed', 'people_people_att']:

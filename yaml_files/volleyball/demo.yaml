@@ -24,17 +24,17 @@ exp_params:
   use_frame_type: mid
   # use_frame_type: all
 
-  bbox_types: GT
-  # bbox_types: PRED
-  action_types: GT
-  # action_types: PRED
+  # bbox_types: GT
+  bbox_types: PRED
+  # action_types: GT
+  action_types: PRED
   # gaze_types: GT
   gaze_types: PRED
   # gaze_types: NONE
 
-  use_action: True
-  use_position: True
-  use_gaze: True
+  # use_action: True
+  # use_position: True
+  # use_gaze: True
 
   use_gt_gaze: False
   # use_gt_gaze: True
