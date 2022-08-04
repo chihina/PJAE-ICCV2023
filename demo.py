@@ -147,30 +147,28 @@ for iteration, batch in enumerate(test_data_loader,1):
                 if key != 'rgb_path':
                     batch[key] = Variable(val).cuda(gpus_list[0])
 
-        head_feature = batch['head_feature']
         if cfg.model_params.use_position:
-            input_feature = head_feature.clone() 
+            input_feature = batch['head_feature'].clone() 
         else:
-            input_feature = head_feature.clone()
+            input_feature = batch['head_feature'].clone()
             input_feature[:, :, :2] = input_feature[:, :, :2] * 0
         batch['input_feature'] = input_feature
 
         # head pose estimation
         out_head = model_head(batch)
         head_vector = out_head['head_vector']
-        head_enc_map = out_head['head_enc_map']
-        batch['head_enc_map'] = head_enc_map
+        batch['head_img_extract'] = out_head['head_img_extract']
 
         if cfg.exp_params.use_gt_gaze:
-            head_vector = batch['head_vector_gt']
-        batch['head_vector'] = head_vector
+            batch['head_vector'] = batch['head_vector_gt']
+        else:
+            batch['head_vector'] = out_head['head_vector']
 
         # change position inputs
         if cfg.model_params.use_gaze:
-            input_gaze = head_vector.clone() 
+            batch['input_gaze'] = head_vector.clone() 
         else:
-            input_gaze = head_vector.clone() * 0
-        batch['input_gaze'] = input_gaze
+            batch['input_gaze'] = head_vector.clone() * 0
 
         out_attention = model_attention(batch)
 
