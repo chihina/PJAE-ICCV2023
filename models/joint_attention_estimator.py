@@ -335,6 +335,7 @@ class JointAttentionEstimatorTransformer(nn.Module):
         saliency_img = inp['saliency_img']
         rgb_img = inp['rgb_img']
         head_img_extract = inp['head_img_extract']
+        att_inside_flag = inp['att_inside_flag']
 
         torch.autograd.set_detect_anomaly(True)
         
@@ -493,9 +494,11 @@ class JointAttentionEstimatorTransformer(nn.Module):
                     if self.use_img:
                         rgb_people_trans_weights_people_rgb = rgb_people_trans_weights[:, (rgb_feat_height*rgb_feat_width):, :(rgb_feat_height*rgb_feat_width)]
                         rgb_people_trans_weights_people_people = rgb_people_trans_weights[:, (rgb_feat_height*rgb_feat_width):, (rgb_feat_height*rgb_feat_width):]
+                        rgb_people_trans_weights_people_rgb = (rgb_people_trans_weights_people_rgb - torch.min(rgb_people_trans_weights_people_rgb)) / (torch.max(rgb_people_trans_weights_people_rgb)-torch.min(rgb_people_trans_weights_people_rgb))
+                        rgb_people_trans_weights_people_people = rgb_people_trans_weights_people_people * att_inside_flag[:, :, None]
+                        rgb_people_trans_weights_people_people = rgb_people_trans_weights_people_people * att_inside_flag[:, None, :]
                         trans_att_people_rgb_i = rgb_people_trans_weights_people_rgb.view(self.batch_size, people_num, 1, rgb_feat_height, rgb_feat_width)
                         trans_att_people_people_i = rgb_people_trans_weights_people_people.view(self.batch_size, 1, people_num, people_num)
-                        trans_att_people_rgb_i = (trans_att_people_rgb_i - torch.min(trans_att_people_rgb_i)) / (torch.max(trans_att_people_rgb_i)-torch.min(trans_att_people_rgb_i))
                     else:
                         trans_att_people_rgb_i = torch.zeros(self.batch_size, people_num, 1, rgb_feat_height, rgb_feat_width)
                         trans_att_people_people_i = torch.zeros(self.batch_size, 1, people_num, people_num)

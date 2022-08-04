@@ -115,9 +115,9 @@ for dir_name in save_image_dir_list:
 
 print("===> Starting demo processing")
 for iteration, batch in enumerate(test_data_loader,1):
-    print(f'Iter:{iteration}')
     if iteration > 20:
         break
+    print(f'Iter:{iteration}')
 
     # init heatmaps
     num_people = batch['head_img'].shape[1]
