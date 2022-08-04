@@ -26,6 +26,14 @@ import sys
 from dataset.dataset_selector import dataset_generator
 from models.model_selector import model_generator
 
+# generate data type
+def data_type_id_generator(cfg):
+    data_type_id = 'unknown'
+    if cfg.data.name == 'volleyball':
+        data_type_id = f'bbox_{cfg.exp_params.bbox_types}_gaze_{cfg.exp_params.gaze_types}_act_{cfg.exp_params.action_types}'
+
+    return data_type_id
+
 # generate data id
 def data_id_generator(img_path, cfg):
     data_id = 'unknown'
@@ -117,7 +125,6 @@ print("===> Starting demo processing")
 for iteration, batch in enumerate(test_data_loader,1):
     if iteration > 20:
         break
-    print(f'Iter:{iteration}')
 
     # init heatmaps
     num_people = batch['head_img'].shape[1]
@@ -190,9 +197,9 @@ for iteration, batch in enumerate(test_data_loader,1):
     img_path = out['rgb_path'][0]
 
     # define data id
-    # data_type_id = search_data_type_id(head_vector_gt, head_tensor, gt_box, cfg)
-    data_type_id = f''
+    data_type_id = data_type_id_generator(cfg)
     data_id = data_id_generator(img_path, cfg)
+    print(f'Iter:{iteration}, {data_id}')
 
     # expand directories
     for dir_name in ['joint_attention', 'joint_attention_superimposed', 'people_people_att']:
@@ -206,26 +213,26 @@ for iteration, batch in enumerate(test_data_loader,1):
     save_image(img_pred, os.path.join(save_image_dir_dic['joint_attention'], data_type_id, f'{mode}_{data_id}_joint_attention.png'))
 
     # save attention of transformers (people and rgb attention)
+    key_no_padding_num = torch.sum((torch.sum(head_feature, dim=-1) != 0)).numpy()
     people_num, rgb_people_trans_enc_num, rgb_feat_height, rgb_feat_width = trans_att_people_rgb.shape
     trans_att_people_rgb = trans_att_people_rgb.view(rgb_people_trans_enc_num*people_num, 1, rgb_feat_height, rgb_feat_width)
     trans_att_people_rgb = F.interpolate(trans_att_people_rgb, (cfg.exp_set.resize_height, cfg.exp_set.resize_width), mode='nearest')
     trans_att_people_rgb = trans_att_people_rgb.view(people_num, rgb_people_trans_enc_num, 1, cfg.exp_set.resize_height, cfg.exp_set.resize_width)
-    for person_idx in range(people_num):
+    for person_idx in range(key_no_padding_num):
         for i in range(cfg.model_params.rgb_people_trans_enc_num):
-            if att_inside_flag[person_idx]:
-                save_image(trans_att_people_rgb[person_idx, i, 0, :, :], os.path.join(save_image_dir_dic['people_rgb_att'], data_type_id, f'{data_id}', f'{mode}_{data_id}_p{person_idx}_enc{i}_people_rgb_attention.png'))
+            save_image(trans_att_people_rgb[person_idx, i, 0, :, :], os.path.join(save_image_dir_dic['people_rgb_att'], data_type_id, f'{data_id}', f'{mode}_{data_id}_p{person_idx}_enc{i}_people_rgb_attention.png'))
 
     # save attention of transformers (people and people attention)
-    df_person = [person_idx for person_idx in range(people_num)]
+    df_person = [person_idx for person_idx in range(key_no_padding_num)]
     for i in range(cfg.model_params.rgb_people_trans_enc_num):
         plt.figure(figsize=(8, 6))
-        trans_att_people_people_enc = pd.DataFrame(data=trans_att_people_people[i, :, :], index=df_person, columns=df_person)
+        trans_att_people_people_enc = pd.DataFrame(data=trans_att_people_people[i, :key_no_padding_num, :key_no_padding_num], index=df_person, columns=df_person)
         sns.heatmap(trans_att_people_people_enc, cmap='jet')
         plt.savefig(os.path.join(save_image_dir_dic['people_people_att'], data_type_id, f'{data_id}', f'{mode}_{data_id}_enc{i}_people_people_att.png'))
         plt.close()
 
     # save attention of each person
-    for person_idx in range(people_num):
+    for person_idx in range(key_no_padding_num):
         save_image(img_mid_pred[person_idx], os.path.join(save_image_dir_dic['attention'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_attention.png'))
         save_image(angle_dist[person_idx], os.path.join(save_image_dir_dic['attention_fan'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_fan.png'))
         save_image(distance_dist[person_idx], os.path.join(save_image_dir_dic['attention_dist'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_dist.png'))
@@ -239,16 +246,14 @@ for iteration, batch in enumerate(test_data_loader,1):
     img_heatmap_norm = norm_heatmap(img_heatmap)
     img_heatmap_norm = img_heatmap_norm.astype(np.uint8)
     img_heatmap_norm = cv2.applyColorMap(img_heatmap_norm, cv2.COLORMAP_JET)
+
     if cfg.model_params.dynamic_distance_type == 'gaussian':
         superimposed_image = cv2.addWeighted(img, 1.0, img_heatmap_norm, 0, 0)
-    elif cfg.dynamic_distance_type == 'generator':
-        superimposed_image = cv2.addWeighted(img, 0.5, img_heatmap_norm, 0.5, 0)
     else:
         superimposed_image = cv2.addWeighted(img, 0.5, img_heatmap_norm, 0.5, 0)
 
     # calculate metrics for each attetntion estimation
-    gt_box_num = torch.sum(att_inside_flag)
-    for person_idx in range(people_num):
+    for person_idx in range(key_no_padding_num):
         if att_inside_flag[person_idx]:
             # calc a center of gt bbox
             peak_x_min_gt, peak_y_min_gt, peak_x_max_gt, peak_y_max_gt = gt_box[person_idx]
@@ -267,78 +272,78 @@ for iteration, batch in enumerate(test_data_loader,1):
             # calc metrics
             peak_x_diff, peak_y_diff = peak_x_mid_pred-peak_x_mid_gt, peak_y_mid_pred-peak_y_mid_gt
             l2_dist = np.power(np.power(peak_x_diff, 2) + np.power(peak_y_diff, 2), 0.5)
-            print(f'Dis={l2_dist:.0f}, GT=({peak_x_mid_gt:.0f},{peak_y_mid_gt:.0f}), peak=({peak_x_mid_pred:.0f},{peak_y_mid_pred:.0f})')
+            print(f'Person_id:{person_idx}, Dis={l2_dist:.0f}, GT=({peak_x_mid_gt:.0f},{peak_y_mid_gt:.0f}), peak=({peak_x_mid_pred:.0f},{peak_y_mid_pred:.0f})')
 
-            # get head position and gaze direction
-            head_tensor_person = head_tensor[person_idx]
-            head_vec_x, head_vec_y = head_tensor_person[0:2]
-            head_feature_person = head_feature[person_idx]
-            head_x, head_y = head_feature_person[0:2]
-            head_x, head_y = int(head_x*cfg.exp_set.resize_width), int(head_y*cfg.exp_set.resize_height)
-            scale_factor = 30
-            pred_x = int(head_vec_x*scale_factor + head_x)
-            pred_y = int(head_vec_y*scale_factor + head_y)
+        # get head position and gaze direction
+        head_tensor_person = head_tensor[person_idx]
+        head_vec_x, head_vec_y = head_tensor_person[0:2]
+        head_feature_person = head_feature[person_idx]
+        head_x, head_y = head_feature_person[0:2]
+        head_x, head_y = int(head_x*cfg.exp_set.resize_width), int(head_y*cfg.exp_set.resize_height)
+        scale_factor = 30
+        pred_x = int(head_vec_x*scale_factor + head_x)
+        pred_y = int(head_vec_y*scale_factor + head_y)
 
-            # save attention estimation as a superimposed image
-            img_heatmap_person = cv2.imread(os.path.join(save_image_dir_dic['attention'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_attention.png'), cv2.IMREAD_GRAYSCALE)
-            img_heatmap_person = norm_heatmap(img_heatmap_person)
-            img_heatmap_person = img_heatmap_person.astype(np.uint8)
-            img_heatmap_person = cv2.applyColorMap(cv2.resize(img_heatmap_person, (img.shape[1], img.shape[0])), cv2.COLORMAP_JET)
-            if cfg.dynamic_distance_type == 'gaussian':
-                superimposed_image_person = cv2.addWeighted(img, 1.0, img_heatmap_person, 0, 0)
-            else:
-                superimposed_image_person = cv2.addWeighted(img, 0.5, img_heatmap_person, 0.5, 0)
+        # save attention estimation as a superimposed image
+        img_heatmap_person = cv2.imread(os.path.join(save_image_dir_dic['attention'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_attention.png'), cv2.IMREAD_GRAYSCALE)
+        img_heatmap_person = norm_heatmap(img_heatmap_person)
+        img_heatmap_person = img_heatmap_person.astype(np.uint8)
+        img_heatmap_person = cv2.applyColorMap(cv2.resize(img_heatmap_person, (img.shape[1], img.shape[0])), cv2.COLORMAP_JET)
+        
+        img_heatmap_angle = cv2.imread(os.path.join(save_image_dir_dic['attention_fan'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_fan.png'), cv2.IMREAD_GRAYSCALE)
+        img_heatmap_angle = img_heatmap_angle.astype(np.uint8)
+        img_heatmap_angle = cv2.applyColorMap(cv2.resize(img_heatmap_angle, (img.shape[1], img.shape[0])), cv2.COLORMAP_JET)
 
-            img_heatmap_angle = cv2.imread(os.path.join(save_image_dir_dic['attention_fan'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_fan.png'), cv2.IMREAD_GRAYSCALE)
-            img_heatmap_angle = img_heatmap_angle.astype(np.uint8)
-            img_heatmap_angle = cv2.applyColorMap(cv2.resize(img_heatmap_angle, (img.shape[1], img.shape[0])), cv2.COLORMAP_JET)
+        img_heatmap_distance = cv2.imread(os.path.join(save_image_dir_dic['attention_dist'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_dist.png'), cv2.IMREAD_GRAYSCALE)
+        img_heatmap_distance = img_heatmap_distance.astype(np.uint8)
+        img_heatmap_distance = cv2.applyColorMap(cv2.resize(img_heatmap_distance, (img.shape[1], img.shape[0])), cv2.COLORMAP_JET)
+
+        if cfg.model_params.dynamic_distance_type == 'gaussian':
+            superimposed_image_person = cv2.addWeighted(img, 1.0, img_heatmap_person, 0, 0)
+            superimposed_image_angle = cv2.addWeighted(img, 1.0, img_heatmap_angle, 0, 0)
+            superimposed_image_distance = cv2.addWeighted(img, 1.0, img_heatmap_distance, 0, 0)
+        else:
+            superimposed_image_person = cv2.addWeighted(img, 0.5, img_heatmap_person, 0.5, 0)
             superimposed_image_angle = cv2.addWeighted(img, 0.5, img_heatmap_angle, 0.5, 0)
-
-            img_heatmap_distance = cv2.imread(os.path.join(save_image_dir_dic['attention_dist'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_dist.png'), cv2.IMREAD_GRAYSCALE)
-            img_heatmap_distance = img_heatmap_distance.astype(np.uint8)
-            img_heatmap_distance = cv2.applyColorMap(cv2.resize(img_heatmap_distance, (img.shape[1], img.shape[0])), cv2.COLORMAP_JET)
             superimposed_image_distance = cv2.addWeighted(img, 0.5, img_heatmap_distance, 0.5, 0)
 
-            img_heatmap_distance = cv2.imread(os.path.join(save_image_dir_dic['attention_dist'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_dist.png'), cv2.IMREAD_GRAYSCALE)
-            img_heatmap_distance = img_heatmap_distance.astype(np.uint8)
-            img_heatmap_distance = cv2.applyColorMap(cv2.resize(img_heatmap_distance, (img.shape[1], img.shape[0])), cv2.COLORMAP_JET)
-            superimposed_image_distance = cv2.addWeighted(img, 0.5, img_heatmap_distance, 0.5, 0)
+        # head pose arrow color
+        # arrow_set = (255, 255, 255)
+        arrow_set = (0, 0, 0)
 
-            # head pose arrow color
-            # arrow_set = (255, 255, 255)
-            arrow_set = (0, 0, 0)
-
-            # save attention of people and rgb
-            for i in range(cfg.model_params.rgb_people_trans_enc_num):            
-                people_rgb_att_one = cv2.imread(os.path.join(save_image_dir_dic['people_rgb_att'], data_type_id, f'{data_id}', f'{mode}_{data_id}_p{person_idx}_enc{i}_people_rgb_attention.png'), cv2.IMREAD_GRAYSCALE)
-                people_rgb_att_one = people_rgb_att_one.astype(np.uint8)
-                people_rgb_att_one = cv2.applyColorMap(cv2.resize(people_rgb_att_one, (img.shape[1], img.shape[0])), cv2.COLORMAP_JET)
-                superimposed_people_rgb_att_one = cv2.addWeighted(img, 0.5, people_rgb_att_one, 0.5, 0)
-                superimposed_people_rgb_att_one = cv2.arrowedLine(superimposed_people_rgb_att_one, (head_x, head_y), (pred_x, pred_y), arrow_set, thickness=3)
-                cv2.circle(superimposed_people_rgb_att_one, (peak_x_mid_pred, peak_y_mid_pred), 10, (128, 0, 128), thickness=-1)
+        # save attention of people and rgb
+        for i in range(cfg.model_params.rgb_people_trans_enc_num):            
+            people_rgb_att_one = cv2.imread(os.path.join(save_image_dir_dic['people_rgb_att'], data_type_id, f'{data_id}', f'{mode}_{data_id}_p{person_idx}_enc{i}_people_rgb_attention.png'), cv2.IMREAD_GRAYSCALE)
+            people_rgb_att_one = people_rgb_att_one.astype(np.uint8)
+            people_rgb_att_one = cv2.applyColorMap(cv2.resize(people_rgb_att_one, (img.shape[1], img.shape[0])), cv2.COLORMAP_JET)
+            superimposed_people_rgb_att_one = cv2.addWeighted(img, 0.5, people_rgb_att_one, 0.5, 0)
+            superimposed_people_rgb_att_one = cv2.arrowedLine(superimposed_people_rgb_att_one, (head_x, head_y), (pred_x, pred_y), arrow_set, thickness=3)
+            cv2.circle(superimposed_people_rgb_att_one, (peak_x_mid_pred, peak_y_mid_pred), 10, (128, 0, 128), thickness=-1)
+            if att_inside_flag[person_idx]:
                 cv2.circle(superimposed_people_rgb_att_one, (peak_x_mid_gt, peak_y_mid_gt), 10, (0, 255, 0), thickness=-1)
-                cv2.imwrite(os.path.join(save_image_dir_dic['people_rgb_att'], data_type_id, f'{data_id}', f'{mode}_{data_id}_p{person_idx}_enc{i}_people_rgb_attention.png'), superimposed_people_rgb_att_one)
+            cv2.imwrite(os.path.join(save_image_dir_dic['people_rgb_att'], data_type_id, f'{data_id}', f'{mode}_{data_id}_p{person_idx}_enc{i}_people_rgb_attention.png'), superimposed_people_rgb_att_one)
 
-            superimposed_image= cv2.arrowedLine(superimposed_image, (head_x, head_y), (pred_x, pred_y), arrow_set, thickness=3)
-            superimposed_image_person = cv2.arrowedLine(superimposed_image_person, (head_x, head_y), (pred_x, pred_y), arrow_set, thickness=3)
-            superimposed_image_angle = cv2.arrowedLine(superimposed_image_angle, (head_x, head_y), (pred_x, pred_y), arrow_set, thickness=3)
-            superimposed_image_distance = cv2.arrowedLine(superimposed_image_distance, (head_x, head_y), (pred_x, pred_y), arrow_set, thickness=3)
+        superimposed_image= cv2.arrowedLine(superimposed_image, (head_x, head_y), (pred_x, pred_y), arrow_set, thickness=3)
+        superimposed_image_person = cv2.arrowedLine(superimposed_image_person, (head_x, head_y), (pred_x, pred_y), arrow_set, thickness=3)
+        superimposed_image_angle = cv2.arrowedLine(superimposed_image_angle, (head_x, head_y), (pred_x, pred_y), arrow_set, thickness=3)
+        superimposed_image_distance = cv2.arrowedLine(superimposed_image_distance, (head_x, head_y), (pred_x, pred_y), arrow_set, thickness=3)
 
-            # plot ground-truth and predicted points
-            cv2.circle(superimposed_image, (peak_x_mid_pred, peak_y_mid_pred), 10, (128, 0, 128), thickness=-1)
+        # plot ground-truth and predicted points
+        cv2.circle(superimposed_image, (peak_x_mid_pred, peak_y_mid_pred), 10, (128, 0, 128), thickness=-1)
+        cv2.circle(superimposed_image_person, (peak_x_mid_pred, peak_y_mid_pred), 10, (128, 0, 128), thickness=-1)
+        cv2.circle(superimposed_image_angle, (peak_x_mid_pred, peak_y_mid_pred), 10, (128, 0, 128), thickness=-1)
+        cv2.circle(superimposed_image_distance, (peak_x_mid_pred, peak_y_mid_pred), 10, (128, 0, 128), thickness=-1)
+
+        if att_inside_flag[person_idx]:
             cv2.circle(superimposed_image, (peak_x_mid_gt, peak_y_mid_gt), 10, (0, 255, 0), thickness=-1)
-            cv2.circle(superimposed_image_person, (peak_x_mid_pred, peak_y_mid_pred), 10, (128, 0, 128), thickness=-1)
             cv2.circle(superimposed_image_person, (peak_x_mid_gt, peak_y_mid_gt), 10, (0, 255, 0), thickness=-1)
-            cv2.circle(superimposed_image_angle, (peak_x_mid_pred, peak_y_mid_pred), 10, (128, 0, 128), thickness=-1)
             cv2.circle(superimposed_image_angle, (peak_x_mid_gt, peak_y_mid_gt), 10, (0, 255, 0), thickness=-1)
-            cv2.circle(superimposed_image_distance, (peak_x_mid_pred, peak_y_mid_pred), 10, (128, 0, 128), thickness=-1)
             cv2.circle(superimposed_image_distance, (peak_x_mid_gt, peak_y_mid_gt), 10, (0, 255, 0), thickness=-1)
 
-
-            # save attention of each person
-            cv2.imwrite(os.path.join(save_image_dir_dic['attention'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_attention.png'), superimposed_image_person)
-            cv2.imwrite(os.path.join(save_image_dir_dic['attention_fan'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_fan.png'), superimposed_image_angle)
-            cv2.imwrite(os.path.join(save_image_dir_dic['attention_dist'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_dist.png'), superimposed_image_distance)
+        # save attention of each person
+        cv2.imwrite(os.path.join(save_image_dir_dic['attention'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_attention.png'), superimposed_image_person)
+        cv2.imwrite(os.path.join(save_image_dir_dic['attention_fan'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_fan.png'), superimposed_image_angle)
+        cv2.imwrite(os.path.join(save_image_dir_dic['attention_dist'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_dist.png'), superimposed_image_distance)
 
     # save joint attention estimation as a superimposed image
     cv2.imwrite(os.path.join(save_image_dir_dic['joint_attention_superimposed'], data_type_id, f'{mode}_{data_id}_superimposed.png'), superimposed_image)

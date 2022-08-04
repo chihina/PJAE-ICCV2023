@@ -495,8 +495,6 @@ class JointAttentionEstimatorTransformer(nn.Module):
                         rgb_people_trans_weights_people_rgb = rgb_people_trans_weights[:, (rgb_feat_height*rgb_feat_width):, :(rgb_feat_height*rgb_feat_width)]
                         rgb_people_trans_weights_people_people = rgb_people_trans_weights[:, (rgb_feat_height*rgb_feat_width):, (rgb_feat_height*rgb_feat_width):]
                         rgb_people_trans_weights_people_rgb = (rgb_people_trans_weights_people_rgb - torch.min(rgb_people_trans_weights_people_rgb)) / (torch.max(rgb_people_trans_weights_people_rgb)-torch.min(rgb_people_trans_weights_people_rgb))
-                        rgb_people_trans_weights_people_people = rgb_people_trans_weights_people_people * att_inside_flag[:, :, None]
-                        rgb_people_trans_weights_people_people = rgb_people_trans_weights_people_people * att_inside_flag[:, None, :]
                         trans_att_people_rgb_i = rgb_people_trans_weights_people_rgb.view(self.batch_size, people_num, 1, rgb_feat_height, rgb_feat_width)
                         trans_att_people_people_i = rgb_people_trans_weights_people_people.view(self.batch_size, 1, people_num, people_num)
                     else:
@@ -581,15 +579,15 @@ class JointAttentionEstimatorTransformer(nn.Module):
                     print(f'{distance_mean_vec[0, 0, gauss_idx, 0, 0, 0].item():.2f}', end=' ')
                     print(f'{distance_mean_vec[0, 0, gauss_idx, 0, 0, 1].item():.2f}')
             
-            if self.wandb_name == 'demo':
-                no_pad_idx_demo = torch.sum((torch.sum(head_feature, dim=2) != 0), dim=1)[0]
-                for person_idx in range(no_pad_idx_demo):
-                    print(f'Person:{person_idx}')
-                    for gauss_idx in range(self.dynamic_gaussian_num):
-                        print(f'{distance_dist_coef[0, person_idx, gauss_idx, 0, 0].item():.2f}', end=' ')
-                        print(f'{distance_mean_vec[0, person_idx, gauss_idx, 0, 0, 0].item():.2f}', end=' ')
-                        print(f'{distance_mean_vec[0, person_idx, gauss_idx, 0, 0, 1].item():.2f}', end=' ')
-                        print(f'{distance_dist_denom[0, person_idx, gauss_idx, 0, 0].item():.2f}')
+            # if self.wandb_name == 'demo':
+            #     no_pad_idx_demo = torch.sum((torch.sum(head_feature, dim=2) != 0), dim=1)[0]
+            #     for person_idx in range(no_pad_idx_demo):
+            #         print(f'Person:{person_idx}')
+            #         for gauss_idx in range(self.dynamic_gaussian_num):
+            #             print(f'{distance_dist_coef[0, person_idx, gauss_idx, 0, 0].item():.2f}', end=' ')
+            #             print(f'{distance_mean_vec[0, person_idx, gauss_idx, 0, 0, 0].item():.2f}', end=' ')
+            #             print(f'{distance_mean_vec[0, person_idx, gauss_idx, 0, 0, 1].item():.2f}', end=' ')
+            #             print(f'{distance_dist_denom[0, person_idx, gauss_idx, 0, 0].item():.2f}')
 
         elif self.dynamic_distance_type == 'generator':
             if self.rgb_people_trans_type == 'concat':
