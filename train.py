@@ -35,22 +35,19 @@ def process_epoch(epoch, data_set, mode):
     epoch_loss_dic = {}
 
     if mode == 'train':
+        model_head.train()
+        model_attention.train()
         if cfg.exp_params.freeze_head_pose_estimator:
             model_head.eval()
-        else:
-            model_head.train()
-        model_attention.train()
     else:
         model_head.eval()
         model_attention.eval()
 
     for iteration, batch in enumerate(data_set, 1):
         # init graph
-        optimizer_attention.zero_grad()
-        if cfg.exp_params.freeze_head_pose_estimator:
-            pass
-        else:
+        if not cfg.exp_params.freeze_head_pose_estimator:
             optimizer_head.zero_grad()
+        optimizer_attention.zero_grad()
 
         # init heatmaps
         cfg.exp_set.batch_size, num_people = batch['head_img'].shape[0:2]
@@ -89,20 +86,18 @@ def process_epoch(epoch, data_set, mode):
 
         # head pose estimation
         out_head = model_head(batch)
-        head_vector = out_head['head_vector']
-        head_enc_map = out_head['head_enc_map']
-        batch['head_enc_map'] = head_enc_map
+        batch['head_img_extract'] = out_head['head_img_extract']
 
         if cfg.exp_params.use_gt_gaze:
-            head_vector = batch['head_vector_gt']
-        batch['head_vector'] = head_vector
+            batch['head_vector'] = batch['head_vector_gt']
+        else:
+            batch['head_vector'] = out_head['head_vector']
 
         # change position inputs
         if cfg.model_params.use_gaze:
-            input_gaze = head_vector.clone() 
+            batch['input_gaze'] = batch['head_vector'].clone() 
         else:
-            input_gaze = head_vector.clone() * 0
-        batch['input_gaze'] = input_gaze
+            batch['input_gaze'] = batch['head_vector'].clone() * 0
 
         # joint attention estimation
         out_attention = model_attention(batch)
@@ -122,11 +117,9 @@ def process_epoch(epoch, data_set, mode):
         if mode == 'train':
             loss.backward()
 
-            optimizer_attention.step()
-            if cfg.exp_params.freeze_head_pose_estimator:
-                pass
-            else:
+            if not cfg.exp_params.freeze_head_pose_estimator:
                 optimizer_head.step()
+            optimizer_attention.step()
 
         for loss_name, loss_val in loss_set.items():
             if iteration == 1:
@@ -265,11 +258,8 @@ for epoch in range(cfg.exp_params.start_iter, cfg.exp_params.nEpochs + 1):
     _ = process_epoch(epoch, training_data_loader, 'train')
 
     # schedule learning rate
+    scheduler_head.step()
     scheduler_attention.step()
-    if cfg.exp_params.use_pretrained_head_pose_estimator:
-        pass
-    else:
-        scheduler_head.step()
 
     current_val_loss = process_epoch(epoch, validation_data_loader, 'valid')
 

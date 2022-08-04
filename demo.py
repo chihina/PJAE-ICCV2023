@@ -83,8 +83,8 @@ model_name = cfg.exp_set.model_name
 weight_saved_dir = os.path.join(cfg.exp_set.save_folder,cfg.data.name, model_name)
 model_head_weight_path = os.path.join(weight_saved_dir, "model_head_best.pth.tar")
 model_attention_weight_path = os.path.join(weight_saved_dir, "model_gaussian_best.pth.tar")
-model_head.load_state_dict(torch.load(model_head_weight_path))
-model_attention.load_state_dict(torch.load(model_attention_weight_path))
+model_head.load_state_dict(torch.load(model_head_weight_path,  map_location='cuda:'+str(gpus_list[0])))
+model_attention.load_state_dict(torch.load(model_attention_weight_path,  map_location='cuda:'+str(gpus_list[0])))
 if cuda:
     model_head = model_head.cuda(gpus_list[0])
     model_attention = model_attention.cuda(gpus_list[0])
@@ -116,6 +116,8 @@ for dir_name in save_image_dir_list:
 print("===> Starting demo processing")
 for iteration, batch in enumerate(test_data_loader,1):
     print(f'Iter:{iteration}')
+    if iteration > 20:
+        break
 
     # init heatmaps
     num_people = batch['head_img'].shape[1]

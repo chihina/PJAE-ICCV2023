@@ -4,20 +4,26 @@ import torch.nn as nn
 import torchvision.models as models
 from torch.nn import functional as F
 
+import sys
+
 class HeadPoseEstimatorResnet(nn.Module):
     def __init__(self, cfg):
         super(HeadPoseEstimatorResnet, self).__init__()
 
-        # load vgg models
-        vgg16 = models.vgg16(pretrained=True)
-        vgg16.classifier = vgg16.classifier[:-1]
-        self.vgg16 = vgg16
+        # load resnet
+        resnet = models.resnet18(pretrained=True)
+        resnet = nn.Sequential(*list(resnet.children())[:-1])
+        # for p in resnet.parameters():
+            # p.requires_grad = False
+        self.feature_extractor = resnet
 
-        # load head pose estimator
         self.head_pose_estimator = nn.Sequential(
-            nn.Linear(4096, 2),
+            nn.Linear(512, 64),
+            nn.ReLU(),
+            nn.Linear(64, 16),
+            nn.ReLU(),
+            nn.Linear(16, 2),
         )
-        self.head_pose_tanh = nn.Tanh()
 
         # define loss function
         self.use_gaze_loss = cfg.exp_params.use_gaze_loss
@@ -27,16 +33,16 @@ class HeadPoseEstimatorResnet(nn.Module):
         # unpack input data
         head_img = inp['head_img']
 
-        # backbone
+        # head feature extraction
         batch_size, people_num, channel_num, img_height, img_width = head_img.shape
-        head_img = head_img.view(-1, channel_num, img_height, img_width)
-        head_img = self.vgg16(head_img)
+        head_img = head_img.view(batch_size*people_num, channel_num, img_height, img_width)
+        head_feature = self.feature_extractor(head_img)
+        head_feature = head_feature.mean(dim=(-2, -1))
 
         # head pose estimation
-        head_vector = self.head_pose_estimator(head_img)
-        head_vector = self.head_pose_tanh(head_vector)
+        head_vector = self.head_pose_estimator(head_feature)
         head_vector = head_vector.view(batch_size, people_num, -1)
-        head_img = head_img.view(batch_size, people_num, -1)
+        head_feature = head_feature.view(batch_size, people_num, -1)
 
         # normarize head pose
         head_vector = F.normalize(head_vector, dim=-1)
@@ -44,7 +50,7 @@ class HeadPoseEstimatorResnet(nn.Module):
         # pack output data
         out = {}
         out['head_vector'] = head_vector
-        out['head_enc_map'] = head_img
+        out['head_img_extract'] = head_feature
 
         return out
 

@@ -104,7 +104,7 @@ class JointAttentionEstimatorTransformer(nn.Module):
             if self.use_gaze:
                 embeding_param_num += gaze_feat_emb_dim
             self.gaze_feat_embeding = nn.Sequential(
-                nn.Linear(4096, gaze_feat_emb_dim),
+                nn.Linear(512, gaze_feat_emb_dim),
                 nn.ReLU(inplace=False),
             )
 
@@ -334,7 +334,7 @@ class JointAttentionEstimatorTransformer(nn.Module):
         gaze_xy_map = inp['gaze_xy_map']
         saliency_img = inp['saliency_img']
         rgb_img = inp['rgb_img']
-        head_enc_map = inp['head_enc_map']
+        head_img_extract = inp['head_img_extract']
 
         torch.autograd.set_detect_anomaly(True)
         
@@ -349,8 +349,8 @@ class JointAttentionEstimatorTransformer(nn.Module):
         if self.gaze_type == 'vector':
             head_gaze = torch.cat([input_gaze[:, :, :2]], dim=-1)
         elif self.gaze_type == 'feature':
-            head_enc_map = head_enc_map.view(self.batch_size*people_num, -1)
-            head_gaze = self.gaze_feat_embeding(head_enc_map)
+            head_img_extract = head_img_extract.view(self.batch_size*people_num, -1)
+            head_gaze = self.gaze_feat_embeding(head_img_extract)
             head_gaze = head_gaze.view(self.batch_size, people_num, -1)
 
         if self.use_position and self.use_gaze and self.use_action:

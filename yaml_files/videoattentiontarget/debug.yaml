@@ -69,7 +69,7 @@ exp_params:
   # use_pretrained_head_pose_estimator: True
   pretrained_joint_attention_estimator_name: pretrain_head_estimator
   # pretrained_joint_attention_estimator_name: pretrain_head_estimator_unipose
-  # freeze_joint_attention_estimator: False
+  freeze_joint_attention_estimator: False
   # freeze_joint_attention_estimator: True
 
 model_params:

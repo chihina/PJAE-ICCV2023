@@ -15,8 +15,8 @@ exp_set:
   num_workers: 2
   seed_num: 777
   gpu_mode : True
-  gpu_start : 5
-  gpu_finish : 5
+  gpu_start : 7
+  gpu_finish : 7
 
   resize_height : 720
   resize_width : 1280

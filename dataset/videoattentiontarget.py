@@ -41,7 +41,7 @@ class VideoAttentionTargetDataset(Dataset):
         self.max_num_people = 0
         self.set_max_num_people()
 
-        self.transforms = transforms.Compose(
+        self.transforms_head = transforms.Compose(
             [
                 transforms.Resize((self.resize_head_height, self.resize_head_width)),
                 transforms.ToTensor(),
@@ -119,8 +119,8 @@ class VideoAttentionTargetDataset(Dataset):
             croped_head = img.crop((head_x_min, head_y_min, head_x_max, head_y_max))
 
             # transform tensor 
-            if self.transforms:
-                croped_head = self.transforms(croped_head)
+            if self.transforms_head:
+                croped_head = self.transforms_head(croped_head)
 
             head_img[head_idx, :, :, :] = croped_head
             head_feature_tensor[head_idx, :2] = torch.tensor(self.feature_list[idx][head_idx])
