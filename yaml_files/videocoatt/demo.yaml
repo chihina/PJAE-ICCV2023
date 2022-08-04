@@ -1,0 +1,27 @@
+data:
+  name: videocoatt
+  dataset_dir : data/VideoCoAtt_Dataset
+  saliency_dataset_dir : data/deepgaze_output_loader
+
+exp_set:
+  save_folder : saved_weights
+  model_name : videocoatt-try1
+  seed_num : 777
+  gpu_mode : True
+  gpu_start : 7
+  gpu_finish : 7
+  num_workers : 1
+  batch_size : 1
+  wandb_name : demo
+
+  mode: test
+  # mode : validate
+  # mode : train
+
+exp_params:
+  test_heads_type : det
+  # test_heads_type : gt
+  det_heads_model : dets_txt_nk_faster_rcnn_20220421
+  test_heads_conf : 0.6
+  test_gt_gaze : False
+  # test_gt_gaze : True

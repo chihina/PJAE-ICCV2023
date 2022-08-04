@@ -128,9 +128,9 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# nakatani add
+# additional requirements
 wandb
 data
 saved_weights
-yaml_files
+result/
 .vscode

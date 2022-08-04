@@ -1,0 +1,163 @@
+data: 
+  name: volleyball
+  sendo_dataset_dir: data/volleyball_tracking_annotation
+  train_dataset_dir: data/social_saliency_dataset_unipose_gt_20
+  test_dataset_dir: data/social_saliency_dataset_unipose_pred_mid
+  rgb_dataset_dir: data/videos
+  annotation_dir: data/vatic_ball_annotation/annotation_data/
+
+exp_set:
+  save_folder: saved_weights
+  wandb_name: debug
+  wandb_log : False
+
+  batch_size: 2
+  num_workers: 2
+  seed_num: 777
+  gpu_mode : True
+  gpu_start : 5
+  gpu_finish : 5
+
+  resize_height : 720
+  resize_width : 1280
+  resize_head_width: 64
+  resize_head_height: 64
+
+exp_params:
+  # use_gaze_loss : False
+  use_gaze_loss : True
+
+  use_e_map_loss : False
+  # use_e_map_loss : True
+
+  use_e_att_loss : False
+  # use_e_att_loss : True
+
+  use_each_e_map_loss : False
+  # use_each_e_map_loss : True
+
+  # use_regression_loss : False
+  use_regression_loss : True
+
+  use_frame_type: mid
+  # use_frame_type: all
+
+  use_gt_gaze: False
+  # use_gt_gaze: True
+
+  iar_type: gt
+  # iar_type: pred_label
+  # iar_type: none
+
+  # loss function
+  loss : mse
+  # loss : bce
+
+  # learning rate
+  lr : 0.001
+  # lr : 0.01
+  # lr : 0.1
+
+  nEpochs : 500
+  start_iter : 0
+  snapshots : 100
+  scheduler_start : 1000
+  scheduler_iter : 1100000
+
+  gaussian_sigma: 10
+
+  # pretrained models
+  pretrained_models_dir: saved_weights
+
+  use_pretrained_head_pose_estimator: False
+  # use_pretrained_head_pose_estimator: True
+  pretrained_head_pose_estimator_name: pretrain_head_estimator
+  # pretrained_head_pose_estimator_name: pretrain_head_estimator_unipose
+  # freeze_head_pose_estimator: False
+  # freeze_head_pose_estimator: True
+
+  use_pretrained_joint_attention_estimator: False
+  # use_pretrained_head_pose_estimator: True
+  pretrained_joint_attention_estimator_name: pretrain_head_estimator
+  # pretrained_joint_attention_estimator_name: pretrain_head_estimator_unipose
+  # freeze_joint_attention_estimator: False
+  # freeze_joint_attention_estimator: True
+
+model_params:
+  model_type: ja_transformer
+
+  # Position
+  # use_position : False
+  use_position : True
+  # use_position_enc_person : False
+  use_position_enc_person : True
+  use_position_enc_type : sine
+  # use_position_enc_type : learnable
+
+  # Gaze
+  # use_gaze : False
+  use_gaze : True
+  gaze_type: vector
+  # gaze_type: feature
+
+  # Action
+  use_action : False
+  use_action : True
+
+  # Whole image
+  use_img : False
+  use_img : True
+
+  # Gaze map
+  use_dynamic_angle : False
+  # use_dynamic_angle : True
+
+  # use_dynamic_distance : False
+  use_dynamic_distance : True
+
+  dynamic_distance_type: gaussian
+  dynamic_gaussian_num : 1
+  # # dynamic_distance_type: generator
+  use_gauss_limit : False
+  # # use_gauss_limit : True
+
+  gaze_map_estimator_type : identity
+  # gaze_map_estimator_type : deep
+  # gaze_map_estimator_type : normal
+  # gaze_map_estimator_type : shallow
+
+  # transformer
+  # rgb_people_trans_type : identity
+  # rgb_people_trans_type : concat
+  # rgb_people_trans_type : concat_conv_upsample
+  rgb_people_trans_type : concat_paralell
+
+  # rgb_people_trans_enc_num : 2
+  rgb_people_trans_enc_num : 4
+
+  mha_num_heads_rgb_people : 4
+  rgb_embeding_dim : 64
+  people_feat_dim : 16
+
+  # rgb_cnn_extractor_type : normal
+  # rgb_cnn_extractor_type : no_use
+  rgb_cnn_extractor_type : resnet18
+  # rgb_cnn_extractor_type : resnet50
+  # rgb_cnn_extractor_stage_idx : 1
+  # rgb_cnn_extractor_stage_idx : 2
+  rgb_cnn_extractor_stage_idx : 3
+  # rgb_cnn_extractor_stage_idx : 4
+  # rgb_cnn_extractor_type : hrnet_w18_small
+  # rgb_cnn_extractor_type : hrnet_w32
+  # rgb_cnn_extractor_stage_idx : 3
+  # rgb_cnn_extractor_type : convnext
+  # rgb_cnn_extractor_stage_idx : 2
+
+  # Others
+  # people_feat_aggregation_type : max_pool
+  people_feat_aggregation_type : no_use
+
+  # angle_distance_fusion: max
+  # angle_distance_fusion: mean
+  angle_distance_fusion: mult
+  # angle_distance_fusion : sum_coef

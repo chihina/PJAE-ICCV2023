@@ -1,0 +1,22 @@
+data:
+  name: videoattentiontarget
+  dataset_dir : data/videoattentiontarget
+
+exp_set:
+  save_folder : saved_weights
+  model_name : videoattentiontarget-try1
+  seed_num : 777
+  gpu_mode : True
+  gpu_start : 7
+  gpu_finish : 7
+  num_workers : 1
+  batch_size : 1
+  wandb_name : demo
+
+  mode: test
+  # mode : validate
+  # mode : train
+
+exp_params:
+  test_gt_gaze : False
+  # test_gt_gaze : True
