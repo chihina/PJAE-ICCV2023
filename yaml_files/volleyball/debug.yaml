@@ -36,8 +36,8 @@ exp_params:
   use_each_e_map_loss : False
   # use_each_e_map_loss : True
 
-  use_regression_loss : False
-  # use_regression_loss : True
+  # use_regression_loss : False
+  use_regression_loss : True
 
   use_triple_loss : False
   # use_triple_loss : True
@@ -100,15 +100,15 @@ model_params:
   # Gaze
   # use_gaze : False
   use_gaze : True
-  gaze_type: vector
-  # gaze_type: feature
+  # gaze_type: vector
+  gaze_type: feature
 
   # Action
-  use_action : False
+  # use_action : False
   use_action : True
 
   # Whole image
-  use_img : False
+  # use_img : False
   use_img : True
 
   # Gaze map
