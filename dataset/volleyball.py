@@ -42,6 +42,7 @@ class VolleyBallDataset(Dataset):
         self.head_radius_list = []
         self.edge_list = []
         self.gt_bbox = []
+        self.gt_bbox_id = []
         self.gt_bbox_resized = []
         self.rgb_path_list = []
 
@@ -241,7 +242,9 @@ class VolleyBallDataset(Dataset):
                     x_min, x_max = map(lambda x: int(x*self.resize_width/img_width), [x_min, x_max])
                     y_min, y_max = map(lambda x: int(x*self.resize_height/img_height), [y_min, y_max])
                     gt_box = np.array([x_min, y_min, x_max, y_max])
+                    gt_bbox_idx = np.arange(len(self.feature_list_img)).reshape(-1, 1)
 
+                    self.gt_bbox_id.append(gt_bbox_idx)
                     self.gt_bbox_resized.append(gt_box)
                     self.rgb_path_list.append(rgb_img_file_path)
                     self.feature_list.append(self.feature_list_img)
@@ -314,19 +317,28 @@ class VolleyBallDataset(Dataset):
             img_gt = self.transforms_gt(img_gt)
             img_gt = img_gt.expand(self.max_num_people, self.resize_height, self.resize_width)
 
-        # pack one data into a dict
-        batch = {}
-        batch['head_img'] = head_img
-        batch['head_feature'] = head_feature_tensor
-        batch['head_vector_gt'] = head_vector_gt_tensor
-        batch['img_gt'] = img_gt
-        batch['gt_box'] = gt_box_expand
-        batch['rgb_img'] = rgb_tensor
-        batch['saliency_img'] = rgb_tensor
-        batch['att_inside_flag'] = att_inside_flag
-        batch['rgb_path'] = img_file_path
+        # generate gt box id for joint attention estimation
+        gt_box_id_original = torch.tensor(self.gt_bbox_id[idx])
+        gt_box_id_original_num = gt_box_id_original.shape[0]
+        gt_box_id_original_max = torch.max(gt_box_id_original)
+        gt_box_id_expand_num = self.max_num_people - gt_box_id_original_num
+        gt_box_id_expand = torch.tensor([(gt_box_id_original_max+i+1) for i in range(gt_box_id_expand_num)]).view(-1, 1)
+        gt_box_id = torch.cat([gt_box_id_original, gt_box_id_expand], dim=0).long()
 
-        return batch
+        # pack one data into a dict
+        data = {}
+        data['head_img'] = head_img
+        data['head_feature'] = head_feature_tensor
+        data['head_vector_gt'] = head_vector_gt_tensor
+        data['img_gt'] = img_gt
+        data['gt_box'] = gt_box_expand
+        data['gt_box_id'] = gt_box_id
+        data['rgb_img'] = rgb_tensor
+        data['saliency_img'] = rgb_tensor
+        data['att_inside_flag'] = att_inside_flag
+        data['rgb_path'] = img_file_path
+
+        return data
 
     # generage gt imgs for probability heatmap
     def load_gt_imgs_ball(self, img_width, img_height, bbox, gamma):

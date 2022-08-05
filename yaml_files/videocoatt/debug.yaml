@@ -8,12 +8,12 @@ exp_set:
   wandb_name: debug
   wandb_log : False
 
-  batch_size: 1
+  batch_size: 2
   num_workers: 1
   seed_num: 777
   gpu_mode : True
-  gpu_start : 7
-  gpu_finish : 7
+  gpu_start : 1
+  gpu_finish : 1
 
   resize_height: 320
   resize_width: 480
@@ -35,6 +35,12 @@ exp_params:
 
   # use_regression_loss : False
   use_regression_loss : True
+
+  # use_regression_loss : False
+  use_regression_loss : True
+
+  use_triple_loss : False
+  # use_triple_loss : True
 
   use_gt_gaze: False
   # use_gt_gaze: True
@@ -59,8 +65,8 @@ exp_params:
   scheduler_iter : 1100000
 
   det_heads_model : dets_txt_nk_faster_rcnn_20220421
-  train_det_heads : False
-  # train_det_heads : True
+  # train_det_heads : False
+  train_det_heads : True
   train_heads_conf : 0.6
 
   # pretrained models

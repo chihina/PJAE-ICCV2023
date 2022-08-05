@@ -1,3 +1,4 @@
+from tokenize import triple_quoted
 import  numpy as np
 import torch
 import torch.nn as nn
@@ -76,6 +77,7 @@ class JointAttentionEstimatorTransformer(nn.Module):
         self.use_e_att_loss = cfg.exp_params.use_e_att_loss
         self.use_each_e_map_loss = cfg.exp_params.use_each_e_map_loss
         self.use_regression_loss = cfg.exp_params.use_regression_loss
+        self.use_triple_loss = cfg.exp_params.use_triple_loss
 
         # set people feat dim based on model params
         if self.rgb_people_trans_type == 'concat' or self.rgb_people_trans_type == 'concat_conv_upsample':
@@ -661,6 +663,7 @@ class JointAttentionEstimatorTransformer(nn.Module):
         # unpack data
         img_gt = inp['img_gt']
         gt_box = inp['gt_box']
+        gt_box_id = inp['gt_box_id']
         att_inside_flag = inp['att_inside_flag']
         img_pred = out['img_pred']
         img_mid_pred = out['img_mid_pred']
@@ -687,6 +690,11 @@ class JointAttentionEstimatorTransformer(nn.Module):
             loss_regress_coef = 1
         else:
             loss_regress_coef = 0
+
+        if self.use_triple_loss:
+            loss_triple_coef = 1
+        else:
+            loss_triple_coef = 0
 
         batch_size, people_num, _, _ = img_mid_pred.shape
 
@@ -716,14 +724,29 @@ class JointAttentionEstimatorTransformer(nn.Module):
         loss_regress_xy = ((gt_box_xy_mid-distance_mean_xy) ** 2)
         loss_regress_euc = (torch.sum(loss_regress_xy, dim=-1))
         loss_regress_all = loss_regress_euc * att_inside_flag
-        loss_regress = torch.sum(loss_regress_all) / (batch_size*people_num)
+        loss_regress = torch.sum(loss_regress_all) / torch.sum(att_inside_flag)
         loss_regress = loss_regress_coef * loss_regress
+
+        # calculate triplet
+        distance_mean_euc = torch.sum(distance_mean_xy, dim=-1).view(batch_size, -1, 1)
+        distance_mean_euc_t = distance_mean_euc.transpose(2, 1)
+        distance_mean_euc_matrix = (distance_mean_euc - distance_mean_euc_t) ** 2
+        gt_box_id_base = gt_box_id.view(batch_size, -1, 1)
+        gt_box_id_t = gt_box_id_base.transpose(2, 1)
+        gt_box_id_mask_same = gt_box_id_base == gt_box_id_t
+        gt_box_id_mask_not_same = gt_box_id_base != gt_box_id_t
+        loss_triple_same_id = (distance_mean_euc_matrix * gt_box_id_mask_same) * att_inside_flag[:, :, None] * att_inside_flag[:, None, :]
+        loss_triple_no_same_id = -1 * (distance_mean_euc_matrix * gt_box_id_mask_not_same) * att_inside_flag[:, :, None] * att_inside_flag[:, None, :]
+        loss_triple_all = loss_triple_same_id + loss_triple_no_same_id
+        loss_triple = torch.sum(loss_triple_all) / torch.sum(att_inside_flag)
+        loss_triple = loss_triple_coef * loss_triple
 
         loss_set = {}
         loss_set['loss_map_gaze'] = loss_map_gaze
         loss_set['loss_map'] = loss_map
         loss_set['loss_map_gaze_each'] = loss_map_gaze_each
         loss_set['loss_regress'] = loss_regress
+        loss_set['loss_triple'] = loss_triple
 
         return loss_set
 

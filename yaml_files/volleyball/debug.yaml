@@ -36,8 +36,11 @@ exp_params:
   use_each_e_map_loss : False
   # use_each_e_map_loss : True
 
-  # use_regression_loss : False
-  use_regression_loss : True
+  use_regression_loss : False
+  # use_regression_loss : True
+
+  use_triple_loss : False
+  # use_triple_loss : True
 
   use_frame_type: mid
   # use_frame_type: all

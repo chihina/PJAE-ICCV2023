@@ -42,6 +42,7 @@ class VideoCoAttDataset(Dataset):
         self.feature_list = []
         self.head_bbox_list = []
         self.gt_bbox = []
+        self.gt_bbox_id = []
         self.rgb_path_list = []
         self.saliency_path_list = []
 
@@ -154,24 +155,33 @@ class VideoCoAttDataset(Dataset):
         if self.transforms_saliency:
             saliency_tensor = self.transforms_saliency(Image.open(saliency_file_path))
 
-        # pack one data into a dict
-        batch = {}
-        batch['head_img'] = head_img
-        batch['head_feature'] = head_feature_tensor
-        batch['head_vector_gt'] = head_vector_gt_tensor
-        batch['img_gt'] = gt_img_pad
-        batch['gt_box'] = bboxes
-        batch['rgb_img'] = rgb_tensor
-        batch['saliency_img'] = saliency_tensor
-        batch['att_inside_flag'] = torch.sum(torch.tensor(bboxes), dim=-1)!=0
-        batch['rgb_path'] = img_file_path
+        # generate gt box id for joint attention estimation
+        gt_box_id_original = torch.tensor(self.gt_bbox_id[idx])
+        gt_box_id_original_num = gt_box_id_original.shape[0]
+        gt_box_id_original_max = torch.max(gt_box_id_original)
+        gt_box_id_expand_num = self.max_num_people - gt_box_id_original_num
+        gt_box_id_expand = torch.tensor([(gt_box_id_original_max+i+1) for i in range(gt_box_id_expand_num)]).view(-1, 1)
+        gt_box_id = torch.cat([gt_box_id_original, gt_box_id_expand], dim=0).long()
 
-        return batch
+        # pack one data into a dict
+        data = {}
+        data['head_img'] = head_img
+        data['head_feature'] = head_feature_tensor
+        data['head_vector_gt'] = head_vector_gt_tensor
+        data['img_gt'] = gt_img_pad
+        data['gt_box'] = bboxes
+        data['gt_box_id'] = gt_box_id
+        data['rgb_img'] = rgb_tensor
+        data['saliency_img'] = saliency_tensor
+        data['att_inside_flag'] = torch.sum(torch.tensor(bboxes), dim=-1)!=0
+        data['rgb_path'] = img_file_path
+
+        return data
 
     # set maximum number of people
     def set_max_num_people(self):
-        for data_idx in range(len(self.feature_list)):
-            data_people_num = len(self.feature_list[data_idx])
+        for idx in range(len(self.feature_list)):
+            data_people_num = self.feature_list[idx].shape[0]
             self.max_num_people = max(self.max_num_people, data_people_num)
 
     # read graph information
@@ -202,24 +212,29 @@ class VideoCoAttDataset(Dataset):
                 else:
                     # # get annotation data
                     ann_info = ann_dic[int(frame_id)]
+                    co_att_bbox = np.array(ann_info['co_att_bbox_list'], dtype=np.int32).reshape(-1, 4)
+                    co_att_id = np.array(ann_info['co_att_id_list'], dtype=np.int32).reshape(-1, 1)
 
-                    # get yolo detection results
+                    # get detection results
                     if self.train_det_heads:
                         det_file_path = os.path.join(self.dataset_dir, self.det_heads_model, self.mode, str(video_num), file_name.replace('jpg', 'txt'))
                         det_bbox_conf = self.read_det_file(det_file_path, self.mode)
-                        det_bbox, det_conf = det_bbox_conf[:, :-1], det_bbox_conf[:, -1]
-                        use_head_boxes_dets = np.array(det_bbox)
+                        det_bboxes, det_conf = det_bbox_conf[:, :-1], det_bbox_conf[:, -1]
+                        use_head_boxes_dets = np.array(det_bboxes)
                         use_head_boxes_gt = np.array(ann_info['head_bbox_list'], dtype=np.int32).reshape(-1, 4)
-
-                        if use_head_boxes_dets.shape[0] == 0:
-                            use_head_boxes = np.concatenate([use_head_boxes_gt], 0)
-                        else:
-                            use_head_boxes = np.concatenate([use_head_boxes_dets, use_head_boxes_gt], 0)
-                        use_head_boxes, _, _ = self.nms_fast(use_head_boxes, np.ones(use_head_boxes.shape[0]), np.ones(use_head_boxes.shape[0]), 0.1)
-                    else:
                         use_head_boxes = np.array(ann_info['head_bbox_list'], dtype=np.int32).reshape(-1, 4)
 
-                    co_att_bbox = np.array(ann_info['co_att_bbox_list'], dtype=np.int32).reshape(-1, 4)
+                        for det_idx in range(use_head_boxes_dets.shape[0]):
+                            det_box = use_head_boxes_dets[det_idx].reshape(1, -1)
+                            use_head_boxes_concat = np.concatenate([use_head_boxes_gt, det_box], 0)
+                            use_head_boxes_concat_af_nms, _, _ = self.nms_fast(use_head_boxes_concat, np.ones(use_head_boxes_concat.shape[0]), np.ones(use_head_boxes_concat.shape[0]), 0.1)
+                            add_flag = use_head_boxes_concat.shape[0] == use_head_boxes_concat_af_nms.shape[0]
+                            if add_flag:
+                                use_head_boxes = np.concatenate([use_head_boxes, det_box], 0)
+                                co_att_id_add = np.array([[np.max(co_att_id)+1]])
+                                co_att_id = np.concatenate([co_att_id, co_att_id_add], 0)
+                    else:
+                        use_head_boxes = np.array(ann_info['head_bbox_list'], dtype=np.int32).reshape(-1, 4)
 
                     # calculate each person head position
                     use_head_feature = np.zeros((use_head_boxes.shape[0], 2))
@@ -228,6 +243,7 @@ class VideoCoAttDataset(Dataset):
                         use_head_feature[:, 1] = (use_head_boxes[:, 1] + use_head_boxes[:, 3]) / 2
 
                     self.gt_bbox.append(co_att_bbox)
+                    self.gt_bbox_id.append(co_att_id)
                     self.rgb_path_list.append(rgb_img_file_path)
                     self.saliency_path_list.append(saliency_file_path)
                     self.head_bbox_list.append(use_head_boxes)
@@ -236,18 +252,8 @@ class VideoCoAttDataset(Dataset):
 
                     if self.wandb_name == 'demo' and seq_cnt > 1:
                         break
-
-                # if self.mode == 'validate' and seq_cnt > 5:
-                    # break
-                # if 'debug' in self.wandb_name and seq_cnt > 10:
-                    # break
                 if self.wandb_name == 'demo' and seq_cnt > 1:
                     break
-
-            # if self.mode == 'validate' and video_cnt > 5:
-                # break
-            # if self.wandb_name == 'debug' and video_cnt > 5:
-                # break
             if self.wandb_name == 'demo' and video_cnt > 20:
                 break
 
@@ -282,6 +288,7 @@ class VideoCoAttDataset(Dataset):
                     # # get annotation data
                     ann_info = ann_dic[int(frame_id)]
                     co_att_bbox = np.array(ann_info['co_att_bbox_list'])
+                    co_att_id = np.array(ann_info['co_att_id_list'], dtype=np.int32).reshape(-1, 1)
 
                 # get yolo detection results
                 if self.test_heads_type == 'det':
@@ -291,6 +298,7 @@ class VideoCoAttDataset(Dataset):
                     use_head_boxes = np.array(det_bbox)
                 elif self.test_heads_type == 'gt':
                     use_head_boxes = np.array(sum(ann_info['head_bbox_list'], []), dtype=np.int32).reshape(-1, 4)
+
                 else:
                     print('Please employ correct heads type')
 
@@ -301,6 +309,7 @@ class VideoCoAttDataset(Dataset):
                     use_head_feature[:, 1] = (use_head_boxes[:, 1] + use_head_boxes[:, 3]) / 2
 
                 self.gt_bbox.append(co_att_bbox)
+                self.gt_bbox_id.append(co_att_id)
                 self.rgb_path_list.append(rgb_img_file_path)
                 self.saliency_path_list.append(saliency_file_path)
                 self.head_bbox_list.append(use_head_boxes)
@@ -308,15 +317,8 @@ class VideoCoAttDataset(Dataset):
 
                 seq_cnt += 1
 
-                # if 'test' in self.wandb_name and seq_cnt > 5:
-                    # break
                 if self.wandb_name == 'demo' and seq_cnt > 1:
                     break
-                # if 'debug' in self.wandb_name and seq_cnt > 1:
-                #     break
-
-            # if 'test' in self.wandb_name and video_cnt > 5:
-                # break
             if self.wandb_name == 'demo' and video_cnt > 40:
                 break
 

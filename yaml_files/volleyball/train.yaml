@@ -9,7 +9,7 @@ data:
 exp_set:
   save_folder: saved_weights
   wandb_log : True
-  wandb_name: volleyball-try1
+  wandb_name: volleyball-head_pose_estimator
 
   batch_size: 4
   num_workers: 4
@@ -38,8 +38,8 @@ exp_params:
   use_each_e_map_loss : False
   # use_each_e_map_loss : True
 
-  # use_regression_loss : False
-  use_regression_loss : True
+  use_regression_loss : False
+  # use_regression_loss : True
 
   use_frame_type: mid
   # use_frame_type: all

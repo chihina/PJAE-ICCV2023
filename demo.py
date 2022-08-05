@@ -157,7 +157,7 @@ for dir_name in save_image_dir_list:
 
 print("===> Starting demo processing")
 for iteration, batch in enumerate(test_data_loader,1):
-    if iteration > 20:
+    if iteration > 1:
         break
 
     # init heatmaps
@@ -212,6 +212,8 @@ for iteration, batch in enumerate(test_data_loader,1):
             batch['input_gaze'] = head_vector.clone() * 0
 
         out_attention = model_attention(batch)
+        # loss_set_head = model_head.calc_loss(batch, out_head)
+        # loss_set_attention = model_attention.calc_loss(batch, out_attention)
 
         out = {**out_head, **out_attention, **batch}
 
@@ -288,6 +290,7 @@ for iteration, batch in enumerate(test_data_loader,1):
 
     # calculate metrics for each attetntion estimation
     for person_idx in range(key_no_padding_num):
+        print(person_idx)
         if att_inside_flag[person_idx]:
             # calc a center of gt bbox
             peak_x_min_gt, peak_y_min_gt, peak_x_max_gt, peak_y_max_gt = gt_box[person_idx]
@@ -342,8 +345,8 @@ for iteration, batch in enumerate(test_data_loader,1):
             superimposed_image_distance = cv2.addWeighted(img, 0.5, img_heatmap_distance, 0.5, 0)
 
         # head pose arrow color
-        # arrow_set = (255, 255, 255)
-        arrow_set = (0, 0, 0)
+        arrow_set = (255, 255, 255)
+        # arrow_set = (0, 0, 0)
 
         # save attention of people and rgb
         for i in range(cfg.model_params.rgb_people_trans_enc_num):            

@@ -30,6 +30,8 @@ class VideoAttentionTargetDataset(Dataset):
         self.feature_list = []
         self.head_bbox_list = []
         self.gt_bbox = []
+        self.gt_bbox_id = []
+
         self.rgb_path_list = []
         self.saliency_path_list = []
         self.att_inside_list = []
@@ -139,12 +141,21 @@ class VideoAttentionTargetDataset(Dataset):
         if self.transforms_saliency:
             saliency_tensor = self.transforms_saliency(Image.open(saliency_file_path))
 
+        # generate gt box id for joint attention estimation
+        gt_box_id_original = torch.tensor(self.gt_bbox_id[idx])
+        gt_box_id_original_num = gt_box_id_original.shape[0]
+        gt_box_id_original_max = torch.max(gt_box_id_original)
+        gt_box_id_expand_num = self.max_num_people - gt_box_id_original_num
+        gt_box_id_expand = torch.tensor([(gt_box_id_original_max+i+1) for i in range(gt_box_id_expand_num)]).view(-1, 1)
+        gt_box_id = torch.cat([gt_box_id_original, gt_box_id_expand], dim=0).long()
+
         data = {}
         data['head_img'] = head_img
         data['head_feature'] = head_feature_tensor
         data['head_vector_gt'] = head_vector_gt_tensor
         data['img_gt'] = gt_img
         data['gt_box'] = bboxes
+        data['gt_box_id'] = gt_box_id
         data['rgb_img'] = rgb_tensor
         data['saliency_img'] = saliency_tensor
         data['head_bbox_tensor'] = head_bbox_tensor
@@ -210,6 +221,7 @@ class VideoAttentionTargetDataset(Dataset):
                     box_size = 20
                     gt_bbox[:, 0:2], gt_bbox[:, 2:4] = gt_point - box_size, gt_point + box_size
                     att_inside = np.array(img_item['att_inside']).reshape(-1, 1)
+                    gt_bbox_idx = np.arange(gt_bbox.shape[0]).reshape(-1, 1)
 
                     if np.sum(att_inside) == 0:
                         continue
@@ -220,6 +232,7 @@ class VideoAttentionTargetDataset(Dataset):
                     self.head_bbox_list.append(head_bbox)
                     self.feature_list.append(use_head_feature)
                     self.gt_bbox.append(gt_bbox)
+                    self.gt_bbox_id.append(gt_bbox_idx)
                     self.att_inside_list.append(att_inside)
 
     # generage gt imgs for probability heatmap
