@@ -144,7 +144,6 @@ for iteration, batch in enumerate(test_data_loader):
             batch['input_gaze'] = head_vector.clone() * 0
 
         out_attention = model_attention(batch)
-
         out = {**out_head, **out_attention, **batch}
 
     img_pred = out['img_pred'].to('cpu').detach()[0].numpy()

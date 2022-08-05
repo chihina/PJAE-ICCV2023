@@ -9,14 +9,15 @@ data:
 exp_set:
   save_folder: saved_weights
   wandb_log : True
-  wandb_name: volleyball-head_pose_estimator
+  # wandb_name: volleyball-head_pose_estimator
+  wandb_name: volleyball-try1
 
   batch_size: 4
   num_workers: 4
   seed_num: 777
   gpu_mode : True
-  gpu_start : 4
-  gpu_finish : 4
+  gpu_start : 6
+  gpu_finish : 6
 
   # resize_height: 320
   # resize_width: 480
@@ -38,8 +39,11 @@ exp_params:
   use_each_e_map_loss : False
   # use_each_e_map_loss : True
 
-  use_regression_loss : False
-  # use_regression_loss : True
+  # use_regression_loss : False
+  use_regression_loss : True
+
+  use_triple_loss : False
+  # use_triple_loss : True
 
   use_frame_type: mid
   # use_frame_type: all
@@ -71,17 +75,15 @@ exp_params:
   # pretrained models
   pretrained_models_dir: saved_weights
 
-  use_pretrained_head_pose_estimator: False
-  # use_pretrained_head_pose_estimator: True
-  pretrained_head_pose_estimator_name: pretrain_head_estimator
-  # pretrained_head_pose_estimator_name: pretrain_head_estimator_unipose
-  # freeze_head_pose_estimator: False
+  # use_pretrained_head_pose_estimator: False
+  use_pretrained_head_pose_estimator: True
+  pretrained_head_pose_estimator_name: volleyball-head_pose_estimator
+  freeze_head_pose_estimator: False
   # freeze_head_pose_estimator: True
 
   use_pretrained_joint_attention_estimator: False
   # use_pretrained_head_pose_estimator: True
   pretrained_joint_attention_estimator_name: pretrain_head_estimator
-  # pretrained_joint_attention_estimator_name: pretrain_head_estimator_unipose
   # freeze_joint_attention_estimator: False
   # freeze_joint_attention_estimator: True
 

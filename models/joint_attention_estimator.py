@@ -438,7 +438,6 @@ class JointAttentionEstimatorTransformer(nn.Module):
         else:
             rgb_feat = self.rgb_feat_extractor(rgb_img)
 
-        att_map = torch.zeros(self.batch_size, self.rgb_people_trans_enc_num, people_num, 1, 1, device=self.device, dtype=torch.float32)
         if self.rgb_cnn_extractor_type != 'no_use':
             # extract rgb position encoding
             rgb_feat_channel, rgb_feat_height, rgb_feat_width = rgb_feat.shape[-3:]
@@ -647,6 +646,7 @@ class JointAttentionEstimatorTransformer(nn.Module):
         head_vector_params = head_vector_params.view(self.batch_size, people_num, self.dynamic_gaussian_num*self.estimate_param_num_base)
         head_tensor = torch.cat([head_vector, head_vector_params], dim=2)
 
+        # pack return values
         data = {}
         data['img_pred'] = x_final
         data['img_mid_pred'] = x_mid

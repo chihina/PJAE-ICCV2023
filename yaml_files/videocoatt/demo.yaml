@@ -5,7 +5,8 @@ data:
 
 exp_set:
   save_folder : saved_weights
-  model_name: videocoatt-head_pose_estimator
+  # model_name: videocoatt-head_pose_estimator
+  model_name: videocoatt-try1
   seed_num : 777
   gpu_mode : True
   gpu_start : 7

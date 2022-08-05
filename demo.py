@@ -157,7 +157,7 @@ for dir_name in save_image_dir_list:
 
 print("===> Starting demo processing")
 for iteration, batch in enumerate(test_data_loader,1):
-    if iteration > 1:
+    if iteration > 20:
         break
 
     # init heatmaps
@@ -290,7 +290,6 @@ for iteration, batch in enumerate(test_data_loader,1):
 
     # calculate metrics for each attetntion estimation
     for person_idx in range(key_no_padding_num):
-        print(person_idx)
         if att_inside_flag[person_idx]:
             # calc a center of gt bbox
             peak_x_min_gt, peak_y_min_gt, peak_x_max_gt, peak_y_max_gt = gt_box[person_idx]
