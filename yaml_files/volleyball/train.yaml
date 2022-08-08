@@ -10,14 +10,19 @@ exp_set:
   save_folder: saved_weights
   wandb_log : True
   # wandb_name: volleyball-head_pose_estimator
-  wandb_name: volleyball-concat_independent
+  # wandb_name: volleyball-concat_paralell
+  # wandb_name: volleyball-concat_independent
+  # wandb_name: volleyball-concat_independent_wo_img
+  # wandb_name: volleyball-concat_independent_wo_action
+  # wandb_name: volleyball-concat_independent_wo_gaze
+  wandb_name: volleyball-concat_independent_wo_position
 
   batch_size: 8
-  num_workers: 8
+  num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 2
-  gpu_finish : 2
+  gpu_start : 7
+  gpu_finish : 7
 
   resize_height : 320
   resize_width : 640
@@ -45,8 +50,8 @@ exp_params:
   use_triple_loss : False
   # use_triple_loss : True
 
-  use_frame_type: mid
-  # use_frame_type: all
+  # use_frame_type: mid
+  use_frame_type: all
 
   use_gt_gaze: False
   # use_gt_gaze: True
@@ -91,8 +96,8 @@ model_params:
   model_type: ja_transformer
 
   # Position
-  # use_position : False
-  use_position : True
+  use_position : False
+  # use_position : True
   # use_position_enc_person : False
   use_position_enc_person : True
   use_position_enc_type : sine
@@ -135,9 +140,10 @@ model_params:
   # rgb_people_trans_type : concat_paralell
   rgb_people_trans_type : concat_independent
 
-  # rgb_people_trans_enc_num : 2
-  rgb_people_trans_enc_num : 4
+  people_people_trans_enc_num : 2
+  mha_num_heads_people_people : 2
 
+  rgb_people_trans_enc_num : 4
   mha_num_heads_rgb_people : 4
   rgb_embeding_dim : 64
   people_feat_dim : 16

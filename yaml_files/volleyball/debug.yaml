@@ -26,14 +26,14 @@ exp_set:
   resize_head_height: 64
 
 exp_params:
-  # use_gaze_loss : False
-  use_gaze_loss : True
+  use_gaze_loss : False
+  # use_gaze_loss : True
 
   use_e_map_loss : False
   # use_e_map_loss : True
 
-  use_e_att_loss : False
-  # use_e_att_loss : True
+  # use_e_att_loss : False
+  use_e_att_loss : True
 
   use_each_e_map_loss : False
   # use_each_e_map_loss : True
@@ -74,12 +74,11 @@ exp_params:
   # pretrained models
   pretrained_models_dir: saved_weights
 
-  use_pretrained_head_pose_estimator: False
-  # use_pretrained_head_pose_estimator: True
-  pretrained_head_pose_estimator_name: pretrain_head_estimator
-  # pretrained_head_pose_estimator_name: pretrain_head_estimator_unipose
+  # use_pretrained_head_pose_estimator: False
+  use_pretrained_head_pose_estimator: True
+  pretrained_head_pose_estimator_name: volleyball-head_pose_estimator
   # freeze_head_pose_estimator: False
-  # freeze_head_pose_estimator: True
+  freeze_head_pose_estimator: True
 
   use_pretrained_joint_attention_estimator: False
   # use_pretrained_head_pose_estimator: True
@@ -136,9 +135,10 @@ model_params:
   # rgb_people_trans_type : concat_paralell
   rgb_people_trans_type : concat_independent
 
-  # rgb_people_trans_enc_num : 2
-  rgb_people_trans_enc_num : 4
+  people_people_trans_enc_num : 2
+  mha_num_heads_people_people : 2
 
+  rgb_people_trans_enc_num : 4
   mha_num_heads_rgb_people : 4
   rgb_embeding_dim : 64
   people_feat_dim : 16

@@ -270,7 +270,7 @@ for iteration, batch in enumerate(test_data_loader,1):
 
     # save attention of transformers (people and people attention)
     df_person = [person_idx for person_idx in range(key_no_padding_num)]
-    for i in range(cfg.model_params.rgb_people_trans_enc_num):
+    for i in range(cfg.model_params.people_people_trans_enc_num):
         plt.figure(figsize=(8, 6))
         trans_att_people_people_enc = pd.DataFrame(data=trans_att_people_people[i, :key_no_padding_num, :key_no_padding_num], index=df_person, columns=df_person)
         sns.heatmap(trans_att_people_people_enc, cmap='jet')

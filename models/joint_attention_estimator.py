@@ -59,6 +59,8 @@ class JointAttentionEstimatorTransformer(nn.Module):
         self.people_feat_dim = cfg.model_params.people_feat_dim
 
         self.rgb_people_trans_type = cfg.model_params.rgb_people_trans_type
+        self.people_people_trans_enc_num = cfg.model_params.people_people_trans_enc_num
+        self.mha_num_heads_people_people = cfg.model_params.mha_num_heads_people_people
         self.rgb_people_trans_enc_num = cfg.model_params.rgb_people_trans_enc_num
         self.mha_num_heads_rgb_people = cfg.model_params.mha_num_heads_rgb_people
 
@@ -120,9 +122,15 @@ class JointAttentionEstimatorTransformer(nn.Module):
 
         if self.rgb_people_trans_type == 'concat_direct' or self.rgb_people_trans_type == 'concat_independent':
             print('Use tranformer encoder for people relation')
-            trans_layer_norm_people = nn.LayerNorm(normalized_shape=self.people_feat_dim)
-            encoder_layer = nn.TransformerEncoderLayer(d_model=self.people_feat_dim, nhead=self.mha_num_heads_rgb_people, batch_first=True)
-            self.people_people_transformer = nn.TransformerEncoder(encoder_layer, num_layers=self.rgb_people_trans_enc_num, norm=trans_layer_norm_people)
+            self.people_people_self_attention = nn.ModuleList([nn.MultiheadAttention(embed_dim=self.people_feat_dim, num_heads=self.mha_num_heads_people_people, batch_first=True) for _ in range(self.people_people_trans_enc_num)])
+            self.people_people_fc = nn.ModuleList(
+                                        [nn.Sequential(
+                                        nn.Linear(self.people_feat_dim, self.people_feat_dim),
+                                        nn.ReLU(),
+                                        nn.Linear(self.people_feat_dim, self.people_feat_dim),
+                                        )
+                                        for _ in range(self.people_people_trans_enc_num)
+                                        ])
 
         if self.rgb_cnn_extractor_type == 'normal':
             feat_ext_rgb = models.resnet50(pretrained=True)
@@ -352,7 +360,19 @@ class JointAttentionEstimatorTransformer(nn.Module):
         # people relation encoding
         if self.rgb_people_trans_type == 'concat_direct' or self.rgb_people_trans_type == 'concat_independent':
             key_padding_mask_people_people = (torch.sum(head_feature, dim=-1) == 0)
-            head_info_params = self.people_people_transformer(head_info_params, src_key_padding_mask=key_padding_mask_people_people)
+            for i in range(self.people_people_trans_enc_num):
+                head_info_params_feat, people_people_trans_weights = self.people_people_self_attention[i](head_info_params, head_info_params, head_info_params, key_padding_mask=key_padding_mask_people_people)
+                head_info_params_feat_res = head_info_params_feat + head_info_params
+                head_info_params_feat_feed = self.people_people_fc[i](head_info_params_feat_res)
+                head_info_params_feat_feed_res = head_info_params_feat_res + head_info_params_feat_feed
+                head_info_params_feat_feed_res = self.trans_layer_norm_people_rgb(head_info_params_feat_feed_res)
+                head_info_params = head_info_params_feat_feed_res
+
+                trans_att_people_people_i = people_people_trans_weights.view(self.batch_size, 1, people_num, people_num)
+                if i == 0:
+                    trans_att_people_people = trans_att_people_people_i
+                else:
+                    trans_att_people_people = torch.cat([trans_att_people_people, trans_att_people_people_i], dim=1)
 
         # generate head xy map
         head_xy_map = head_xy_map * head_feature[:, :, :2, None, None]
@@ -453,11 +473,12 @@ class JointAttentionEstimatorTransformer(nn.Module):
 
                 if self.rgb_people_trans_type == 'concat_direct':
                     trans_att_people_rgb_i = torch.zeros(self.batch_size, people_num, 1, rgb_feat_height, rgb_feat_width)
-                    trans_att_people_people_i = torch.zeros(self.batch_size, 1, people_num, people_num)
                 elif self.rgb_people_trans_type == 'concat_independent':
-                    rgb_people_trans_weights_people_rgb = rgb_people_trans_weights[:, (rgb_feat_height*rgb_feat_width):, :(rgb_feat_height*rgb_feat_width)]
-                    trans_att_people_rgb_i = rgb_people_trans_weights_people_rgb.view(self.batch_size, people_num, 1, rgb_feat_height, rgb_feat_width)
-                    trans_att_people_people_i = torch.zeros(self.batch_size, 1, people_num, people_num)
+                    if self.use_img:
+                        rgb_people_trans_weights_people_rgb = rgb_people_trans_weights[:, (rgb_feat_height*rgb_feat_width):, :(rgb_feat_height*rgb_feat_width)]
+                        trans_att_people_rgb_i = rgb_people_trans_weights_people_rgb.view(self.batch_size, people_num, 1, rgb_feat_height, rgb_feat_width)
+                    else:
+                        trans_att_people_rgb_i = torch.zeros(self.batch_size, people_num, 1, rgb_feat_height, rgb_feat_width)
                 elif self.rgb_people_trans_type == 'concat_paralell':
                     if self.use_img:
                         rgb_people_trans_weights_people_rgb = rgb_people_trans_weights[:, (rgb_feat_height*rgb_feat_width):, :(rgb_feat_height*rgb_feat_width)]
@@ -471,10 +492,12 @@ class JointAttentionEstimatorTransformer(nn.Module):
                 
                 if i == 0:
                     trans_att_people_rgb = trans_att_people_rgb_i
-                    trans_att_people_people = trans_att_people_people_i
+                    if self.rgb_people_trans_type == 'concat_paralell':
+                        trans_att_people_people = trans_att_people_people_i
                 else:
                     trans_att_people_rgb = torch.cat([trans_att_people_rgb, trans_att_people_rgb_i], dim=2)
-                    trans_att_people_people = torch.cat([trans_att_people_people, trans_att_people_people_i], dim=1)
+                    if self.rgb_people_trans_type == 'concat_paralell':
+                        trans_att_people_people = torch.cat([trans_att_people_people, trans_att_people_people_i], dim=1)
             
             if self.rgb_people_trans_type == 'concat_direct':
                 pass
