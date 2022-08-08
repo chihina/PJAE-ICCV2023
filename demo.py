@@ -276,6 +276,9 @@ for iteration, batch in enumerate(test_data_loader,1):
 
     # save joint attention estimation as a superimposed image
     img = cv2.imread(img_path)
+    original_height, original_width, _ = img.shape
+    cfg.exp_set.resize_height = original_height
+    cfg.exp_set.resize_width = original_width
     img = cv2.resize(img, (cfg.exp_set.resize_width, cfg.exp_set.resize_height))
     img_heatmap = cv2.imread(os.path.join(save_image_dir_dic['joint_attention'], data_type_id, f'{mode}_{data_id}_joint_attention.png'), cv2.IMREAD_GRAYSCALE)
     img_heatmap = cv2.resize(img_heatmap, (img.shape[1], img.shape[0]))

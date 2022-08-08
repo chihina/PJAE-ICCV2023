@@ -455,7 +455,8 @@ class JointAttentionEstimatorTransformer(nn.Module):
                     trans_att_people_rgb_i = torch.zeros(self.batch_size, people_num, 1, rgb_feat_height, rgb_feat_width)
                     trans_att_people_people_i = torch.zeros(self.batch_size, 1, people_num, people_num)
                 elif self.rgb_people_trans_type == 'concat_independent':
-                    trans_att_people_rgb_i = torch.zeros(self.batch_size, people_num, 1, rgb_feat_height, rgb_feat_width)
+                    rgb_people_trans_weights_people_rgb = rgb_people_trans_weights[:, (rgb_feat_height*rgb_feat_width):, :(rgb_feat_height*rgb_feat_width)]
+                    trans_att_people_rgb_i = rgb_people_trans_weights_people_rgb.view(self.batch_size, people_num, 1, rgb_feat_height, rgb_feat_width)
                     trans_att_people_people_i = torch.zeros(self.batch_size, 1, people_num, people_num)
                 elif self.rgb_people_trans_type == 'concat_paralell':
                     if self.use_img:

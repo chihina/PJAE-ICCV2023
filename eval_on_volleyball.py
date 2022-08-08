@@ -22,6 +22,7 @@ import pandas as pd
 import seaborn as sns
 import sys
 import json
+from PIL import Image
 
 # original module
 from dataset.dataset_selector import dataset_generator
@@ -151,6 +152,10 @@ for iteration, batch in enumerate(test_data_loader):
     head_tensor = out['head_tensor'].to('cpu').detach()[0].numpy()
 
     # calc a center of gt bbox
+    img = Image.open(batch['rgb_path'][0])
+    original_width, original_height = img.size
+    cfg.exp_set.resize_height = original_height
+    cfg.exp_set.resize_width = original_width
     peak_x_min_gt, peak_y_min_gt, peak_x_max_gt, peak_y_max_gt = gt_box[0]
     peak_x_mid_gt, peak_y_mid_gt = (peak_x_min_gt+peak_x_max_gt)/2, (peak_y_min_gt+peak_y_max_gt)/2
     peak_x_mid_gt, peak_y_mid_gt = peak_x_mid_gt*cfg.exp_set.resize_width, peak_y_mid_gt*cfg.exp_set.resize_height
