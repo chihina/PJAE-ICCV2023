@@ -12,8 +12,8 @@ exp_set:
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 3
-  gpu_finish : 3
+  gpu_start : 2
+  gpu_finish : 2
 
   resize_height: 320
   resize_width: 480
@@ -58,6 +58,9 @@ exp_params:
   snapshots : 100
   scheduler_start : 1000
   scheduler_iter : 1100000
+  
+  # gt gaussian
+  gaussian_sigma: 10
 
   # pretrained models
   pretrained_models_dir: saved_weights
@@ -122,9 +125,10 @@ model_params:
   # rgb_people_trans_type : concat_paralell
   rgb_people_trans_type : concat_independent
 
-  # rgb_people_trans_enc_num : 2
-  rgb_people_trans_enc_num : 4
+  people_people_trans_enc_num : 2
+  mha_num_heads_people_people : 2
 
+  rgb_people_trans_enc_num : 4
   mha_num_heads_rgb_people : 4
   rgb_embeding_dim : 64
   people_feat_dim : 16

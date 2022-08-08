@@ -11,8 +11,8 @@ exp_set:
   num_workers: 1
   seed_num: 777
   gpu_mode : True
-  gpu_start : 2
-  gpu_finish : 2
+  gpu_start : 1
+  gpu_finish : 1
 
   resize_height: 320
   resize_width: 480
@@ -20,8 +20,8 @@ exp_set:
   resize_head_width: 64
 
 exp_params:
-  # use_gaze_loss : False
-  use_gaze_loss : True
+  use_gaze_loss : False
+  # use_gaze_loss : True
 
   use_e_map_loss : False
   # use_e_map_loss : True
@@ -32,8 +32,8 @@ exp_params:
   use_each_e_map_loss : False
   # use_each_e_map_loss : True
 
-  use_regression_loss : False
-  # use_regression_loss : True
+  # use_regression_loss : False
+  use_regression_loss : True
 
   use_triple_loss : False
   # use_triple_loss : True
@@ -58,20 +58,21 @@ exp_params:
   scheduler_start : 1000
   scheduler_iter : 1100000
 
+  # gt gaussian
+  gaussian_sigma: 10
+
   # pretrained models
   pretrained_models_dir: saved_weights
 
-  use_pretrained_head_pose_estimator: False
-  # use_pretrained_head_pose_estimator: True
-  pretrained_head_pose_estimator_name: pretrain_head_estimator
-  # pretrained_head_pose_estimator_name: pretrain_head_estimator_unipose
+  # use_pretrained_head_pose_estimator: False
+  use_pretrained_head_pose_estimator: True
+  pretrained_head_pose_estimator_name: videoattentiontarget-head_pose_estimator
   # freeze_head_pose_estimator: False
-  # freeze_head_pose_estimator: True
+  freeze_head_pose_estimator: True
 
   use_pretrained_joint_attention_estimator: False
   # use_pretrained_head_pose_estimator: True
   pretrained_joint_attention_estimator_name: pretrain_head_estimator
-  # pretrained_joint_attention_estimator_name: pretrain_head_estimator_unipose
   freeze_joint_attention_estimator: False
   # freeze_joint_attention_estimator: True
 
@@ -123,9 +124,10 @@ model_params:
   # rgb_people_trans_type : concat_paralell
   rgb_people_trans_type : concat_independent
   
-  # rgb_people_trans_enc_num : 2
-  rgb_people_trans_enc_num : 4
+  people_people_trans_enc_num : 2
+  mha_num_heads_people_people : 2
 
+  rgb_people_trans_enc_num : 4
   mha_num_heads_rgb_people : 4
   rgb_embeding_dim : 64
   people_feat_dim : 16

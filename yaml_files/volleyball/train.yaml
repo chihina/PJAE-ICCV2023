@@ -69,12 +69,14 @@ exp_params:
   # lr : 0.01
   # lr : 0.1
 
+  # learning schedule
   nEpochs : 500
   start_iter : 0
   snapshots : 100
   scheduler_start : 1000
   scheduler_iter : 1100000
 
+  # gt gaussian
   gaussian_sigma: 10
 
   # pretrained models
@@ -89,15 +91,15 @@ exp_params:
   use_pretrained_joint_attention_estimator: False
   # use_pretrained_head_pose_estimator: True
   pretrained_joint_attention_estimator_name: pretrain_head_estimator
-  # freeze_joint_attention_estimator: False
+  freeze_joint_attention_estimator: False
   # freeze_joint_attention_estimator: True
 
 model_params:
   model_type: ja_transformer
 
   # Position
-  use_position : False
-  # use_position : True
+  # use_position : False
+  use_position : True
   # use_position_enc_person : False
   use_position_enc_person : True
   use_position_enc_type : sine
