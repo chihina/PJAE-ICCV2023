@@ -232,6 +232,12 @@ for iteration, batch in enumerate(test_data_loader,1):
     att_inside_flag = out['att_inside_flag'].to('cpu').detach()[0]
     img_path = out['rgb_path'][0]
 
+    # redefine image size
+    img = cv2.imread(img_path)
+    original_height, original_width, _ = img.shape
+    cfg.exp_set.resize_height = original_height
+    cfg.exp_set.resize_width = original_width
+
     # define data id
     data_type_id = data_type_id_generator(head_vector_gt, head_tensor, gt_box, cfg)
     data_id = data_id_generator(img_path, cfg)
@@ -254,9 +260,13 @@ for iteration, batch in enumerate(test_data_loader,1):
     trans_att_people_rgb = trans_att_people_rgb.view(rgb_people_trans_enc_num*people_num, 1, rgb_feat_height, rgb_feat_width)
     trans_att_people_rgb = F.interpolate(trans_att_people_rgb, (cfg.exp_set.resize_height, cfg.exp_set.resize_width), mode='nearest')
     trans_att_people_rgb = trans_att_people_rgb.view(people_num, rgb_people_trans_enc_num, 1, cfg.exp_set.resize_height, cfg.exp_set.resize_width)
+
     for person_idx in range(key_no_padding_num):
         for i in range(cfg.model_params.rgb_people_trans_enc_num):
-            save_image(trans_att_people_rgb[person_idx, i, 0, :, :], os.path.join(save_image_dir_dic['people_rgb_att'], data_type_id, f'{data_id}', f'{mode}_{data_id}_p{person_idx}_enc{i}_people_rgb_attention.png'))
+            trans_att_people_rgb_save = trans_att_people_rgb[person_idx, i, 0, :, :]
+            trans_att_people_rgb_save_max, trans_att_people_rgb_save_min = torch.max(trans_att_people_rgb_save), torch.min(trans_att_people_rgb_save)
+            trans_att_people_rgb_save = (trans_att_people_rgb_save-trans_att_people_rgb_save_min)/(trans_att_people_rgb_save_max-trans_att_people_rgb_save_min)
+            save_image(trans_att_people_rgb_save, os.path.join(save_image_dir_dic['people_rgb_att'], data_type_id, f'{data_id}', f'{mode}_{data_id}_p{person_idx}_enc{i}_people_rgb_attention.png'))
 
     # save attention of transformers (people and people attention)
     df_person = [person_idx for person_idx in range(key_no_padding_num)]
@@ -275,10 +285,6 @@ for iteration, batch in enumerate(test_data_loader,1):
         save_image(img_gt[person_idx], os.path.join(save_image_dir_dic['gt_map'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_gt.png'))
 
     # save joint attention estimation as a superimposed image
-    img = cv2.imread(img_path)
-    original_height, original_width, _ = img.shape
-    cfg.exp_set.resize_height = original_height
-    cfg.exp_set.resize_width = original_width
     img = cv2.resize(img, (cfg.exp_set.resize_width, cfg.exp_set.resize_height))
     img_heatmap = cv2.imread(os.path.join(save_image_dir_dic['joint_attention'], data_type_id, f'{mode}_{data_id}_joint_attention.png'), cv2.IMREAD_GRAYSCALE)
     img_heatmap = cv2.resize(img_heatmap, (img.shape[1], img.shape[0]))
