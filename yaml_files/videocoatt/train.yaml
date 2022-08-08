@@ -7,14 +7,14 @@ exp_set:
   save_folder: saved_weights
   wandb_log : True
   # wandb_name: videocoatt-head_pose_estimator
-  wandb_name: videocoatt-try1
+  wandb_name: videocoatt-concat_independent
 
   batch_size: 16
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 4
-  gpu_finish : 4
+  gpu_start : 1
+  gpu_finish : 1
 
   resize_height: 320
   resize_width: 480
@@ -78,8 +78,7 @@ exp_params:
   use_pretrained_joint_attention_estimator: False
   # use_pretrained_head_pose_estimator: True
   pretrained_joint_attention_estimator_name: pretrain_head_estimator
-  # pretrained_joint_attention_estimator_name: pretrain_head_estimator_unipose
-  # freeze_joint_attention_estimator: False
+  freeze_joint_attention_estimator: False
   # freeze_joint_attention_estimator: True
 
 model_params:
@@ -104,7 +103,7 @@ model_params:
   # use_action : True
 
   # Whole image
-  use_img : False
+  # use_img : False
   use_img : True
 
   # Gaze map
@@ -126,14 +125,14 @@ model_params:
   # gaze_map_estimator_type : shallow
 
   # transformer
-  # rgb_people_trans_type : identity
-  # rgb_people_trans_type : concat
-  # rgb_people_trans_type : concat_conv_upsample
-  rgb_people_trans_type : concat_paralell
+  # rgb_people_trans_type : concat_direct
+  # rgb_people_trans_type : concat_paralell
+  rgb_people_trans_type : concat_independent
 
-  # rgb_people_trans_enc_num : 2
+  people_people_trans_enc_num : 2
+  mha_num_heads_people_people : 2
+
   rgb_people_trans_enc_num : 4
-
   mha_num_heads_rgb_people : 4
   rgb_embeding_dim : 64
   people_feat_dim : 16
