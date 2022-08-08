@@ -11,12 +11,12 @@ exp_set:
   wandb_name: debug
   wandb_log : False
 
-  batch_size: 2
-  num_workers: 2
+  batch_size: 1
+  num_workers: 1
   seed_num: 777
   gpu_mode : True
-  gpu_start : 7
-  gpu_finish : 7
+  gpu_start : 1
+  gpu_finish : 1
 
   resize_height : 720
   resize_width : 1280
@@ -120,7 +120,7 @@ model_params:
 
   dynamic_distance_type: gaussian
   dynamic_gaussian_num : 1
-  # # dynamic_distance_type: generator
+  # dynamic_distance_type: generator
   use_gauss_limit : False
   # # use_gauss_limit : True
 
@@ -130,10 +130,9 @@ model_params:
   # gaze_map_estimator_type : shallow
 
   # transformer
-  # rgb_people_trans_type : identity
-  # rgb_people_trans_type : concat
-  # rgb_people_trans_type : concat_conv_upsample
+  # rgb_people_trans_type : concat_direct
   rgb_people_trans_type : concat_paralell
+  # rgb_people_trans_type : concat_independent
 
   # rgb_people_trans_enc_num : 2
   rgb_people_trans_enc_num : 4
@@ -156,11 +155,6 @@ model_params:
   # rgb_cnn_extractor_type : convnext
   # rgb_cnn_extractor_stage_idx : 2
 
-  # Others
-  # people_feat_aggregation_type : max_pool
-  people_feat_aggregation_type : no_use
-
   # angle_distance_fusion: max
   # angle_distance_fusion: mean
   angle_distance_fusion: mult
-  # angle_distance_fusion : sum_coef

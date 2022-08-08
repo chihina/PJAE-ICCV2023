@@ -80,18 +80,18 @@ class JointAttentionEstimatorTransformer(nn.Module):
         self.use_triple_loss = cfg.exp_params.use_triple_loss
 
         # set people feat dim based on model params
-        if self.rgb_people_trans_type == 'concat' or self.rgb_people_trans_type == 'concat_conv_upsample':
+        if self.rgb_people_trans_type == 'concat_direct':
             self.people_feat_dim = self.people_feat_dim
-        elif self.rgb_people_trans_type == 'concat_paralell':
+        elif self.rgb_people_trans_type == 'concat_paralell' or self.rgb_people_trans_type == 'concat_independent':
             self.people_feat_dim = self.rgb_embeding_dim
         else:
-            self.people_feat_dim = self.people_feat_dim
+            print('Use correct rgb trans type')
+            sys.exit()
 
         embeding_param_num = 0
         if self.use_position:
             if self.use_position_enc_person:
                 self.person_positional_encoding = PositionalEncoding2D_RGB(self.people_feat_dim)
-                self.pe_generator_person = PositionalEmbeddingGenerator(self.resize_height, self.resize_width, self.people_feat_dim, self.use_position_enc_type)
             else:
                 embeding_param_num += 2
         
@@ -117,6 +117,12 @@ class JointAttentionEstimatorTransformer(nn.Module):
             nn.ReLU(),
             nn.Linear(self.people_feat_dim, self.people_feat_dim),
         )
+
+        if self.rgb_people_trans_type == 'concat_direct' or self.rgb_people_trans_type == 'concat_independent':
+            print('Use tranformer encoder for people relation')
+            trans_layer_norm_people = nn.LayerNorm(normalized_shape=self.people_feat_dim)
+            encoder_layer = nn.TransformerEncoderLayer(d_model=self.people_feat_dim, nhead=self.mha_num_heads_rgb_people, batch_first=True)
+            self.people_people_transformer = nn.TransformerEncoder(encoder_layer, num_layers=self.rgb_people_trans_enc_num, norm=trans_layer_norm_people)
 
         if self.rgb_cnn_extractor_type == 'normal':
             feat_ext_rgb = models.resnet50(pretrained=True)
@@ -167,11 +173,11 @@ class JointAttentionEstimatorTransformer(nn.Module):
         else:
             print('Please use correct rgb cnn extractor type')
 
-        down_height = self.resize_height//down_scale_ratio
-        down_width = self.resize_width//down_scale_ratio
-        self.pe_generator_rgb = PositionalEmbeddingGenerator(down_height, down_width, self.rgb_embeding_dim, self.use_position_enc_type)
+        self.down_height = self.resize_height//down_scale_ratio
+        self.down_width = self.resize_width//down_scale_ratio
+        self.pe_generator_rgb = PositionalEmbeddingGenerator(self.down_height, self.down_width, self.rgb_embeding_dim, self.use_position_enc_type)
 
-        if self.rgb_people_trans_type == 'concat' or self.rgb_people_trans_type == 'concat_conv_upsample':
+        if self.rgb_people_trans_type == 'concat_direct':
             self.rgb_people_trans_dim = self.people_feat_dim + self.rgb_embeding_dim
             self.rgb_people_self_attention = nn.ModuleList([nn.MultiheadAttention(embed_dim=self.rgb_people_trans_dim, kdim=self.rgb_people_trans_dim, vdim=self.rgb_people_trans_dim, num_heads=self.mha_num_heads_rgb_people, batch_first=True) for _ in range(self.rgb_people_trans_enc_num)])
             self.rgb_people_fc = nn.ModuleList(
@@ -195,9 +201,9 @@ class JointAttentionEstimatorTransformer(nn.Module):
                                         for _ in range(self.rgb_people_trans_enc_num)
                                         ])
             self.trans_layer_norm_people_rgb = nn.LayerNorm(normalized_shape=self.rgb_people_trans_dim)
-        else:
-            self.rgb_people_trans_dim = self.people_feat_dim
-            self.rgb_people_self_attention = nn.ModuleList([nn.MultiheadAttention(embed_dim=self.rgb_people_trans_dim, kdim=self.rgb_embeding_dim, vdim=self.rgb_embeding_dim, num_heads=self.mha_num_heads_rgb_people, batch_first=True) for _ in range(self.rgb_people_trans_enc_num)])
+        elif self.rgb_people_trans_type == 'concat_independent':
+            self.rgb_people_trans_dim = self.rgb_embeding_dim
+            self.rgb_people_self_attention = nn.ModuleList([nn.MultiheadAttention(embed_dim=self.rgb_people_trans_dim, kdim=self.rgb_people_trans_dim, vdim=self.rgb_people_trans_dim, num_heads=self.mha_num_heads_rgb_people, batch_first=True) for _ in range(self.rgb_people_trans_enc_num)])
             self.rgb_people_fc = nn.ModuleList(
                                         [nn.Sequential(
                                         nn.Linear(self.rgb_people_trans_dim, self.rgb_people_trans_dim),
@@ -207,40 +213,15 @@ class JointAttentionEstimatorTransformer(nn.Module):
                                         for _ in range(self.rgb_people_trans_enc_num)
                                         ])
             self.trans_layer_norm_people_rgb = nn.LayerNorm(normalized_shape=self.rgb_people_trans_dim)
+        else:
+            print('Use correct rgb trans type')
+            sys.exit()
 
         if self.dynamic_distance_type == 'generator':
-            if self.rgb_people_trans_type == 'concat':
-                self.distance_map_generator = nn.Sequential(
-                                        nn.Conv2d(in_channels=self.rgb_people_trans_dim, out_channels=1, kernel_size=1),
-                                        )
-            elif self.rgb_people_trans_type == 'concat_conv_upsample':
-                self.distance_map_generator = nn.Sequential(
-                                        nn.Conv2d(in_channels=self.rgb_people_trans_dim, out_channels=self.rgb_people_trans_dim, kernel_size=(3, 3), padding=(1, 1), stride=(1, 1)),
-                                        nn.GroupNorm(1, self.rgb_people_trans_dim),
-                                        nn.ReLU(),
-                                        nn.Upsample(scale_factor=2, mode='bilinear'),
-                                        nn.Conv2d(in_channels=self.rgb_people_trans_dim, out_channels=self.rgb_people_trans_dim//2, kernel_size=(3, 3), padding=(1, 1), stride=(1, 1)),
-                                        nn.GroupNorm(1, self.rgb_people_trans_dim//2),
-                                        nn.ReLU(),
-                                        nn.Upsample(scale_factor=2, mode='bilinear'),
-                                        nn.Conv2d(in_channels=self.rgb_people_trans_dim//2, out_channels=self.rgb_people_trans_dim//4, kernel_size=(3, 3), padding=(1, 1), stride=(1, 1)),
-                                        nn.GroupNorm(1, self.rgb_people_trans_dim//4),
-                                        nn.ReLU(),
-                                        nn.Upsample(scale_factor=2, mode='bilinear'),
-                                        nn.Conv2d(in_channels=self.rgb_people_trans_dim//4, out_channels=self.rgb_people_trans_dim//4, kernel_size=(3, 3), padding=(1, 1), stride=(1, 1)),
-                                        nn.GroupNorm(1, self.rgb_people_trans_dim//4),
-                                        nn.ReLU(),
-                                        nn.Upsample(scale_factor=2, mode='bilinear'),
-                                        nn.Conv2d(in_channels=self.rgb_people_trans_dim//4, out_channels=1, kernel_size=1),
-                                        )
-            elif self.rgb_people_trans_type == 'concat_paralell':
-                self.distance_map_generator = nn.Sequential(
-                                        nn.Linear(self.rgb_people_trans_dim, self.resize_height*self.resize_width//(2**2*2**2)),
-                                        )
-            else:
+            if self.rgb_people_trans_type == 'concat_direct':
                 self.distance_map_generator = nn.Sequential(
                                         nn.LayerNorm(normalized_shape=self.rgb_people_trans_dim),
-                                        nn.Linear(self.rgb_people_trans_dim, self.resize_height*self.resize_width),
+                                        nn.Linear(self.rgb_people_trans_dim, 1),
                                         )
 
         if self.dynamic_gaussian_num:
@@ -253,43 +234,26 @@ class JointAttentionEstimatorTransformer(nn.Module):
         estimate_param_num = self.estimate_param_num_base * self.dynamic_gaussian_num
         self.estimate_param_num = estimate_param_num
 
-        if self.gaze_map_estimator_type == 'shallow':
-            print(f'Use two-layers gaze map estimator')
+        if self.gaze_map_estimator_type == 'identity':
             self.gaze_map_estimator = nn.Sequential(
-                nn.Linear(self.people_feat_dim, self.people_feat_dim),
-                nn.ReLU(inplace=False),
                 nn.Linear(self.people_feat_dim, estimate_param_num),
             )
         elif self.gaze_map_estimator_type == 'normal':
             self.gaze_map_estimator = nn.Sequential(
-                nn.Linear(self.people_feat_dim, self.people_feat_dim//4),
-                nn.ReLU(inplace=False),
-                nn.Linear(self.people_feat_dim//4, self.people_feat_dim//4),
-                nn.ReLU(inplace=False),
-                nn.Linear(self.people_feat_dim//4, estimate_param_num),
-            )
-        elif self.gaze_map_estimator_type == 'normal_layernorm':
-            self.gaze_map_estimator = nn.Sequential(
-                nn.LayerNorm(self.people_feat_dim),
                 nn.Linear(self.people_feat_dim, self.people_feat_dim),
                 nn.ReLU(inplace=False),
-                nn.LayerNorm(self.people_feat_dim),
                 nn.Linear(self.people_feat_dim, self.people_feat_dim),
                 nn.ReLU(inplace=False),
                 nn.Linear(self.people_feat_dim, estimate_param_num),
             )
         elif self.gaze_map_estimator_type == 'deep':
             self.gaze_map_estimator = nn.Sequential(
-                nn.Linear(self.people_feat_dim, self.people_feat_dim//4),
+                nn.Linear(self.people_feat_dim, self.people_feat_dim),
                 nn.ReLU(inplace=False),
-                nn.Linear(self.people_feat_dim//4, self.people_feat_dim//4),
+                nn.Linear(self.people_feat_dim, self.people_feat_dim),
                 nn.ReLU(inplace=False),
-                nn.Linear(self.people_feat_dim//4, self.people_feat_dim//4),
+                nn.Linear(self.people_feat_dim, self.people_feat_dim),
                 nn.ReLU(inplace=False),
-                nn.Linear(self.people_feat_dim//4, estimate_param_num),
-            )
-        elif self.gaze_map_estimator_type == 'identity':
-            self.gaze_map_estimator = nn.Sequential(
                 nn.Linear(self.people_feat_dim, estimate_param_num),
             )
         else:
@@ -305,10 +269,8 @@ class JointAttentionEstimatorTransformer(nn.Module):
         if self.use_dynamic_distance:
             print(f'Use dynamic distance')
             if self.dynamic_distance_type == 'gaussian':
-                self.people_feat_pool = nn.AdaptiveMaxPool1d(output_size=1)
                 print(f'Use distance gaze map (gaussian)')
             elif self.dynamic_distance_type == 'generator':
-                self.people_feat_pool = nn.AdaptiveMaxPool1d(output_size=1)
                 print(f'Use distance gaze map (generator)')
             else:
                 print(f'Use correct distance saliency field')
@@ -319,8 +281,6 @@ class JointAttentionEstimatorTransformer(nn.Module):
                 print(f'Use max fusion (angle and distance)')
             elif self.angle_distance_fusion == 'mean':
                 print(f'Use mean fusion (angle and distance)')
-            elif self.angle_distance_fusion == 'sum_coef':
-                print(f'Use sum coeficient fusion (angle and distance)')
             else:
                 print(f'Use correct fusion method')
                 sys.exit()
@@ -389,13 +349,10 @@ class JointAttentionEstimatorTransformer(nn.Module):
             head_position_encoding = self.person_positional_encoding(head_position)
             head_info_params = head_info_params + head_position_encoding
 
-        # generate position map
-        head_xy_map_vis = head_xy_map * head_feature[:, :, :2, None, None]
-        xy_axis_map_dif_head = xy_axis_map - head_xy_map_vis
-        distance_dist_x = torch.pow(xy_axis_map_dif_head[:, :, 0, :, :], 2)/(2*0.001)
-        distance_dist_y = torch.pow(xy_axis_map_dif_head[:, :, 1, :, :], 2)/(2*0.001)
-        input_position_map = torch.exp(-(distance_dist_x+distance_dist_y))
-        input_position_map = input_position_map.view(self.batch_size, people_num, 1, img_height, img_width)
+        # people relation encoding
+        if self.rgb_people_trans_type == 'concat_direct' or self.rgb_people_trans_type == 'concat_independent':
+            key_padding_mask_people_people = (torch.sum(head_feature, dim=-1) == 0)
+            head_info_params = self.people_people_transformer(head_info_params, src_key_padding_mask=key_padding_mask_people_people)
 
         # generate head xy map
         head_xy_map = head_xy_map * head_feature[:, :, :2, None, None]
@@ -445,41 +402,48 @@ class JointAttentionEstimatorTransformer(nn.Module):
             rgb_feat_patch = torch.transpose(rgb_feat_patch, 1, 2)
             rgb_feat_patch_pos = rgb_feat_patch + self.pe_generator_rgb.pos_embedding
 
-            if self.rgb_people_trans_type == 'concat' or self.rgb_people_trans_type == 'concat_conv_upsample':
-                rgb_feat_patch_pos_expand = rgb_feat_patch_pos.view(self.batch_size, 1, -1, self.rgb_embeding_dim)
-                rgb_feat_patch_expand = rgb_feat_patch.view(self.batch_size, 1, -1, self.rgb_embeding_dim)
-                rgb_feat_patch_pos_expand = rgb_feat_patch_pos_expand.expand(self.batch_size, people_num, rgb_feat_patch.shape[1], self.rgb_embeding_dim)
-                rgb_feat_patch_expand = rgb_feat_patch_expand.expand(self.batch_size, people_num, rgb_feat_patch.shape[1], self.rgb_embeding_dim)
-                head_info_params_expand = head_info_params.view(self.batch_size, people_num, 1, self.people_feat_dim)
-                head_info_params_expand = head_info_params_expand.expand(self.batch_size, people_num, rgb_feat_patch.shape[1], self.people_feat_dim)
-                
-                if self.use_img:
-                    rgb_people_feat_all_pos = torch.cat([rgb_feat_patch_pos_expand, head_info_params_expand], dim=-1)
-                    rgb_people_feat_all = torch.cat([rgb_feat_patch_expand, head_info_params_expand], dim=-1)
-                else:
-                    rgb_people_feat_all_pos = head_info_params_expand
-                    rgb_people_feat_all = head_info_params_expand
+            if self.rgb_people_trans_type == 'concat_direct' or self.rgb_people_trans_type == 'concat_independent':
+                rgb_feat_patch_pos_view = rgb_feat_patch_pos.view(self.batch_size, 1, -1, self.rgb_embeding_dim)
+                rgb_feat_patch_view = rgb_feat_patch.view(self.batch_size, 1, -1, self.rgb_embeding_dim)
+                rgb_feat_patch_pos_expand = rgb_feat_patch_pos_view.expand(self.batch_size, people_num, rgb_feat_patch.shape[1], self.rgb_embeding_dim)
+                rgb_feat_patch_expand = rgb_feat_patch_view.expand(self.batch_size, people_num, rgb_feat_patch.shape[1], self.rgb_embeding_dim)
+                head_info_params_view = head_info_params.view(self.batch_size, people_num, 1, self.people_feat_dim)
+                head_info_params_expand = head_info_params_view.expand(self.batch_size, people_num, rgb_feat_patch.shape[1], self.people_feat_dim)
 
-                rgb_people_feat_all_pos = rgb_people_feat_all_pos.view(self.batch_size*people_num, -1, self.rgb_embeding_dim+self.people_feat_dim)
-                rgb_people_feat_all = rgb_people_feat_all.view(self.batch_size*people_num, -1, self.rgb_embeding_dim+self.people_feat_dim)
+                if self.rgb_people_trans_type == 'concat_direct':
+                    if self.use_img:
+                        rgb_people_feat_all_pos = torch.cat([rgb_feat_patch_pos_expand, head_info_params_expand], dim=-1)
+                        rgb_people_feat_all = torch.cat([rgb_feat_patch_expand, head_info_params_expand], dim=-1)
+                    else:
+                        rgb_people_feat_all_pos = head_info_params_expand
+                        rgb_people_feat_all = head_info_params_expand
+                    rgb_people_feat_all_pos = rgb_people_feat_all_pos.view(self.batch_size*people_num, -1, self.rgb_embeding_dim+self.people_feat_dim)
+                    rgb_people_feat_all = rgb_people_feat_all.view(self.batch_size*people_num, -1, self.rgb_embeding_dim+self.people_feat_dim)
+                elif self.rgb_people_trans_type == 'concat_independent':
+                    if self.use_img:
+                        rgb_people_feat_all_pos = torch.cat([rgb_feat_patch_pos_expand, head_info_params_view], dim=-2)
+                        rgb_people_feat_all = torch.cat([rgb_feat_patch_expand, head_info_params_view], dim=-2)
+                    else:
+                        rgb_people_feat_all_pos = head_info_params_view
+                        rgb_people_feat_all = head_info_params_view
+                    rgb_people_feat_all_pos = rgb_people_feat_all_pos.view(self.batch_size*people_num, -1, self.rgb_embeding_dim)
+                    rgb_people_feat_all = rgb_people_feat_all.view(self.batch_size*people_num, -1, self.rgb_embeding_dim)
             elif self.rgb_people_trans_type == 'concat_paralell':
                 if self.use_img:
                     rgb_people_feat_all_pos = torch.cat([rgb_feat_patch_pos, head_info_params], dim=-2)
                 else:
                     rgb_people_feat_all_pos = head_info_params_expand
                 rgb_people_feat_all = rgb_people_feat_all_pos
-            else:
-                rgb_people_feat_all = head_info_params
 
             for i in range(self.rgb_people_trans_enc_num):
                 key_padding_mask_rgb_trans_rgb = torch.sum(rgb_feat_patch_pos, dim=-1)*0
                 key_padding_mask_rgb_trans_people = (torch.sum(head_feature, dim=-1) == 0)
                 key_padding_mask_rgb_trans = torch.cat([key_padding_mask_rgb_trans_rgb, key_padding_mask_rgb_trans_people], dim=-1).bool()
 
-                if  'concat' in self.rgb_people_trans_type:
-                    rgb_people_feat, rgb_people_trans_weights = self.rgb_people_self_attention[i](rgb_people_feat_all_pos, rgb_people_feat_all_pos, rgb_people_feat_all, key_padding_mask=key_padding_mask_rgb_trans)
+                if  'concat_paralell' in self.rgb_people_trans_type:
+                    rgb_people_feat, rgb_people_trans_weights = self.rgb_people_self_attention[i](rgb_people_feat_all_pos, rgb_people_feat_all_pos, rgb_people_feat_all_pos, key_padding_mask=key_padding_mask_rgb_trans)
                 else:
-                    rgb_people_feat, rgb_people_trans_weights = self.rgb_people_self_attention[i](rgb_people_feat_all, rgb_feat_patch_pos, rgb_feat_patch_pos)
+                    rgb_people_feat, rgb_people_trans_weights = self.rgb_people_self_attention[i](rgb_people_feat_all_pos, rgb_people_feat_all_pos, rgb_people_feat_all_pos)
 
                 rgb_people_feat_res = rgb_people_feat + rgb_people_feat_all
                 rgb_people_feat_feed = self.rgb_people_fc[i](rgb_people_feat_res)
@@ -487,10 +451,12 @@ class JointAttentionEstimatorTransformer(nn.Module):
                 rgb_people_feat_feed_res = self.trans_layer_norm_people_rgb(rgb_people_feat_feed_res)
                 rgb_people_feat_all = rgb_people_feat_feed_res
 
-                if self.rgb_people_trans_type == 'concat':
+                if self.rgb_people_trans_type == 'concat_direct':
                     trans_att_people_rgb_i = torch.zeros(self.batch_size, people_num, 1, rgb_feat_height, rgb_feat_width)
                     trans_att_people_people_i = torch.zeros(self.batch_size, 1, people_num, people_num)
-
+                elif self.rgb_people_trans_type == 'concat_independent':
+                    trans_att_people_rgb_i = torch.zeros(self.batch_size, people_num, 1, rgb_feat_height, rgb_feat_width)
+                    trans_att_people_people_i = torch.zeros(self.batch_size, 1, people_num, people_num)
                 elif self.rgb_people_trans_type == 'concat_paralell':
                     if self.use_img:
                         rgb_people_trans_weights_people_rgb = rgb_people_trans_weights[:, (rgb_feat_height*rgb_feat_width):, :(rgb_feat_height*rgb_feat_width)]
@@ -509,38 +475,21 @@ class JointAttentionEstimatorTransformer(nn.Module):
                     trans_att_people_rgb = torch.cat([trans_att_people_rgb, trans_att_people_rgb_i], dim=2)
                     trans_att_people_people = torch.cat([trans_att_people_people, trans_att_people_people_i], dim=1)
             
-            if self.rgb_people_trans_type == 'concat' or self.rgb_people_trans_type == 'concat_conv_upsample':
+            if self.rgb_people_trans_type == 'concat_direct':
                 pass
-            elif self.rgb_people_trans_type == 'concat_paralell':
+            elif self.rgb_people_trans_type == 'concat_independent' or self.rgb_people_trans_type == 'concat_paralell':
                 if self.use_img:
                     rgb_people_feat_all = rgb_people_feat_all[:, (rgb_feat_height*rgb_feat_width):, :]
         else:
             rgb_people_feat_all = head_info_params
 
-        if self.people_feat_aggregation_type == 'max_pool':
-            no_pad_idx = torch.sum((torch.sum(head_feature, dim=2) != 0), dim=1)
-            no_pad_idx = torch.where(no_pad_idx==0, no_pad_idx+1, no_pad_idx)
-            for batch_idx in range(self.batch_size):
-                rgb_people_feat_all_batch = rgb_people_feat_all[batch_idx, :, :]
-                rgb_people_feat_all_batch_no_pad = rgb_people_feat_all_batch[:no_pad_idx[batch_idx], :][None, :, :]
-                rgb_people_feat_all_batch_no_pad = rgb_people_feat_all_batch_no_pad.permute(0, 2, 1)
-                rgb_people_feat_all_batch_no_pad = self.people_feat_pool(rgb_people_feat_all_batch_no_pad)
-                rgb_people_feat_all_batch_no_pad = rgb_people_feat_all_batch_no_pad.permute(0, 2, 1)
-                if batch_idx == 0:
-                    rgb_people_feat_all_pool = rgb_people_feat_all_batch_no_pad
-                else:
-                    rgb_people_feat_all_pool = torch.cat([rgb_people_feat_all_pool, rgb_people_feat_all_batch_no_pad], dim=0)
-        elif self.people_feat_aggregation_type == 'no_use':
-            rgb_people_feat_all_pool = rgb_people_feat_all
-        else:
-            sys.exit()
-
-        if self.rgb_people_trans_type == 'concat' or self.rgb_people_trans_type == 'concat_conv_upsample':
+        # gaze map estimation
+        if self.rgb_people_trans_type == 'concat_direct':
             # estimate gaze map parameters (dummy)
             head_vector_params = self.gaze_map_estimator(head_info_params)
-        else:
+        elif self.rgb_people_trans_type == 'concat_independent' or self.rgb_people_trans_type == 'concat_paralell':
             # estimate gaze map parameters
-            head_vector_params = self.gaze_map_estimator(rgb_people_feat_all_pool)
+            head_vector_params = self.gaze_map_estimator(rgb_people_feat_all)
 
         head_vector_params = head_vector_params.view(self.batch_size, people_num, self.dynamic_gaussian_num, self.estimate_param_num_base)
         head_vector_params[:, :, :, 3] = torch.exp(head_vector_params[:, :, :, 3].clone())
@@ -591,23 +540,10 @@ class JointAttentionEstimatorTransformer(nn.Module):
             #             print(f'{distance_dist_denom[0, person_idx, gauss_idx, 0, 0].item():.2f}')
 
         elif self.dynamic_distance_type == 'generator':
-            if self.rgb_people_trans_type == 'concat':
-                distance_dist = rgb_people_feat_all_pool.view(self.batch_size, rgb_feat_width, rgb_feat_height, -1)
-                distance_dist = torch.transpose(distance_dist, 1, 3)
+            if self.rgb_people_trans_type == 'concat_direct':
+                distance_dist = self.distance_map_generator(rgb_people_feat_all)
+                distance_dist = distance_dist.view(self.batch_size, people_num, self.down_height, self.down_width)
                 distance_dist = F.interpolate(distance_dist, (self.resize_height, self.resize_width), mode='bilinear')
-                distance_dist = self.distance_map_generator(distance_dist)
-            elif self.rgb_people_trans_type == 'concat_conv_upsample':
-                distance_dist = rgb_people_feat_all_pool.view(self.batch_size, rgb_feat_width, rgb_feat_height, -1)
-                distance_dist = torch.transpose(distance_dist, 1, 3)
-                distance_dist = self.distance_map_generator(distance_dist)
-            elif self.rgb_people_trans_type == 'concat_paralell':
-                distance_dist_mini = self.distance_map_generator(rgb_people_feat_all_pool)
-                distance_dist_mini = distance_dist_mini.view(self.batch_size, people_num, self.resize_height//(2**2), self.resize_width//(2**2))
-                distance_dist = F.interpolate(distance_dist_mini, (self.resize_height, self.resize_width), mode='bilinear')
-                distance_dist = distance_dist.view(self.batch_size, people_num, self.resize_height, self.resize_width)
-            else:
-                distance_dist = self.distance_map_generator(rgb_people_feat_all_pool)
-                distance_dist = distance_dist.view(self.batch_size, people_num, self.resize_height, self.resize_width)
 
         # multiply zero to padding maps
         distance_dist = distance_dist * (torch.sum(head_feature, dim=2) != 0)[:, :, None, None]
@@ -621,11 +557,6 @@ class JointAttentionEstimatorTransformer(nn.Module):
                 x_mid = torch.max(angle_dist, distance_dist)
             elif self.angle_distance_fusion == 'mean':
                 x_mid = (angle_dist + distance_dist) * 0.5
-            elif self.angle_distance_fusion == 'sum_coef':
-                angle_coef = head_vector_params[:, :, self.angle_dist_coef, None, None]
-                angle_coef = self.angle_dist_coef_sigmoid(angle_coef)
-                distance_coef = (1-angle_coef)
-                x_mid = ((angle_coef * angle_dist) + (distance_coef * distance_dist))
         elif self.use_dynamic_angle:
             x_mid = angle_dist
         elif self.use_dynamic_distance:
