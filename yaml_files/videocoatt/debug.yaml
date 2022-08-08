@@ -12,8 +12,8 @@ exp_set:
   num_workers: 1
   seed_num: 777
   gpu_mode : True
-  gpu_start : 1
-  gpu_finish : 1
+  gpu_start : 0
+  gpu_finish : 0
 
   resize_height: 320
   resize_width: 480
@@ -36,8 +36,8 @@ exp_params:
   # use_regression_loss : False
   use_regression_loss : True
 
-  use_triple_loss : False
-  # use_triple_loss : True
+  # use_triple_loss : False
+  use_triple_loss : True
 
   use_gt_gaze: False
   # use_gt_gaze: True

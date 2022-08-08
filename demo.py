@@ -213,7 +213,7 @@ for iteration, batch in enumerate(test_data_loader,1):
 
         out_attention = model_attention(batch)
         # loss_set_head = model_head.calc_loss(batch, out_head)
-        # loss_set_attention = model_attention.calc_loss(batch, out_attention)
+        loss_set_attention = model_attention.calc_loss(batch, out_attention)
 
         out = {**out_head, **out_attention, **batch}
 

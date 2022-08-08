@@ -10,16 +10,16 @@ data:
 exp_set:
   save_folder : saved_weights
   # model_name : volleyball-concat_paralell
-  model_name: volleyball-concat_independent
+  # model_name: volleyball-concat_independent
   # model_name: volleyball-concat_independent_wo_img
   # model_name: volleyball-concat_independent_wo_action
   # model_name: volleyball-concat_independent_wo_gaze
-  # model_name: volleyball-concat_independent_wo_position
+  model_name: volleyball-concat_independent_wo_position
 
   seed_num : 777
   gpu_mode : True
-  gpu_start : 2
-  gpu_finish : 2
+  gpu_start : 3
+  gpu_finish : 3
   num_workers : 1
   batch_size : 1
   wandb_name : test
@@ -30,10 +30,10 @@ exp_params:
   use_frame_type: mid
   # use_frame_type: all
 
-  bbox_types: GT
-  # bbox_types: PRED
-  action_types: GT
-  # action_types: PRED
+  # bbox_types: GT
+  bbox_types: PRED
+  # action_types: GT
+  action_types: PRED
   # gaze_types: GT
   gaze_types: PRED
   # gaze_types: NONE

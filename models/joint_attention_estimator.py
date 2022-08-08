@@ -611,6 +611,7 @@ class JointAttentionEstimatorTransformer(nn.Module):
         data['distance_dist'] = distance_dist
         data['trans_att_people_rgb'] = trans_att_people_rgb
         data['trans_att_people_people'] = trans_att_people_people
+        data['rgb_people_feat_all'] = rgb_people_feat_all
 
         return data
 
@@ -624,6 +625,10 @@ class JointAttentionEstimatorTransformer(nn.Module):
         img_mid_pred = out['img_mid_pred']
         img_mid_mean_pred = out['img_mid_mean_pred']
         head_tensor = out['head_tensor']
+
+        # triplet loss
+        rgb_people_feat_all = out['rgb_people_feat_all']
+        head_feature = inp['head_feature']
 
         # switch loss coeficient
         if self.use_e_map_loss:
@@ -682,16 +687,29 @@ class JointAttentionEstimatorTransformer(nn.Module):
         loss_regress = torch.sum(loss_regress_all) / torch.sum(att_inside_flag)
         loss_regress = loss_regress_coef * loss_regress
 
-        # calculate triplet
-        distance_mean_euc = torch.sum(distance_mean_xy, dim=-1).view(batch_size, -1, 1)
-        distance_mean_euc_t = distance_mean_euc.transpose(2, 1)
-        distance_mean_euc_matrix = (distance_mean_euc - distance_mean_euc_t) ** 2
+        # calculate triplet loss
         gt_box_id_base = gt_box_id.view(batch_size, -1, 1)
         gt_box_id_t = gt_box_id_base.transpose(2, 1)
         gt_box_id_mask_same = gt_box_id_base == gt_box_id_t
         gt_box_id_mask_not_same = gt_box_id_base != gt_box_id_t
-        loss_triple_same_id = (distance_mean_euc_matrix * gt_box_id_mask_same) * att_inside_flag[:, :, None] * att_inside_flag[:, None, :]
-        loss_triple_no_same_id = -1 * (distance_mean_euc_matrix * gt_box_id_mask_not_same) * att_inside_flag[:, :, None] * att_inside_flag[:, None, :]
+        people_no_padding_mask = (torch.sum(head_feature, dim=-1) != 0)
+
+        # estimated attention based loss
+        distance_mean_euc = torch.sum(distance_mean_xy, dim=-1).view(batch_size, -1, 1)
+        distance_mean_euc_t = distance_mean_euc.transpose(2, 1)
+        distance_mean_euc_matrix = (distance_mean_euc - distance_mean_euc_t) ** 2
+        loss_triple_same_id = (distance_mean_euc_matrix * gt_box_id_mask_same) * people_no_padding_mask[:, :, None] * people_no_padding_mask[:, None, :]
+        loss_triple_no_same_id = -1 * (distance_mean_euc_matrix * gt_box_id_mask_not_same) * people_no_padding_mask[:, :, None] * people_no_padding_mask[:, None, :]
+        
+        # estimated person feature based loss
+        person_feat_all = rgb_people_feat_all.view(batch_size, people_num, -1)
+        person_feat_all = person_feat_all / torch.norm(person_feat_all, dim=-1)[:, :, None]
+        person_feat_all_t = person_feat_all.transpose(2, 1)
+        person_feat_all_matrix = torch.bmm(person_feat_all, person_feat_all_t)
+
+        # add positive loss and negative loss
+        loss_triple_same_id = -1 * (person_feat_all_matrix * gt_box_id_mask_same) * people_no_padding_mask[:, :, None] * people_no_padding_mask[:, None, :]
+        loss_triple_no_same_id = (person_feat_all_matrix * gt_box_id_mask_not_same) * people_no_padding_mask[:, :, None] * people_no_padding_mask[:, None, :]
         loss_triple_all = loss_triple_same_id + loss_triple_no_same_id
         loss_triple = torch.sum(loss_triple_all) / torch.sum(att_inside_flag)
         loss_triple = loss_triple_coef * loss_triple
