@@ -149,8 +149,8 @@ model_params:
 
   # rgb_cnn_extractor_type : normal
   # rgb_cnn_extractor_type : no_use
-  # rgb_cnn_extractor_type : resnet18
-  rgb_cnn_extractor_type : resnet50
+  rgb_cnn_extractor_type : resnet18
+  # rgb_cnn_extractor_type : resnet50
   # rgb_cnn_extractor_stage_idx : 1
   # rgb_cnn_extractor_stage_idx : 2
   rgb_cnn_extractor_stage_idx : 3

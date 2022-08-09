@@ -34,6 +34,43 @@ def data_type_id_generator(cfg):
     data_type_id = f'{cfg.exp_set.mode}_gt_gaze_{cfg.exp_params.test_gt_gaze}_head_conf_{cfg.exp_params.test_heads_conf}'
     return data_type_id
 
+def each_data_type_id_generator(head_vector_gt, head_tensor, gt_box, cfg):
+
+    dets_people_num = np.sum(np.sum(head_vector_gt, axis=-1) != 0)
+    # define data id of dets people
+    dets_people_num = np.sum(np.sum(head_vector_gt, axis=-1) != 0)
+    if dets_people_num <= 3:
+        dets_people_id = '0<peo<3'
+    else:
+        dets_people_id = '3<=peo'
+
+    # define data id of gaze estimation
+    head_vector_gt_cos = head_vector_gt[:dets_people_num, :]
+    head_vector_pred_cos = head_tensor[:dets_people_num, :2]
+    head_gt_pred_cos_sim = np.sum(head_vector_gt_cos * head_vector_pred_cos, axis=1)
+    head_gt_pred_cos_sim_ave = np.sum(head_gt_pred_cos_sim) / dets_people_num
+    if head_gt_pred_cos_sim_ave < 0.5:
+        gaze_error_id = '0_0<gaze<0_5'
+    else:
+        gaze_error_id = '0_5_gaze<1_0'
+
+    # define data id of joint attention size
+    gt_x_min, gt_y_min, gt_x_max, gt_y_max = gt_box[0, :]
+    gt_x_size, gt_y_size = gt_x_max-gt_x_min, gt_y_max-gt_y_min
+    gt_x_size /= cfg.exp_set.resize_width
+    gt_y_size /= cfg.exp_set.resize_height
+    gt_size = ((gt_x_size**2)+(gt_y_size**2))**0.5
+    if gt_size < 0.1:
+        gt_size_id = '0_0<size<0_1'
+    else:
+        gt_size_id = '0_1<size'
+
+    # data_type_id = f'{dets_people_id}:{gaze_error_id}:{gt_size_id}'
+    data_type_id = f'{dets_people_id}:{gaze_error_id}'
+    # data_type_id = ''
+
+    return data_type_id
+
 print("===> Getting configuration")
 parser = argparse.ArgumentParser(description="parameters for training")
 parser.add_argument("config", type=str, help="configuration yaml file path")
@@ -92,6 +129,7 @@ if not os.path.exists(save_results_dir):
 
 print("===> Starting eval processing")
 l2_dist_list = []
+each_data_type_id_dic = {}
 for iteration, batch in enumerate(test_data_loader):
     print(f'{iteration}/{len(test_data_loader)}')
 
@@ -153,6 +191,13 @@ for iteration, batch in enumerate(test_data_loader):
     gt_box = out['gt_box'].to('cpu').detach()[0].numpy()
     head_tensor = out['head_tensor'].to('cpu').detach()[0].numpy()
     head_feature = out['head_feature'].to('cpu').detach()[0].numpy()
+    head_vector_gt = out['head_vector_gt'].to('cpu').detach()[0].numpy()
+
+    # generate each data id
+    each_data_type_id = each_data_type_id_generator(head_vector_gt, head_tensor, gt_box, cfg)
+    if not each_data_type_id in each_data_type_id_dic.keys():
+        each_data_type_id_dic[each_data_type_id] = len(each_data_type_id_dic.keys())
+    each_data_type_id_idx = each_data_type_id_dic[each_data_type_id]
 
     # get a padding number
     people_padding_mask = (np.sum(head_feature, axis=-1) != 0)
@@ -214,7 +259,7 @@ for iteration, batch in enumerate(test_data_loader):
             peak_x_mid_pred, peak_y_mid_pred = map(int, [peak_x_mid_pred, peak_y_mid_pred])
 
         print(f'Dist {l2_dist_euc:.0f}, ({peak_x_mid_pred},{peak_y_mid_pred}), GT:({peak_x_mid_gt},{peak_y_mid_gt})')
-        l2_dist_list.append([l2_dist_x, l2_dist_y, l2_dist_euc])
+        l2_dist_list.append([l2_dist_x, l2_dist_y, l2_dist_euc, each_data_type_id_idx])
 
 # save metrics in a dict
 metrics_dict = {}
@@ -225,6 +270,13 @@ l2_dist_mean = np.mean(l2_dist_array, axis=0)
 l2_dist_list = ['l2_dist_x', 'l2_dist_y', 'l2_dist_euc']
 for l2_dist_idx, l2_dist_type in enumerate(l2_dist_list):
     metrics_dict[l2_dist_type] = l2_dist_mean[l2_dist_idx]
+
+# save l2 dist (detailed analysis)
+for each_data_id, each_data_id_idx in each_data_type_id_dic.items():
+    l2_dist_array_each_data_id = l2_dist_array[l2_dist_array[:, 3] == each_data_id_idx]
+    sample_ratio = l2_dist_array_each_data_id.shape[0]/l2_dist_array.shape[0]*100
+    l2_dist_array_each_data_id_mean = np.mean(l2_dist_array_each_data_id, axis=0)
+    metrics_dict[f'l2_dist_euc ({each_data_id}) ({sample_ratio:.0f}%)'] = l2_dist_array_each_data_id_mean[2]
 
 # save l2 dist as a figure
 for l2_dist_idx, l2_dist_type in enumerate(l2_dist_list):
