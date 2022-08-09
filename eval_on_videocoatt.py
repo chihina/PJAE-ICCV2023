@@ -225,7 +225,6 @@ for iteration, batch in enumerate(test_data_loader):
     no_pad_peak_xy_pred = head_tensor[:people_padding_num, 3:5]
     mean_sift = MeanShift(bandwidth=0.1).fit(no_pad_peak_xy_pred)
     pred_cluster = mean_sift.labels_
-    print(pred_cluster)
     cluster_num = np.max(pred_cluster)+1
     cluster_array = np.zeros((cluster_num, 3))
     for cluster_idx in range(cluster_num):
@@ -245,7 +244,7 @@ for iteration, batch in enumerate(test_data_loader):
 
     # calc dist for each ground-truth box
     for gt_box_idx in range(gt_box_ja_array.shape[0]):
-        print(f'GT:{gt_box_idx}')
+        # print(f'GT:{gt_box_idx}')
         peak_x_mid_gt, peak_y_mid_gt = gt_box_ja_array[gt_box_idx, :]
         peak_xy_gt = gt_box_ja_array[gt_box_idx, :].reshape(-1, 2)
 
