@@ -36,8 +36,11 @@ exp_params:
   # use_regression_loss : False
   use_regression_loss : True
 
-  # use_triple_loss : False
-  use_triple_loss : True
+  # use_attraction_loss : False
+  use_attraction_loss : True
+
+  # use_repulsion_loss : False
+  use_repulsion_loss : True
 
   use_gt_gaze: False
   # use_gt_gaze: True

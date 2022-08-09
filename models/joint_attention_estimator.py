@@ -79,7 +79,8 @@ class JointAttentionEstimatorTransformer(nn.Module):
         self.use_e_att_loss = cfg.exp_params.use_e_att_loss
         self.use_each_e_map_loss = cfg.exp_params.use_each_e_map_loss
         self.use_regression_loss = cfg.exp_params.use_regression_loss
-        self.use_triple_loss = cfg.exp_params.use_triple_loss
+        self.use_attraction_loss = cfg.exp_params.use_attraction_loss
+        self.use_repulsion_loss = cfg.exp_params.use_repulsion_loss
 
         # set people feat dim based on model params
         if self.rgb_people_trans_type == 'concat_direct':
@@ -651,10 +652,15 @@ class JointAttentionEstimatorTransformer(nn.Module):
         else:
             loss_regress_coef = 0
 
-        if self.use_triple_loss:
-            loss_triple_coef = 1
+        if self.use_attraction_loss:
+            loss_attraction_coef = 1
         else:
-            loss_triple_coef = 0
+            loss_attraction_coef = 0
+
+        if self.use_repulsion_loss:
+            loss_repulsion_coef = 1
+        else:
+            loss_repulsion_coef = 0
 
         batch_size, people_num, _, _ = img_mid_pred.shape
 
@@ -706,20 +712,24 @@ class JointAttentionEstimatorTransformer(nn.Module):
         person_feat_all = person_feat_all / torch.norm(person_feat_all, dim=-1)[:, :, None]
         person_feat_all_t = person_feat_all.transpose(2, 1)
         person_feat_all_matrix = torch.bmm(person_feat_all, person_feat_all_t)
-
-        # add positive loss and negative loss
         loss_triple_same_id = -1 * (person_feat_all_matrix * gt_box_id_mask_same) * people_no_padding_mask[:, :, None] * people_no_padding_mask[:, None, :]
         loss_triple_no_same_id = (person_feat_all_matrix * gt_box_id_mask_not_same) * people_no_padding_mask[:, :, None] * people_no_padding_mask[:, None, :]
-        loss_triple_all = loss_triple_same_id + loss_triple_no_same_id
-        loss_triple = torch.sum(loss_triple_all) / torch.sum(att_inside_flag)
-        loss_triple = loss_triple_coef * loss_triple
+
+        # add positive loss and negative loss
+        loss_attraction_all = loss_triple_same_id
+        loss_repulsion_all = loss_triple_no_same_id
+        loss_attraction = torch.sum(loss_attraction_all) / torch.sum(att_inside_flag)
+        loss_repulsion = torch.sum(loss_repulsion_all) / torch.sum(att_inside_flag)
+        loss_attraction = loss_attraction_coef * loss_attraction
+        loss_repulsion = loss_repulsion_coef * loss_repulsion
 
         loss_set = {}
         loss_set['loss_map_gaze'] = loss_map_gaze
         loss_set['loss_map'] = loss_map
         loss_set['loss_map_gaze_each'] = loss_map_gaze_each
         loss_set['loss_regress'] = loss_regress
-        loss_set['loss_triple'] = loss_triple
+        loss_set['loss_attraction'] = loss_attraction
+        loss_set['loss_repulsion'] = loss_repulsion
 
         return loss_set
 

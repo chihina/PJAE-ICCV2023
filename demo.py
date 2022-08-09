@@ -299,20 +299,20 @@ for iteration, batch in enumerate(test_data_loader,1):
 
     # calculate metrics for each attetntion estimation
     for person_idx in range(key_no_padding_num):
+        # calc a centers of pred bboxes
+        if cfg.model_params.dynamic_distance_type == 'gaussian':
+            peak_x_mid_pred, peak_y_mid_pred = head_tensor[person_idx, 3], head_tensor[person_idx, 4]
+            peak_x_mid_pred, peak_y_mid_pred = peak_x_mid_pred*cfg.exp_set.resize_width, peak_y_mid_pred*cfg.exp_set.resize_height
+            peak_x_mid_pred, peak_y_mid_pred = map(int, [peak_x_mid_pred, peak_y_mid_pred])
+        else:
+            peak_y_mid_pred, peak_x_mid_pred = np.unravel_index(np.argmax(img_heatmap), img_heatmap.shape)
+
         if att_inside_flag[person_idx]:
             # calc a center of gt bbox
             peak_x_min_gt, peak_y_min_gt, peak_x_max_gt, peak_y_max_gt = gt_box[person_idx]
             peak_x_mid_gt, peak_y_mid_gt = (peak_x_min_gt+peak_x_max_gt)/2, (peak_y_min_gt+peak_y_max_gt)/2
             peak_x_mid_gt, peak_y_mid_gt = peak_x_mid_gt*cfg.exp_set.resize_width, peak_y_mid_gt*cfg.exp_set.resize_height
             peak_x_mid_gt, peak_y_mid_gt = map(int, [peak_x_mid_gt, peak_y_mid_gt])
-
-            # calc a centers of pred bboxes
-            if cfg.model_params.dynamic_distance_type == 'gaussian':
-                peak_x_mid_pred, peak_y_mid_pred = head_tensor[person_idx, 3], head_tensor[person_idx, 4]
-                peak_x_mid_pred, peak_y_mid_pred = peak_x_mid_pred*cfg.exp_set.resize_width, peak_y_mid_pred*cfg.exp_set.resize_height
-                peak_x_mid_pred, peak_y_mid_pred = map(int, [peak_x_mid_pred, peak_y_mid_pred])
-            else:
-                peak_y_mid_pred, peak_x_mid_pred = np.unravel_index(np.argmax(img_heatmap), img_heatmap.shape)
 
             # calc metrics
             peak_x_diff, peak_y_diff = peak_x_mid_pred-peak_x_mid_gt, peak_y_mid_pred-peak_y_mid_gt
