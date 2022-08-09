@@ -25,6 +25,7 @@ import sys
 import json
 from PIL import Image
 from sklearn.cluster import MeanShift
+from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score
 
 # original module
 from dataset.dataset_selector import dataset_generator
@@ -110,7 +111,9 @@ if cuda:
 
 print("===> Loading dataset")
 mode = cfg.exp_set.mode
+cfg.data.name = 'videocoatt_no_att'
 test_set = dataset_generator(cfg, mode)
+cfg.data.name = 'videocoatt'
 test_data_loader = DataLoader(dataset=test_set,
                                 batch_size=cfg.exp_set.batch_size,
                                 shuffle=False,
@@ -129,6 +132,7 @@ if not os.path.exists(save_results_dir):
 
 print("===> Starting eval processing")
 l2_dist_list = []
+pred_acc_list = []
 each_data_type_id_dic = {}
 for iteration, batch in enumerate(test_data_loader):
     print(f'{iteration}/{len(test_data_loader)}')
@@ -221,6 +225,7 @@ for iteration, batch in enumerate(test_data_loader):
     no_pad_peak_xy_pred = head_tensor[:people_padding_num, 3:5]
     mean_sift = MeanShift(bandwidth=0.1).fit(no_pad_peak_xy_pred)
     pred_cluster = mean_sift.labels_
+    print(pred_cluster)
     cluster_num = np.max(pred_cluster)+1
     cluster_array = np.zeros((cluster_num, 3))
     for cluster_idx in range(cluster_num):
@@ -231,6 +236,12 @@ for iteration, batch in enumerate(test_data_loader):
     cluster_array[:, 0] *= cfg.exp_set.resize_width
     cluster_array[:, 1] *= cfg.exp_set.resize_height
     cluster_array_multi_people = cluster_array[cluster_array[:, 2] >= 2, :]
+
+    co_att_flag_gt = np.sum(gt_box, axis=(0, 1)) != 0
+    co_att_flag_pred = cluster_array_multi_people.shape[0] != 0
+    pred_acc_list.append([co_att_flag_gt, co_att_flag_pred])
+    if not co_att_flag_gt:
+        continue
 
     # calc dist for each ground-truth box
     for gt_box_idx in range(gt_box_ja_array.shape[0]):
@@ -271,20 +282,34 @@ l2_dist_list = ['l2_dist_x', 'l2_dist_y', 'l2_dist_euc']
 for l2_dist_idx, l2_dist_type in enumerate(l2_dist_list):
     metrics_dict[l2_dist_type] = l2_dist_mean[l2_dist_idx]
 
-# save l2 dist (detailed analysis)
+# save l2 dist (Detailed analysis)
 for each_data_id, each_data_id_idx in each_data_type_id_dic.items():
     l2_dist_array_each_data_id = l2_dist_array[l2_dist_array[:, 3] == each_data_id_idx]
     sample_ratio = l2_dist_array_each_data_id.shape[0]/l2_dist_array.shape[0]*100
     l2_dist_array_each_data_id_mean = np.mean(l2_dist_array_each_data_id, axis=0)
     metrics_dict[f'l2_dist_euc ({each_data_id}) ({sample_ratio:.0f}%)'] = l2_dist_array_each_data_id_mean[2]
 
-# save l2 dist as a figure
+# save l2 dist (Histgrad analysis)
 for l2_dist_idx, l2_dist_type in enumerate(l2_dist_list):
     save_figure_path = os.path.join(save_results_dir, f'{l2_dist_type}_hist.png')
     plt.figure()
     plt.hist(l2_dist_array[:, l2_dist_idx])
     plt.xlim(0, 200)
     plt.savefig(save_figure_path)
+
+# save prediction accuracy
+pred_acc_array = np.array(pred_acc_list)
+co_att_gt_array = pred_acc_array[:, 0]
+co_att_pred_array = pred_acc_array[:, 1]
+cm = confusion_matrix(co_att_gt_array, co_att_pred_array)
+plt.figure()
+sns.heatmap(cm, annot=True, cmap='Blues')
+save_cm_path = os.path.join(save_results_dir, 'confusion_matrix.png')
+plt.savefig(save_cm_path)
+metrics_dict['accuracy'] = accuracy_score(co_att_gt_array, co_att_pred_array)
+metrics_dict['precision'] = precision_score(co_att_gt_array, co_att_pred_array)
+metrics_dict['recall'] = recall_score(co_att_gt_array, co_att_pred_array)
+metrics_dict['f1'] = f1_score(co_att_gt_array, co_att_pred_array)
 
 # save detection rate
 det_rate_list = [f'Det (Thr={det_thr})' for det_thr in range(0, 110, 10)]

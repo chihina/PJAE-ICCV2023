@@ -8,17 +8,16 @@ exp_set:
   wandb_log : True
   # wandb_name: videocoatt-head_pose_estimator
   # wandb_name: videocoatt-concat_independent
-  # wandb_name: videocoatt-concat_independent_w_attract_w_repulsion
-  # wandb_name: videocoatt-concat_independent_w_attract
-  # wandb_name: videocoatt-concat_independent_w_repulsion
-  wandb_name: videocoatt-concat_independent_resnet50
+  # wandb_name: videocoatt-concat_independent_wo_img
+  # wandb_name: videocoatt-concat_independent_wo_gaze
+  wandb_name: videocoatt-concat_independent_wo_position
 
   batch_size: 16
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 4
-  gpu_finish : 4
+  gpu_start : 6
+  gpu_finish : 6
 
   resize_height: 320
   resize_width: 480
@@ -95,8 +94,8 @@ model_params:
   model_type: ja_transformer
 
   # Position
-  # use_position : False
-  use_position : True
+  use_position : False
+  # use_position : True
   # use_position_enc_person : False
   use_position_enc_person : True
   use_position_enc_type : sine
