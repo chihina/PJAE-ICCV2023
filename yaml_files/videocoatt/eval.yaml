@@ -6,7 +6,8 @@ data:
 exp_set:
   save_folder : saved_weights
   # model_name: videocoatt-head_pose_estimator
-  model_name: videocoatt-concat_independent
+  # model_name: videocoatt-concat_independent
+  model_name: videocoatt-concat_independent_all
   # model_name: videocoatt-concat_independent_w_attract_w_repulsion
   # model_name: videocoatt-concat_independent_w_attract
   # model_name: videocoatt-concat_independent_w_repulsion
@@ -30,3 +31,6 @@ exp_params:
   test_heads_conf : 0.6
   test_gt_gaze : False
   # test_gt_gaze : True
+
+  use_frame_type: mid
+  # use_frame_type: all

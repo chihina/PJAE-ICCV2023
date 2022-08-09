@@ -12,8 +12,8 @@ exp_set:
   num_workers: 1
   seed_num: 777
   gpu_mode : True
-  gpu_start : 5
-  gpu_finish : 5
+  gpu_start : 3
+  gpu_finish : 3
 
   resize_height: 320
   resize_width: 480
@@ -149,8 +149,8 @@ model_params:
   rgb_cnn_extractor_type : resnet18
   # rgb_cnn_extractor_type : resnet50
   # rgb_cnn_extractor_stage_idx : 1
-  # rgb_cnn_extractor_stage_idx : 2
-  rgb_cnn_extractor_stage_idx : 3
+  rgb_cnn_extractor_stage_idx : 2
+  # rgb_cnn_extractor_stage_idx : 3
   # rgb_cnn_extractor_stage_idx : 4
   # rgb_cnn_extractor_type : hrnet_w18_small
   # rgb_cnn_extractor_type : hrnet_w32

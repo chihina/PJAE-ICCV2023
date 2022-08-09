@@ -11,14 +11,14 @@ exp_set:
   # wandb_name: videocoatt-concat_independent_w_attract_w_repulsion
   # wandb_name: videocoatt-concat_independent_w_attract
   # wandb_name: videocoatt-concat_independent_w_repulsion
-  wandb_name: videocoatt-concat_independent_all
+  wandb_name: videocoatt-concat_independent_high_feature
 
-  batch_size: 16
-  num_workers: 16
+  batch_size: 4
+  num_workers: 4
   seed_num: 777
   gpu_mode : True
-  gpu_start : 5
-  gpu_finish : 5
+  gpu_start : 0
+  gpu_finish : 0
 
   resize_height: 320
   resize_width: 480
@@ -47,8 +47,8 @@ exp_params:
   use_repulsion_loss : False
   # use_repulsion_loss : True
   
-  # use_frame_type: mid
-  use_frame_type: all
+  use_frame_type: mid
+  # use_frame_type: all
   
   use_gt_gaze: False
   # use_gt_gaze: True

@@ -31,7 +31,7 @@ from dataset.dataset_selector import dataset_generator
 from models.model_selector import model_generator
 
 def data_type_id_generator(cfg):
-    data_type_id = f'bbox_{cfg.exp_params.bbox_types}_gaze_{cfg.exp_params.gaze_types}_act_{cfg.exp_params.action_types}'
+    data_type_id = f'{cfg.exp_set.mode}_gt_gaze_{cfg.exp_params.test_gt_gaze}_head_conf_{cfg.exp_params.test_heads_conf}'
     return data_type_id
 
 print("===> Getting configuration")
@@ -91,7 +91,7 @@ if not os.path.exists(save_results_dir):
     os.makedirs(save_results_dir)
 
 print("===> Starting eval processing")
-l2_dist_array = np.zeros((1, 4))
+l2_dist_list = []
 for iteration, batch in enumerate(test_data_loader):
     print(f'{iteration}/{len(test_data_loader)}')
 
@@ -210,22 +210,29 @@ for iteration, batch in enumerate(test_data_loader):
             l2_dist_x = peak_sub_gt_pred[0, 0]
             l2_dist_y = peak_sub_gt_pred[0, 1]
             l2_dist_euc = peak_sub_gt_pred_euc[0]
+            peak_x_mid_pred, peak_y_mid_pred = peak_xy_pred[0, :]
+            peak_x_mid_pred, peak_y_mid_pred = map(int, [peak_x_mid_pred, peak_y_mid_pred])
 
         print(f'Dist {l2_dist_euc:.0f}, ({peak_x_mid_pred},{peak_y_mid_pred}), GT:({peak_x_mid_gt},{peak_y_mid_gt})')
-        l2_dist_array[0, 0] += l2_dist_x
-        l2_dist_array[0, 1] += l2_dist_y
-        l2_dist_array[0, 2] += l2_dist_euc
-        l2_dist_array[0, 3] += 1
+        l2_dist_list.append([l2_dist_x, l2_dist_y, l2_dist_euc])
 
 # save metrics in a dict
 metrics_dict = {}
 
 # save l2 dist
-l2_dist_array[:, 0:3] /= l2_dist_array[:, 3]
+l2_dist_array = np.array(l2_dist_list)
 l2_dist_mean = np.mean(l2_dist_array, axis=0)
 l2_dist_list = ['l2_dist_x', 'l2_dist_y', 'l2_dist_euc']
 for l2_dist_idx, l2_dist_type in enumerate(l2_dist_list):
     metrics_dict[l2_dist_type] = l2_dist_mean[l2_dist_idx]
+
+# save l2 dist as a figure
+for l2_dist_idx, l2_dist_type in enumerate(l2_dist_list):
+    save_figure_path = os.path.join(save_results_dir, f'{l2_dist_type}_hist.png')
+    plt.figure()
+    plt.hist(l2_dist_array[:, l2_dist_idx])
+    plt.xlim(0, 200)
+    plt.savefig(save_figure_path)
 
 # save detection rate
 det_rate_list = [f'Det (Thr={det_thr})' for det_thr in range(0, 110, 10)]
@@ -239,6 +246,7 @@ save_results_path = os.path.join(save_results_dir, 'eval_results.json')
 with open(save_results_path, 'w') as f:
     json.dump(metrics_dict, f, indent=4)
 
+# print metrics into a command line
 print(metrics_dict)
 for met_name, met_val in metrics_dict.items():
     print(met_name, met_val)

@@ -11,6 +11,7 @@ exp_set:
   # model_name: videocoatt-concat_independent_w_attract_w_repulsion
   # model_name: videocoatt-concat_independent_w_attract
   # model_name: videocoatt-concat_independent_w_repulsion
+  model_name: videocoatt-concat_independent_high_feature
 
   seed_num : 777
   gpu_mode : True
@@ -31,3 +32,6 @@ exp_params:
   test_heads_conf : 0.6
   test_gt_gaze : False
   # test_gt_gaze : True
+
+  use_frame_type: mid
+  # use_frame_type: all
