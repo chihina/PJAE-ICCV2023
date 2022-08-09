@@ -132,6 +132,8 @@ class JointAttentionEstimatorTransformer(nn.Module):
                                         )
                                         for _ in range(self.people_people_trans_enc_num)
                                         ])
+            # self.trans_layer_norm_people_people = nn.LayerNorm(normalized_shape=self.people_feat_dim)
+
 
         if self.rgb_cnn_extractor_type == 'normal':
             feat_ext_rgb = models.resnet50(pretrained=True)
@@ -366,6 +368,7 @@ class JointAttentionEstimatorTransformer(nn.Module):
                 head_info_params_feat_res = head_info_params_feat + head_info_params
                 head_info_params_feat_feed = self.people_people_fc[i](head_info_params_feat_res)
                 head_info_params_feat_feed_res = head_info_params_feat_res + head_info_params_feat_feed
+                # head_info_params_feat_feed_res = self.trans_layer_norm_people_people(head_info_params_feat_feed_res)
                 head_info_params_feat_feed_res = self.trans_layer_norm_people_rgb(head_info_params_feat_feed_res)
                 head_info_params = head_info_params_feat_feed_res
 
@@ -701,11 +704,11 @@ class JointAttentionEstimatorTransformer(nn.Module):
         people_no_padding_mask = (torch.sum(head_feature, dim=-1) != 0)
 
         # estimated attention based loss
-        distance_mean_euc = torch.sum(distance_mean_xy, dim=-1).view(batch_size, -1, 1)
-        distance_mean_euc_t = distance_mean_euc.transpose(2, 1)
-        distance_mean_euc_matrix = (distance_mean_euc - distance_mean_euc_t) ** 2
-        loss_triple_same_id = (distance_mean_euc_matrix * gt_box_id_mask_same) * people_no_padding_mask[:, :, None] * people_no_padding_mask[:, None, :]
-        loss_triple_no_same_id = -1 * (distance_mean_euc_matrix * gt_box_id_mask_not_same) * people_no_padding_mask[:, :, None] * people_no_padding_mask[:, None, :]
+        # distance_mean_euc = torch.sum(distance_mean_xy, dim=-1).view(batch_size, -1, 1)
+        # distance_mean_euc_t = distance_mean_euc.transpose(2, 1)
+        # distance_mean_euc_matrix = (distance_mean_euc - distance_mean_euc_t) ** 2
+        # loss_triple_same_id = (distance_mean_euc_matrix * gt_box_id_mask_same) * people_no_padding_mask[:, :, None] * people_no_padding_mask[:, None, :]
+        # loss_triple_no_same_id = -1 * (distance_mean_euc_matrix * gt_box_id_mask_not_same) * people_no_padding_mask[:, :, None] * people_no_padding_mask[:, None, :]
         
         # estimated person feature based loss
         person_feat_all = rgb_people_feat_all.view(batch_size, people_num, -1)

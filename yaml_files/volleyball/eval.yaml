@@ -13,8 +13,8 @@ exp_set:
   # model_name: volleyball-concat_independent
   # model_name: volleyball-concat_independent_wo_img
   # model_name: volleyball-concat_independent_wo_action
-  # model_name: volleyball-concat_independent_wo_gaze
-  model_name: volleyball-concat_independent_wo_position
+  model_name: volleyball-concat_independent_wo_gaze
+  # model_name: volleyball-concat_independent_wo_position
 
   seed_num : 777
   gpu_mode : True

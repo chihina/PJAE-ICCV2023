@@ -6,8 +6,7 @@ data:
 exp_set:
   save_folder : saved_weights
   # model_name: videocoatt-head_pose_estimator
-  # model_name: videocoatt-concat_independent
-  model_name: videocoatt-concat_independent_all
+  model_name: videocoatt-concat_independent
   # model_name: videocoatt-concat_independent_w_attract_w_repulsion
   # model_name: videocoatt-concat_independent_w_attract
   # model_name: videocoatt-concat_independent_w_repulsion
@@ -18,7 +17,7 @@ exp_set:
   gpu_finish : 7
   num_workers : 1
   batch_size : 1
-  wandb_name : demo
+  wandb_name : test
 
   mode: test
   # mode : validate

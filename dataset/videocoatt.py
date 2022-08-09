@@ -27,6 +27,7 @@ class VideoCoAttDataset(Dataset):
         if self.train_det_heads:
             print('Train the model by detetected heads')
         self.gaussian_sigma = cfg.exp_params.gaussian_sigma
+        self.use_frame_type = cfg.exp_params.use_frame_type
 
         # test settings
         self.test_heads_type = cfg.exp_params.test_heads_type
@@ -203,8 +204,11 @@ class VideoCoAttDataset(Dataset):
                 saliency_file_path = os.path.join(self.saliency_dataset_dir, 'images', self.mode, str(video_num), file_name)
 
                 # following authors setting
-                if (int(frame_id) - 1) % 10 != 0:
-                    continue
+                if self.use_frame_type == 'mid': 
+                    if (int(frame_id) - 1) % 10 != 0:
+                        continue
+                else:
+                    pass
 
                 # if annotation is not exists
                 if int(frame_id) not in ann_dic.keys():
@@ -276,10 +280,11 @@ class VideoCoAttDataset(Dataset):
                 saliency_file_path = os.path.join(self.saliency_dataset_dir, 'images', self.mode, str(video_num), file_name)
 
                 # following authors setting
-                if (int(frame_id) - 1) % 10 == 0:
-                    pass
+                if self.use_frame_type == 'mid': 
+                    if (int(frame_id) - 1) % 10 != 0:
+                        continue
                 else:
-                    continue
+                    pass
 
                 # if no co-att box in the frame
                 if int(frame_id) not in ann_dic.keys():

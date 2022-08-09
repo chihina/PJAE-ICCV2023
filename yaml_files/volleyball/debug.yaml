@@ -41,8 +41,11 @@ exp_params:
   # use_regression_loss : False
   use_regression_loss : True
 
-  use_triple_loss : False
-  # use_triple_loss : True
+  use_attraction_loss : False
+  # use_attraction_loss : True
+
+  use_repulsion_loss : False
+  # use_repulsion_loss : True
 
   use_frame_type: mid
   # use_frame_type: all
@@ -131,9 +134,9 @@ model_params:
   # gaze_map_estimator_type : shallow
 
   # transformer
-  # rgb_people_trans_type : concat_direct
+  rgb_people_trans_type : concat_direct
   # rgb_people_trans_type : concat_paralell
-  rgb_people_trans_type : concat_independent
+  # rgb_people_trans_type : concat_independent
 
   people_people_trans_enc_num : 2
   mha_num_heads_people_people : 2
