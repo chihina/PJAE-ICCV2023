@@ -122,7 +122,7 @@ test_data_loader = DataLoader(dataset=test_set,
 print('{} demo samples found'.format(len(test_set)))
 
 print("===> Making directories to save results")
-if cfg.exp_set.test_gt_gaze:
+if cfg.exp_set.use_gt_gaze:
     model_name = model_name + f'_use_gt_gaze'
 
 data_type_id = data_type_id_generator(cfg)
@@ -221,55 +221,72 @@ for iteration, batch in enumerate(test_data_loader):
             gt_box_ja_list.append(save_gt_peak)
     gt_box_ja_array = np.array(gt_box_ja_list)
 
-    # clsutering by mean shift
-    no_pad_peak_xy_pred = head_tensor[:people_padding_num, 3:5]
-    mean_sift = MeanShift(bandwidth=0.1).fit(no_pad_peak_xy_pred)
-    pred_cluster = mean_sift.labels_
-    cluster_num = np.max(pred_cluster)+1
-    cluster_array = np.zeros((cluster_num, 3))
-    for cluster_idx in range(cluster_num):
-        xy_pred_clsuter = no_pad_peak_xy_pred[(pred_cluster==cluster_idx), :]
-        cluster_array[cluster_idx, 0] = np.mean(xy_pred_clsuter[:, 0])
-        cluster_array[cluster_idx, 1] = np.mean(xy_pred_clsuter[:, 1])
-        cluster_array[cluster_idx, 2] = np.sum(pred_cluster==cluster_idx)
-    cluster_array[:, 0] *= cfg.exp_set.resize_width
-    cluster_array[:, 1] *= cfg.exp_set.resize_height
-    cluster_array_multi_people = cluster_array[cluster_array[:, 2] >= 2, :]
+    if cfg.model_params.dynamic_distance_type == 'gaussian':
+        # clsutering by mean shift
+        no_pad_peak_xy_pred = head_tensor[:people_padding_num, 3:5]
+        mean_sift = MeanShift(bandwidth=0.1).fit(no_pad_peak_xy_pred)
+        pred_cluster = mean_sift.labels_
+        cluster_num = np.max(pred_cluster)+1
+        cluster_array = np.zeros((cluster_num, 3))
+        for cluster_idx in range(cluster_num):
+            xy_pred_clsuter = no_pad_peak_xy_pred[(pred_cluster==cluster_idx), :]
+            cluster_array[cluster_idx, 0] = np.mean(xy_pred_clsuter[:, 0])
+            cluster_array[cluster_idx, 1] = np.mean(xy_pred_clsuter[:, 1])
+            cluster_array[cluster_idx, 2] = np.sum(pred_cluster==cluster_idx)
+        cluster_array[:, 0] *= cfg.exp_set.resize_width
+        cluster_array[:, 1] *= cfg.exp_set.resize_height
+        cluster_array_multi_people = cluster_array[cluster_array[:, 2] >= 2, :]
 
-    co_att_flag_gt = np.sum(gt_box, axis=(0, 1)) != 0
-    co_att_flag_pred = cluster_array_multi_people.shape[0] != 0
-    pred_acc_list.append([co_att_flag_gt, co_att_flag_pred])
-    if not co_att_flag_gt:
-        continue
+        co_att_flag_gt = np.sum(gt_box, axis=(0, 1)) != 0
+        co_att_flag_pred = cluster_array_multi_people.shape[0] != 0
+        pred_acc_list.append([co_att_flag_gt, co_att_flag_pred])
+        if not co_att_flag_gt:
+            continue
 
-    # calc dist for each ground-truth box
-    for gt_box_idx in range(gt_box_ja_array.shape[0]):
-        # print(f'GT:{gt_box_idx}')
-        peak_x_mid_gt, peak_y_mid_gt = gt_box_ja_array[gt_box_idx, :]
-        peak_xy_gt = gt_box_ja_array[gt_box_idx, :].reshape(-1, 2)
+        # calc dist for each ground-truth box
+        for gt_box_idx in range(gt_box_ja_array.shape[0]):
+            # print(f'GT:{gt_box_idx}')
+            peak_x_mid_gt, peak_y_mid_gt = gt_box_ja_array[gt_box_idx, :]
+            peak_xy_gt = gt_box_ja_array[gt_box_idx, :].reshape(-1, 2)
 
-        if cluster_array_multi_people.shape[0] >= 1:
-            peak_xy_pred = cluster_array_multi_people[:, :2]
-            peak_sub_gt_pred = np.abs(peak_xy_gt - peak_xy_pred)
-            peak_sub_gt_pred_euc = np.linalg.norm(peak_sub_gt_pred, axis=1)
-            select_peak_idx = np.argmin(peak_sub_gt_pred_euc)
-            l2_dist_x = peak_sub_gt_pred[select_peak_idx, 0]
-            l2_dist_y = peak_sub_gt_pred[select_peak_idx, 1]
-            l2_dist_euc = peak_sub_gt_pred_euc[select_peak_idx]
-            peak_x_mid_pred, peak_y_mid_pred = peak_xy_pred[select_peak_idx, :]
-            peak_x_mid_pred, peak_y_mid_pred = map(int, [peak_x_mid_pred, peak_y_mid_pred])
-        else:
-            peak_xy_pred = np.mean(cluster_array[:, :2], axis=0).reshape(-1, 2)
-            peak_sub_gt_pred = np.abs(peak_xy_gt - peak_xy_pred)
-            peak_sub_gt_pred_euc = np.linalg.norm(peak_sub_gt_pred, axis=1)
-            l2_dist_x = peak_sub_gt_pred[0, 0]
-            l2_dist_y = peak_sub_gt_pred[0, 1]
-            l2_dist_euc = peak_sub_gt_pred_euc[0]
-            peak_x_mid_pred, peak_y_mid_pred = peak_xy_pred[0, :]
-            peak_x_mid_pred, peak_y_mid_pred = map(int, [peak_x_mid_pred, peak_y_mid_pred])
+            if cluster_array_multi_people.shape[0] >= 1:
+                peak_xy_pred = cluster_array_multi_people[:, :2]
+                peak_sub_gt_pred = np.abs(peak_xy_gt - peak_xy_pred)
+                peak_sub_gt_pred_euc = np.linalg.norm(peak_sub_gt_pred, axis=1)
+                select_peak_idx = np.argmin(peak_sub_gt_pred_euc)
+                l2_dist_x = peak_sub_gt_pred[select_peak_idx, 0]
+                l2_dist_y = peak_sub_gt_pred[select_peak_idx, 1]
+                l2_dist_euc = peak_sub_gt_pred_euc[select_peak_idx]
+                peak_x_mid_pred, peak_y_mid_pred = peak_xy_pred[select_peak_idx, :]
+                peak_x_mid_pred, peak_y_mid_pred = map(int, [peak_x_mid_pred, peak_y_mid_pred])
+            else:
+                peak_xy_pred = np.mean(cluster_array[:, :2], axis=0).reshape(-1, 2)
+                peak_sub_gt_pred = np.abs(peak_xy_gt - peak_xy_pred)
+                peak_sub_gt_pred_euc = np.linalg.norm(peak_sub_gt_pred, axis=1)
+                l2_dist_x = peak_sub_gt_pred[0, 0]
+                l2_dist_y = peak_sub_gt_pred[0, 1]
+                l2_dist_euc = peak_sub_gt_pred_euc[0]
+                peak_x_mid_pred, peak_y_mid_pred = peak_xy_pred[0, :]
+                peak_x_mid_pred, peak_y_mid_pred = map(int, [peak_x_mid_pred, peak_y_mid_pred])
 
-        print(f'Dist {l2_dist_euc:.0f}, ({peak_x_mid_pred},{peak_y_mid_pred}), GT:({peak_x_mid_gt},{peak_y_mid_gt})')
-        l2_dist_list.append([l2_dist_x, l2_dist_y, l2_dist_euc, each_data_type_id_idx])
+            print(f'Dist {l2_dist_euc:.0f}, ({peak_x_mid_pred},{peak_y_mid_pred}), GT:({peak_x_mid_gt},{peak_y_mid_gt})')
+            l2_dist_list.append([l2_dist_x, l2_dist_y, l2_dist_euc, each_data_type_id_idx])
+    else:
+        co_att_flag_gt = np.sum(gt_box, axis=(0, 1)) != 0
+        peak_val = np.max(img_pred)
+        co_att_flag_pred = peak_val > 0.15
+        pred_acc_list.append([co_att_flag_gt, co_att_flag_pred])
+        if not co_att_flag_gt:
+            continue
+
+        peak_y_mid_pred, peak_x_mid_pred = np.unravel_index(np.argmax(img_pred), img_pred.shape)
+        for gt_box_idx in range(gt_box_ja_array.shape[0]):
+            peak_x_mid_gt, peak_y_mid_gt = gt_box_ja_array[gt_box_idx, :]
+            l2_dist_x = np.linalg.norm(peak_x_mid_gt-peak_x_mid_pred)
+            l2_dist_y = np.linalg.norm(peak_y_mid_gt-peak_y_mid_pred)
+            l2_dist_euc = np.power(np.power(l2_dist_x, 2)+np.power(l2_dist_y, 2), 0.5)
+            print(f'Dist {l2_dist_euc:.0f}, ({peak_x_mid_pred},{peak_y_mid_pred}), GT:({peak_x_mid_gt},{peak_y_mid_gt})')
+            l2_dist_list.append([l2_dist_x, l2_dist_y, l2_dist_euc, each_data_type_id_idx])
 
 # save metrics in a dict
 metrics_dict = {}

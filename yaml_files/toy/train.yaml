@@ -1,20 +1,19 @@
 data: 
-  name: videoattentiontarget
-  dataset_dir : data/videoattentiontarget
+  name: toy
+  dataset_dir : data/joint_attention_toy
 
 exp_set:
   save_folder: saved_weights
   wandb_log : True
-  # wandb_name: videoattentiontarget-head_pose_estimator
-  wandb_name: videoattentiontarget-concat_independent
-  # wandb_name: videoattentiontarget-concat_independent_wo_people_trans
+  wandb_name: toy-concat_independent
+  # wandb_name: toy-concat_direct
 
-  batch_size: 16
+  batch_size: 64
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 3
-  gpu_finish : 3
+  gpu_start : 5
+  gpu_finish : 5
 
   resize_height: 320
   resize_width: 480
@@ -43,15 +42,18 @@ exp_params:
   use_repulsion_loss : False
   # use_repulsion_loss : True
 
-  use_gt_gaze: False
-  # use_gt_gaze: True
+  # use_frame_type: mid
+  use_frame_type: all
+
+  # use_gt_gaze: False
+  use_gt_gaze: True
 
   # loss function
   loss : mse
   # loss : bce
 
   # learning rate
-  lr : 0.0001
+  lr : 0.001
 
   # gt gaussian
   gaussian_sigma: 10
@@ -62,18 +64,15 @@ exp_params:
   snapshots : 100
   scheduler_start : 1000
   scheduler_iter : 1100000
-  
-  # gt gaussian
-  gaussian_sigma: 10
 
   # pretrained models
   pretrained_models_dir: saved_weights
 
-  # use_pretrained_head_pose_estimator: False
-  use_pretrained_head_pose_estimator: True
-  pretrained_head_pose_estimator_name: videoattentiontarget-head_pose_estimator
-  # freeze_head_pose_estimator: False
-  freeze_head_pose_estimator: True
+  use_pretrained_head_pose_estimator: False
+  # use_pretrained_head_pose_estimator: True
+  pretrained_head_pose_estimator_name: none
+  freeze_head_pose_estimator: False
+  # freeze_head_pose_estimator: True
 
   use_pretrained_joint_attention_estimator: False
   # use_pretrained_head_pose_estimator: True
@@ -124,8 +123,8 @@ model_params:
   # gaze_map_estimator_type : normal
 
   # transformer
-  # use_people_people_trans: False
-  use_people_people_trans: True
+  use_people_people_trans: False
+  # use_people_people_trans: True
 
   # rgb_people_trans_type : concat_direct
   # rgb_people_trans_type : concat_paralell
@@ -140,6 +139,7 @@ model_params:
   people_feat_dim : 16
 
   # rgb_cnn_extractor_type : normal
+  # rgb_cnn_extractor_type : patch
   # rgb_cnn_extractor_type : no_use
   rgb_cnn_extractor_type : resnet18
   # rgb_cnn_extractor_type : resnet50

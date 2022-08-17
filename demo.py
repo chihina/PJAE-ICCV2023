@@ -83,6 +83,10 @@ def data_id_generator(img_path, cfg):
         vid_name, seq_num, img_name = img_path.split('/')[-3:]
         img_num = img_name.split('.')[0]
         data_id = f'{vid_name}_{seq_num}_{img_num}'
+    elif cfg.data.name == 'toy':
+        vid_name, seq_num, img_name = img_path.split('/')[-3:]
+        img_num = img_name.split('.')[0]
+        data_id = f'{vid_name}_{seq_num}_{img_num}'
 
     return data_id
 
@@ -213,7 +217,7 @@ for iteration, batch in enumerate(test_data_loader,1):
 
         out_attention = model_attention(batch)
         # loss_set_head = model_head.calc_loss(batch, out_head)
-        # loss_set_attention = model_attention.calc_loss(batch, out_attention)
+        # loss_set_attention = model_attention.calc_loss(batch, out_attention, cfg)
 
         out = {**out_head, **out_attention, **batch}
 
@@ -305,7 +309,9 @@ for iteration, batch in enumerate(test_data_loader,1):
             peak_x_mid_pred, peak_y_mid_pred = peak_x_mid_pred*cfg.exp_set.resize_width, peak_y_mid_pred*cfg.exp_set.resize_height
             peak_x_mid_pred, peak_y_mid_pred = map(int, [peak_x_mid_pred, peak_y_mid_pred])
         else:
-            peak_y_mid_pred, peak_x_mid_pred = np.unravel_index(np.argmax(img_heatmap), img_heatmap.shape)
+            img_heatmap_person = cv2.imread(os.path.join(save_image_dir_dic['attention'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_attention.png'), cv2.IMREAD_GRAYSCALE)
+            img_heatmap_person = cv2.resize(img_heatmap_person, (img.shape[1], img.shape[0]))
+            peak_y_mid_pred, peak_x_mid_pred = np.unravel_index(np.argmax(img_heatmap_person), img_heatmap_person.shape)
 
         if att_inside_flag[person_idx]:
             # calc a center of gt bbox

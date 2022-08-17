@@ -103,7 +103,7 @@ def process_epoch(epoch, data_set, mode):
         out_attention = model_attention(batch)
 
         loss_set_head = model_head.calc_loss(batch, out_head)
-        loss_set_attention = model_attention.calc_loss(batch, out_attention)
+        loss_set_attention = model_attention.calc_loss(batch, out_attention, cfg)
         loss_set = {**loss_set_head, **loss_set_attention}
 
         # accumulate all loss
@@ -247,7 +247,7 @@ if cuda:
 if cfg.exp_set.wandb_log:
     print("===> Generate wandb system")
     wandb.login()
-    wandb.init(project="config-action-aware-joint-attention-estimation", name=cfg.exp_set.wandb_name, config=cfg)
+    wandb.init(project=f"config-action-aware-joint-attention-estimation-{cfg.data.name}", name=cfg.exp_set.wandb_name, config=cfg)
     wandb.watch(model_head)
     wandb.watch(model_attention)
 

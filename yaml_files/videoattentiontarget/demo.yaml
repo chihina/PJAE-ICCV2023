@@ -6,11 +6,13 @@ exp_set:
   save_folder : saved_weights
   # model_name: videoattentiontarget-head_pose_estimator
   model_name: videoattentiontarget-concat_independent
+  # model_name: videoattentiontarget-concat_independent_wo_people_trans
+  # model_name: videoattentiontarget-concat_direct_bce
 
   seed_num : 777
   gpu_mode : True
-  gpu_start : 0
-  gpu_finish : 0
+  gpu_start : 7
+  gpu_finish : 7
   num_workers : 1
   batch_size : 1
   wandb_name : demo

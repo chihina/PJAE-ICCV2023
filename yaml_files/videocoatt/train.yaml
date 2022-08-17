@@ -10,14 +10,29 @@ exp_set:
   # wandb_name: videocoatt-concat_independent
   # wandb_name: videocoatt-concat_independent_wo_img
   # wandb_name: videocoatt-concat_independent_wo_gaze
-  wandb_name: videocoatt-concat_independent_wo_position
+  # wandb_name: videocoatt-concat_independent_wo_position
+
+  # wandb_name: videocoatt-concat_independent_w_repulsion_resnet18_stage3
+  # wandb_name: videocoatt-concat_independent_w_repulsion_resnet18_stage2
+  # wandb_name: videocoatt-concat_independent_w_repulsion_resnet50_stage3
+  # wandb_name: videocoatt-concat_independent_w_repulsion_resnet18_stage2_gaze_feat
+
+  # wandb_name: videocoatt-concat_independent_wo_people_trans
+  # wandb_name: videocoatt-concat_independent_wo_people_trans_w_repulsion
+  # wandb_name: videocoatt-concat_independent_wo_people_trans_w_repulsion_w_residual
+  # wandb_name: videocoatt-concat_independent_wo_people_trans_w_residual
+
+  wandb_name: videocoatt-concat_direct_wo_people_trans_w_residual
 
   batch_size: 16
+  # batch_size: 8
+  # batch_size: 4
+  # batch_size: 2
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 6
-  gpu_finish : 6
+  gpu_start : 5
+  gpu_finish : 5
 
   resize_height: 320
   resize_width: 480
@@ -94,8 +109,8 @@ model_params:
   model_type: ja_transformer
 
   # Position
-  use_position : False
-  # use_position : True
+  # use_position : False
+  use_position : True
   # use_position_enc_person : False
   use_position_enc_person : True
   use_position_enc_type : sine
@@ -124,16 +139,18 @@ model_params:
 
   dynamic_distance_type: gaussian
   dynamic_gaussian_num : 1
-  # # dynamic_distance_type: generator
+  # dynamic_distance_type: generator
   use_gauss_limit : False
   # # use_gauss_limit : True
 
   gaze_map_estimator_type : identity
-  # gaze_map_estimator_type : deep
   # gaze_map_estimator_type : normal
-  # gaze_map_estimator_type : shallow
+  # gaze_map_estimator_type : deep
 
   # transformer
+  use_people_people_trans: False
+  # use_people_people_trans: True
+
   # rgb_people_trans_type : concat_direct
   # rgb_people_trans_type : concat_paralell
   rgb_people_trans_type : concat_independent
@@ -160,11 +177,6 @@ model_params:
   # rgb_cnn_extractor_type : convnext
   # rgb_cnn_extractor_stage_idx : 2
 
-  # Others
-  # people_feat_aggregation_type : max_pool
-  people_feat_aggregation_type : no_use
-
   # angle_distance_fusion: max
   # angle_distance_fusion: mean
   angle_distance_fusion: mult
-  # angle_distance_fusion : sum_coef

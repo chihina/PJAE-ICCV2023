@@ -1,0 +1,24 @@
+data: 
+  name: toy
+  dataset_dir : data/joint_attention_toy
+
+exp_set:
+  save_folder : saved_weights
+  model_name: toy-concat_independent
+  # model_name: toy-concat_direct
+
+  seed_num : 777
+  gpu_mode : True
+  gpu_start : 7
+  gpu_finish : 7
+  num_workers : 1
+  batch_size : 1
+  wandb_name : demo
+
+  # mode: test
+  # mode : validate
+  mode : train
+
+exp_params:
+  # use_gt_gaze : False
+  use_gt_gaze : True
