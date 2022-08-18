@@ -39,8 +39,8 @@ exp_params:
   use_attraction_loss : False
   # use_attraction_loss : True
 
-  # use_repulsion_loss : False
-  use_repulsion_loss : True
+  use_repulsion_loss : False
+  # use_repulsion_loss : True
 
   use_frame_type: mid
   # use_frame_type: all
@@ -53,7 +53,7 @@ exp_params:
   # loss : bce
 
   # learning rate
-  lr : 0.001
+  lr : 0.0001
 
   # gt gaussian
   gaussian_sigma: 10
@@ -112,6 +112,10 @@ model_params:
   use_img : True
 
   # Gaze map
+  use_angle_dist_rgb_type : none
+  # use_angle_dist_rgb_type : raw
+  # use_angle_dist_rgb_type : feat
+
   use_dynamic_angle : False
   # use_dynamic_angle : True
 
@@ -125,16 +129,16 @@ model_params:
   # # use_gauss_limit : True
 
   gaze_map_estimator_type : identity
-  # gaze_map_estimator_type : deep
   # gaze_map_estimator_type : normal
+  # gaze_map_estimator_type : deep
 
   # transformer
   use_people_people_trans: False
   # use_people_people_trans: True
 
   # rgb_people_trans_type : concat_direct
-  # rgb_people_trans_type : concat_paralell
-  rgb_people_trans_type : concat_independent
+  rgb_people_trans_type : concat_paralell
+  # rgb_people_trans_type : concat_independent
 
   people_people_trans_enc_num : 2
   mha_num_heads_people_people : 2
@@ -145,13 +149,13 @@ model_params:
   people_feat_dim : 16
 
   # rgb_cnn_extractor_type : normal
-  rgb_cnn_extractor_type : patch
   # rgb_cnn_extractor_type : no_use
-  # rgb_cnn_extractor_type : resnet18
+  # rgb_cnn_extractor_type : saliency
+  rgb_cnn_extractor_type : resnet18
   # rgb_cnn_extractor_type : resnet50
   # rgb_cnn_extractor_stage_idx : 1
   # rgb_cnn_extractor_stage_idx : 2
-  # rgb_cnn_extractor_stage_idx : 3
+  rgb_cnn_extractor_stage_idx : 3
   # rgb_cnn_extractor_stage_idx : 4
   # rgb_cnn_extractor_type : hrnet_w18_small
   # rgb_cnn_extractor_type : hrnet_w32

@@ -107,6 +107,10 @@ model_params:
   use_img : True
 
   # Gaze map
+  use_angle_dist_rgb_type : none
+  # use_angle_dist_rgb_type : raw
+  # use_angle_dist_rgb_type : feat
+
   use_dynamic_angle : False
   # use_dynamic_angle : True
 

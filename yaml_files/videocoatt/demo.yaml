@@ -10,17 +10,9 @@ exp_set:
   # model_name: videocoatt-concat_independent_wo_img
   # model_name: videocoatt-concat_independent_wo_gaze
   # model_name: videocoatt-concat_independent_wo_position
-
-  # model_name: videocoatt-concat_independent_w_repulsion_resnet18_stage3
-  # model_name: videocoatt-concat_independent_w_repulsion_resnet18_stage2
-  # model_name: videocoatt-concat_independent_w_repulsion_resnet50_stage3
-
-  # model_name: videocoatt-concat_independent_wo_people_trans
-  # model_name: videocoatt-concat_independent_wo_people_trans_w_repulsion
-  # model_name: videocoatt-concat_independent_wo_people_trans_w_repulsion_w_residual
-  model_name: videocoatt-concat_independent_wo_people_trans_w_residual
-
-  # model_name: videocoatt-concat_direct_wo_people_trans_w_residual
+  # model_name: videocoatt-concat_independent_w_attraction
+  model_name: videocoatt-concat_independent_w_repulstion
+  # model_name: videocoatt-concat_independent_l1
 
   seed_num : 777
   gpu_mode : True
@@ -30,8 +22,8 @@ exp_set:
   batch_size : 1
   wandb_name : demo
 
-  # mode: test
-  mode : validate
+  mode: test
+  # mode : validate
   # mode : train
 
 exp_params:
@@ -39,8 +31,8 @@ exp_params:
   # test_heads_type : gt
   det_heads_model : dets_txt_nk_faster_rcnn_20220421
   test_heads_conf : 0.6
-  use_gt_gaze : False
-  # use_gt_gaze : True
+  # use_gt_gaze : False
+  use_gt_gaze : True
 
   use_frame_type: mid
   # use_frame_type: all

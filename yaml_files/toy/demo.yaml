@@ -4,8 +4,11 @@ data:
 
 exp_set:
   save_folder : saved_weights
-  model_name: toy-concat_independent
   # model_name: toy-concat_direct
+  # model_name: toy-concat_independent
+  # model_name: toy-concat_independent_angle_mask_feat
+
+  model_name: toy-cnn
 
   seed_num : 777
   gpu_mode : True
@@ -15,9 +18,9 @@ exp_set:
   batch_size : 1
   wandb_name : demo
 
-  # mode: test
+  mode: test
   # mode : validate
-  mode : train
+  # mode : train
 
 exp_params:
   # use_gt_gaze : False

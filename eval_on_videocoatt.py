@@ -58,16 +58,15 @@ def each_data_type_id_generator(head_vector_gt, head_tensor, gt_box, cfg):
     # define data id of joint attention size
     gt_x_min, gt_y_min, gt_x_max, gt_y_max = gt_box[0, :]
     gt_x_size, gt_y_size = gt_x_max-gt_x_min, gt_y_max-gt_y_min
-    gt_x_size /= cfg.exp_set.resize_width
-    gt_y_size /= cfg.exp_set.resize_height
     gt_size = ((gt_x_size**2)+(gt_y_size**2))**0.5
-    if gt_size < 0.1:
-        gt_size_id = '0_0<size<0_1'
+    gt_size_thresh = 0.2
+    if gt_size < gt_size_thresh:
+        gt_size_id = f'0_0<size<0_2'
     else:
-        gt_size_id = '0_1<size'
+        gt_size_id = '0_2<size'
 
-    # data_type_id = f'{dets_people_id}:{gaze_error_id}:{gt_size_id}'
-    data_type_id = f'{dets_people_id}:{gaze_error_id}'
+    data_type_id = f'{dets_people_id}:{gaze_error_id}:{gt_size_id}'
+    # data_type_id = f'{dets_people_id}:{gaze_error_id}'
     # data_type_id = ''
 
     return data_type_id
@@ -236,7 +235,6 @@ for iteration, batch in enumerate(test_data_loader):
         cluster_array[:, 0] *= cfg.exp_set.resize_width
         cluster_array[:, 1] *= cfg.exp_set.resize_height
         cluster_array_multi_people = cluster_array[cluster_array[:, 2] >= 2, :]
-
         co_att_flag_gt = np.sum(gt_box, axis=(0, 1)) != 0
         co_att_flag_pred = cluster_array_multi_people.shape[0] != 0
         pred_acc_list.append([co_att_flag_gt, co_att_flag_pred])
@@ -260,13 +258,19 @@ for iteration, batch in enumerate(test_data_loader):
                 peak_x_mid_pred, peak_y_mid_pred = peak_xy_pred[select_peak_idx, :]
                 peak_x_mid_pred, peak_y_mid_pred = map(int, [peak_x_mid_pred, peak_y_mid_pred])
             else:
-                peak_xy_pred = np.mean(cluster_array[:, :2], axis=0).reshape(-1, 2)
+                # peak_xy_pred = np.mean(cluster_array[:, :2], axis=0).reshape(-1, 2)
+                peak_xy_pred = cluster_array[:, :2]
                 peak_sub_gt_pred = np.abs(peak_xy_gt - peak_xy_pred)
                 peak_sub_gt_pred_euc = np.linalg.norm(peak_sub_gt_pred, axis=1)
-                l2_dist_x = peak_sub_gt_pred[0, 0]
-                l2_dist_y = peak_sub_gt_pred[0, 1]
-                l2_dist_euc = peak_sub_gt_pred_euc[0]
-                peak_x_mid_pred, peak_y_mid_pred = peak_xy_pred[0, :]
+                select_peak_idx = np.argmin(peak_sub_gt_pred_euc)
+                # l2_dist_x = peak_sub_gt_pred[0, 0]
+                # l2_dist_y = peak_sub_gt_pred[0, 1]
+                # l2_dist_euc = peak_sub_gt_pred_euc[0]
+                l2_dist_x = peak_sub_gt_pred[select_peak_idx, 0]
+                l2_dist_y = peak_sub_gt_pred[select_peak_idx, 1]
+                l2_dist_euc = peak_sub_gt_pred_euc[select_peak_idx]
+                # peak_x_mid_pred, peak_y_mid_pred = peak_xy_pred[0, :]
+                peak_x_mid_pred, peak_y_mid_pred = peak_xy_pred[select_peak_idx, :]
                 peak_x_mid_pred, peak_y_mid_pred = map(int, [peak_x_mid_pred, peak_y_mid_pred])
 
             print(f'Dist {l2_dist_euc:.0f}, ({peak_x_mid_pred},{peak_y_mid_pred}), GT:({peak_x_mid_gt},{peak_y_mid_gt})')

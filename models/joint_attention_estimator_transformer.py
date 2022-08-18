@@ -46,6 +46,7 @@ class JointAttentionEstimatorTransformer(nn.Module):
         self.use_img = cfg.model_params.use_img
 
         # gaze map
+        self.use_angle_dist_rgb_type = cfg.model_params.use_angle_dist_rgb_type
         self.use_dynamic_angle = cfg.model_params.use_dynamic_angle
         self.use_dynamic_distance = cfg.model_params.use_dynamic_distance
         self.dynamic_distance_type = cfg.model_params.dynamic_distance_type
@@ -70,12 +71,17 @@ class JointAttentionEstimatorTransformer(nn.Module):
         self.angle_distance_fusion = cfg.model_params.angle_distance_fusion
 
         # define loss function
-        if cfg.exp_params.loss == 'mse':
+        self.loss = cfg.exp_params.loss
+        if self.loss == 'mse':
             print('Use MSE loss function')
             self.loss_func_joint_attention = nn.MSELoss()
-        elif cfg.exp_params.loss == 'bce':
+        elif self.loss == 'bce':
             print('Use BCE loss function')
             self.loss_func_joint_attention = nn.BCELoss()
+        elif self.loss == 'l1':
+            print('Use l1 loss function')
+            self.loss_func_joint_attention = nn.L1Loss()
+
         self.use_e_map_loss = cfg.exp_params.use_e_map_loss
         self.use_e_att_loss = cfg.exp_params.use_e_att_loss
         self.use_each_e_map_loss = cfg.exp_params.use_each_e_map_loss
@@ -189,6 +195,15 @@ class JointAttentionEstimatorTransformer(nn.Module):
                                        nn.Conv2d(in_channels=feat_dim, out_channels=self.rgb_embeding_dim, kernel_size=1),
                                        nn.ReLU(),
                                        )
+        elif self.rgb_cnn_extractor_type == 'saliency':
+            down_scale_ratio = 8
+            patch_height = down_scale_ratio
+            patch_width = down_scale_ratio
+            patch_dim = 1 * patch_height * patch_width
+            self.rgb_feat_extractor = nn.Sequential(
+                Rearrange('b c (h p1) (w p2) -> b (h w) (p1 p2 c)', p1 = patch_height, p2 = patch_width),
+                nn.Linear(patch_dim, 64),
+            )
         elif self.rgb_cnn_extractor_type == 'no_use':
             pass
         else:
@@ -351,7 +366,7 @@ class JointAttentionEstimatorTransformer(nn.Module):
         else:
             print('no person information')
             sys.exit()
-
+        
         # position encoding of person
         head_info_params = self.head_info_feat_embeding(head_info_params)
         if self.use_position and self.use_position_enc_person:
@@ -402,7 +417,7 @@ class JointAttentionEstimatorTransformer(nn.Module):
 
         # extract rgb feature
         if self.rgb_cnn_extractor_type == 'saliency':
-            rgb_feat = self.rgb_feat_extractor(saliency_img)
+            rgb_feat_patch = self.rgb_feat_extractor(saliency_img)
         elif self.rgb_cnn_extractor_type == 'convnext':
             rgb_feat_set = self.rgb_feat_extractor(rgb_img)
             rgb_feat = rgb_feat_set[self.rgb_cnn_extractor_stage_idx]
@@ -423,33 +438,44 @@ class JointAttentionEstimatorTransformer(nn.Module):
             rgb_feat = self.rgb_feat_extractor(rgb_img)
 
         if self.rgb_cnn_extractor_type != 'no_use':
-            if self.rgb_cnn_extractor_type != 'patch':
+            if self.rgb_cnn_extractor_type == 'patch' or self.rgb_cnn_extractor_type == 'saliency':
+                rgb_feat_channel, rgb_feat_height, rgb_feat_width = rgb_feat_patch.shape[-1], self.down_height, self.down_width
+            else:
                 # extract rgb position encoding
                 rgb_feat_channel, rgb_feat_height, rgb_feat_width = rgb_feat.shape[-3:]
                 rgb_feat_patch = rgb_feat.view(self.batch_size, rgb_feat_channel, -1)
                 rgb_feat_patch = torch.transpose(rgb_feat_patch, 1, 2)
-            else:
-                rgb_feat_channel, rgb_feat_height, rgb_feat_width = rgb_feat_patch[-1], self.down_height, self.down_width
-
-            rgb_feat_patch_pos = rgb_feat_patch + self.pe_generator_rgb.pos_embedding
 
             if self.rgb_people_trans_type == 'concat_direct' or self.rgb_people_trans_type == 'concat_independent':
-                rgb_feat_patch_pos_view = rgb_feat_patch_pos.view(self.batch_size, 1, -1, self.rgb_embeding_dim)
+
                 rgb_feat_patch_view = rgb_feat_patch.view(self.batch_size, 1, -1, self.rgb_embeding_dim)
-                rgb_feat_patch_pos_expand = rgb_feat_patch_pos_view.expand(self.batch_size, people_num, rgb_feat_patch.shape[1], self.rgb_embeding_dim)
                 rgb_feat_patch_expand = rgb_feat_patch_view.expand(self.batch_size, people_num, rgb_feat_patch.shape[1], self.rgb_embeding_dim)
                 head_info_params_view = head_info_params.view(self.batch_size, people_num, 1, self.people_feat_dim)
                 head_info_params_expand = head_info_params_view.expand(self.batch_size, people_num, rgb_feat_patch.shape[1], self.people_feat_dim)
-                if self.rgb_people_trans_type == 'concat_independent' or self.rgb_people_trans_type == 'concat_direct':
-                    if self.use_img:
-                        rgb_people_feat_all_pos = torch.cat([rgb_feat_patch_pos_expand, head_info_params_view], dim=-2)
-                        rgb_people_feat_all = torch.cat([rgb_feat_patch_expand, head_info_params_view], dim=-2)
-                    else:
-                        rgb_people_feat_all_pos = head_info_params_view
-                        rgb_people_feat_all = head_info_params_view
-                    rgb_people_feat_all_pos = rgb_people_feat_all_pos.view(self.batch_size*people_num, -1, self.rgb_embeding_dim)
-                    rgb_people_feat_all = rgb_people_feat_all.view(self.batch_size*people_num, -1, self.rgb_embeding_dim)
+
+                # angle distribution
+                if self.use_angle_dist_rgb_type == 'feat':
+                    angle_dist_rgb_mask = torch.exp(-torch.pow(theta_x_y, 2)/(2* 0.1 ** 2))
+                    angle_dist_rgb_mask_down = F.interpolate(angle_dist_rgb_mask, (self.down_height, self.down_width), mode='bilinear')
+                    angle_dist_rgb_mask_down_patch = angle_dist_rgb_mask_down.view(self.batch_size, people_num, -1, 1)
+                    rgb_feat_patch_expand = rgb_feat_patch_expand * angle_dist_rgb_mask_down_patch
+
+                # pos encording
+                rgb_pos_embedding = self.pe_generator_rgb.pos_embedding
+                rgb_pos_embedding_view = rgb_pos_embedding.view(1, 1, -1, rgb_feat_channel)
+                rgb_feat_patch_pos_expand = rgb_feat_patch_expand + rgb_pos_embedding_view
+
+                if self.use_img:
+                    rgb_people_feat_all_pos = torch.cat([rgb_feat_patch_pos_expand, head_info_params_view], dim=-2)
+                    rgb_people_feat_all = torch.cat([rgb_feat_patch_expand, head_info_params_view], dim=-2)
+                else:
+                    rgb_people_feat_all_pos = head_info_params_view
+                    rgb_people_feat_all = head_info_params_view
+                rgb_people_feat_all_pos = rgb_people_feat_all_pos.view(self.batch_size*people_num, -1, self.rgb_embeding_dim)
+                rgb_people_feat_all = rgb_people_feat_all.view(self.batch_size*people_num, -1, self.rgb_embeding_dim)
+            
             elif self.rgb_people_trans_type == 'concat_paralell':
+                rgb_feat_patch_pos = rgb_feat_patch + self.pe_generator_rgb.pos_embedding
                 if self.use_img:
                     rgb_people_feat_all_pos = torch.cat([rgb_feat_patch_pos, head_info_params], dim=-2)
                 else:
@@ -457,7 +483,7 @@ class JointAttentionEstimatorTransformer(nn.Module):
                 rgb_people_feat_all = rgb_people_feat_all_pos
 
             for i in range(self.rgb_people_trans_enc_num):
-                key_padding_mask_rgb_trans_rgb = torch.sum(rgb_feat_patch_pos, dim=-1)*0
+                key_padding_mask_rgb_trans_rgb = torch.sum(rgb_feat_patch, dim=-1)*0
                 key_padding_mask_rgb_trans_people = (torch.sum(head_feature, dim=-1) == 0)
                 key_padding_mask_rgb_trans = torch.cat([key_padding_mask_rgb_trans_rgb, key_padding_mask_rgb_trans_people], dim=-1).bool()
 
@@ -504,8 +530,6 @@ class JointAttentionEstimatorTransformer(nn.Module):
             elif self.rgb_people_trans_type == 'concat_independent' or self.rgb_people_trans_type == 'concat_paralell':
                 if self.use_img:
                     rgb_people_feat_all = rgb_people_feat_all[:, (rgb_feat_height*rgb_feat_width):, :]
-                    head_info_params_concat = head_info_params.view(self.batch_size*people_num, 1, -1)
-                    rgb_people_feat_all = rgb_people_feat_all + head_info_params_concat
         else:
             rgb_people_feat_all = head_info_params
 
@@ -527,7 +551,7 @@ class JointAttentionEstimatorTransformer(nn.Module):
             theta_mean, theta_sigma = head_vector_params[:, :, :, 0, None, None], head_vector_params[:, :, :, 3, None, None]
             angle_dist = torch.exp(-torch.pow(theta_x_y, 2)/(2*theta_sigma))
         else:
-            angle_dist = torch.exp(-torch.pow(theta_x_y, 2)/(2* 2 ** 2))
+            angle_dist = torch.exp(-torch.pow(theta_x_y, 2)/(2* 0.5 ** 2))
 
         # multiply zero to padding maps
         angle_dist = angle_dist * (torch.sum(head_feature, dim=2) != 0)[:, :, None, None]
@@ -692,6 +716,7 @@ class JointAttentionEstimatorTransformer(nn.Module):
         gt_box_y_mid = (gt_box[:, :, 1]+gt_box[:, :, 3])/2
         gt_box_xy_mid = torch.cat([gt_box_x_mid[:, :, None], gt_box_y_mid[:, :, None]], dim=-1)
         loss_regress_xy = ((gt_box_xy_mid-distance_mean_xy) ** 2)
+        # loss_regress_xy = (torch.abs(gt_box_xy_mid-distance_mean_xy))
         loss_regress_euc = (torch.sum(loss_regress_xy, dim=-1))
         loss_regress_all = loss_regress_euc * att_inside_flag
         loss_regress = torch.sum(loss_regress_all) / torch.sum(att_inside_flag)

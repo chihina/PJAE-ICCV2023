@@ -10,20 +10,22 @@ exp_set:
   save_folder: saved_weights
   wandb_log : True
   # wandb_name: volleyball-head_pose_estimator
-  wandb_name: volleyball-concat_direct
-  # wandb_name: volleyball-concat_paralell
   # wandb_name: volleyball-concat_independent
+  wandb_name: volleyball-concat_independent_ver2
   # wandb_name: volleyball-concat_independent_wo_img
   # wandb_name: volleyball-concat_independent_wo_action
   # wandb_name: volleyball-concat_independent_wo_gaze
   # wandb_name: volleyball-concat_independent_wo_position
+  # wandb_name: volleyball-concat_independent_wo_action_wo_gaze
+  # wandb_name: volleyball-concat_independent_wo_action_wo_position
+  # wandb_name: volleyball-concat_independent_wo_gaze_wo_position
 
   batch_size: 8
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 5
-  gpu_finish : 5
+  gpu_start : 6
+  gpu_finish : 6
 
   resize_height : 320
   resize_width : 640
@@ -42,11 +44,11 @@ exp_params:
   use_e_att_loss : False
   # use_e_att_loss : True
 
-  # use_each_e_map_loss : False
-  use_each_e_map_loss : True
+  use_each_e_map_loss : False
+  # use_each_e_map_loss : True
 
-  use_regression_loss : False
-  # use_regression_loss : True
+  # use_regression_loss : False
+  use_regression_loss : True
 
   use_attraction_loss : False
   # use_attraction_loss : True
@@ -54,8 +56,8 @@ exp_params:
   use_repulsion_loss : False
   # use_repulsion_loss : True
 
-  use_frame_type: mid
-  # use_frame_type: all
+  # use_frame_type: mid
+  use_frame_type: all
 
   use_gt_gaze: False
   # use_gt_gaze: True
@@ -124,15 +126,19 @@ model_params:
   use_img : True
 
   # Gaze map
+  use_angle_dist_rgb_type : none
+  # use_angle_dist_rgb_type : raw
+  # use_angle_dist_rgb_type : feat
+
   use_dynamic_angle : False
   # use_dynamic_angle : True
 
   # use_dynamic_distance : False
   use_dynamic_distance : True
 
-  # dynamic_distance_type: gaussian
+  dynamic_distance_type: gaussian
   dynamic_gaussian_num : 1
-  dynamic_distance_type: generator
+  # dynamic_distance_type: generator
   use_gauss_limit : False
   # # use_gauss_limit : True
 
@@ -142,9 +148,12 @@ model_params:
   # gaze_map_estimator_type : shallow
 
   # transformer
-  rgb_people_trans_type : concat_direct
+  # use_people_people_trans: False
+  use_people_people_trans: True
+
+  # rgb_people_trans_type : concat_direct
   # rgb_people_trans_type : concat_paralell
-  # rgb_people_trans_type : concat_independent
+  rgb_people_trans_type : concat_independent
 
   people_people_trans_enc_num : 2
   mha_num_heads_people_people : 2
