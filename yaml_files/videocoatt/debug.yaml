@@ -36,11 +36,11 @@ exp_params:
   # use_regression_loss : False
   use_regression_loss : True
 
-  use_attraction_loss : False
-  # use_attraction_loss : True
+  # use_attraction_loss : False
+  use_attraction_loss : True
 
-  use_repulsion_loss : False
-  # use_repulsion_loss : True
+  # use_repulsion_loss : False
+  use_repulsion_loss : True
 
   use_frame_type: mid
   # use_frame_type: all
@@ -126,19 +126,19 @@ model_params:
   dynamic_gaussian_num : 1
   # dynamic_distance_type: generator
   use_gauss_limit : False
-  # # use_gauss_limit : True
+  # use_gauss_limit : True
 
   gaze_map_estimator_type : identity
   # gaze_map_estimator_type : normal
   # gaze_map_estimator_type : deep
 
   # transformer
-  use_people_people_trans: False
-  # use_people_people_trans: True
+  # use_people_people_trans: False
+  use_people_people_trans: True
 
   # rgb_people_trans_type : concat_direct
-  rgb_people_trans_type : concat_paralell
-  # rgb_people_trans_type : concat_independent
+  # rgb_people_trans_type : concat_paralell
+  rgb_people_trans_type : concat_independent
 
   people_people_trans_enc_num : 2
   mha_num_heads_people_people : 2

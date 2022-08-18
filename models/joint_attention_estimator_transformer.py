@@ -557,11 +557,11 @@ class JointAttentionEstimatorTransformer(nn.Module):
         angle_dist = angle_dist * (torch.sum(head_feature, dim=2) != 0)[:, :, None, None]
 
         if self.dynamic_distance_type == 'gaussian':
+            if self.use_gauss_limit:
+                head_vector_params[:, :, :, 1] = self.dist_map_mean_sigmoid(head_vector_params[:, :, :, 1].clone())
+                head_vector_params[:, :, :, 2] = self.dist_map_mean_sigmoid(head_vector_params[:, :, :, 2].clone())
             distance_mean_x = head_vector_params[:, :, :, None, None, None, 1]
             distance_mean_y = head_vector_params[:, :, :, None, None, None, 2]
-            if self.use_gauss_limit:
-                distance_mean_x = self.dist_map_mean_sigmoid(distance_mean_x)
-                distance_mean_y = self.dist_map_mean_sigmoid(distance_mean_y)
             distance_mean_vec = torch.cat([distance_mean_x, distance_mean_y], dim=-1)
             cov_mat_00 = head_vector_params[:, :, :, None, None, None, 4]
             gauss_coef = head_vector_params[:, :, :, None, None, None, 5]
@@ -741,20 +741,27 @@ class JointAttentionEstimatorTransformer(nn.Module):
             loss_triple_no_same_id = (person_feat_all_matrix * gt_box_id_mask_not_same) * people_no_padding_mask[:, :, None] * people_no_padding_mask[:, None, :]
         else:
             # estimated attention based loss
-            # distance_mean_euc = torch.sum(distance_mean_xy, dim=-1).view(batch_size, -1, 1)
-            # distance_mean_euc_t = distance_mean_euc.transpose(2, 1)
-            # distance_mean_euc_matrix = (distance_mean_euc - distance_mean_euc_t) ** 2
-            # loss_triple_same_id = (distance_mean_euc_matrix * gt_box_id_mask_same) * people_no_padding_mask[:, :, None] * people_no_padding_mask[:, None, :]
-            # loss_triple_no_same_id = -1 * (distance_mean_euc_matrix * gt_box_id_mask_not_same) * people_no_padding_mask[:, :, None] * people_no_padding_mask[:, None, :]
-            
+            distance_mean_x = distance_mean_xy[:, :, 0].view(batch_size, people_num, 1)
+            distance_mean_y = distance_mean_xy[:, :, 1].view(batch_size, people_num, 1)
+            distance_mean_x_t = distance_mean_x.transpose(2, 1)
+            distance_mean_y_t = distance_mean_y.transpose(2, 1)
+            distance_mean_x_matrix = distance_mean_x - distance_mean_x_t
+            distance_mean_x_matrix = torch.abs(distance_mean_x_matrix)
+            distance_mean_y_matrix = distance_mean_y - distance_mean_y_t
+            distance_mean_y_matrix = torch.abs(distance_mean_y_matrix)
+            distance_mean_euc_matrix = distance_mean_x_matrix + distance_mean_y_matrix
+            distance_mean_euc_matrix = torch.clip(distance_mean_euc_matrix, max=0.5)
+            loss_triple_same_id = (distance_mean_euc_matrix * gt_box_id_mask_same) * people_no_padding_mask[:, :, None] * people_no_padding_mask[:, None, :]
+            loss_triple_no_same_id = -1 * (distance_mean_euc_matrix * gt_box_id_mask_not_same) * people_no_padding_mask[:, :, None] * people_no_padding_mask[:, None, :]
             # estimated person feature based loss
-            person_feat_all = rgb_people_feat_all.view(batch_size, people_num, -1)
-            person_feat_all = person_feat_all / torch.norm(person_feat_all, dim=-1)[:, :, None]
-            person_feat_all_t = person_feat_all.transpose(2, 1)
-            person_feat_all_matrix = torch.bmm(person_feat_all, person_feat_all_t)
-            loss_triple_same_id = -1 * (person_feat_all_matrix * gt_box_id_mask_same) * people_no_padding_mask[:, :, None] * people_no_padding_mask[:, None, :]
-            loss_triple_no_same_id = (person_feat_all_matrix * gt_box_id_mask_not_same) * people_no_padding_mask[:, :, None] * people_no_padding_mask[:, None, :]
+            # person_feat_all = rgb_people_feat_all.view(batch_size, people_num, -1)
+            # person_feat_all = person_feat_all / torch.norm(person_feat_all, dim=-1)[:, :, None]
+            # person_feat_all_t = person_feat_all.transpose(2, 1)
+            # person_feat_all_matrix = torch.bmm(person_feat_all, person_feat_all_t)
+            # loss_triple_same_id = -1 * (person_feat_all_matrix * gt_box_id_mask_same) * people_no_padding_mask[:, :, None] * people_no_padding_mask[:, None, :]
+            # loss_triple_no_same_id = (person_feat_all_matrix * gt_box_id_mask_not_same) * people_no_padding_mask[:, :, None] * people_no_padding_mask[:, None, :]
 
+        # print(distance_mean_euc_matrix)
         # add positive loss and negative loss
         loss_attraction_all = loss_triple_same_id
         loss_repulsion_all = loss_triple_no_same_id

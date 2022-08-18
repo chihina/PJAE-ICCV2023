@@ -11,8 +11,10 @@ exp_set:
   # model_name: videocoatt-concat_independent_wo_gaze
   # model_name: videocoatt-concat_independent_wo_position
   # model_name: videocoatt-concat_independent_w_attraction
-  model_name: videocoatt-concat_independent_w_repulstion
-  # model_name: videocoatt-concat_independent_l1
+  # model_name: videocoatt-concat_independent_w_repulstion
+  # model_name: videocoatt-concat_independent_w_attraction_coord
+  # model_name: videocoatt-concat_independent_w_repulstion_coord
+  model_name: videocoatt-concat_independent_w_attraction_coord_w_repulstion_coord
 
   seed_num : 777
   gpu_mode : True
@@ -31,8 +33,8 @@ exp_params:
   # test_heads_type : gt
   det_heads_model : dets_txt_nk_faster_rcnn_20220421
   test_heads_conf : 0.6
-  # use_gt_gaze : False
-  use_gt_gaze : True
+  use_gt_gaze : False
+  # use_gt_gaze : True
 
   use_frame_type: mid
   # use_frame_type: all

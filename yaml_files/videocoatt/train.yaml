@@ -13,7 +13,9 @@ exp_set:
   # wandb_name: videocoatt-concat_independent_wo_position
   # wandb_name: videocoatt-concat_independent_w_attraction
   # wandb_name: videocoatt-concat_independent_w_repulstion
-  wandb_name: videocoatt-concat_independent_l1
+  # wandb_name: videocoatt-concat_independent_w_attraction_coord
+  # wandb_name: videocoatt-concat_independent_w_repulstion_coord
+  wandb_name: videocoatt-concat_independent_w_attraction_coord_w_repulstion_coord
 
   batch_size: 16
   num_workers: 16
@@ -43,11 +45,11 @@ exp_params:
   # use_regression_loss : False
   use_regression_loss : True
 
-  use_attraction_loss : False
-  # use_attraction_loss : True
+  # use_attraction_loss : False
+  use_attraction_loss : True
 
-  use_repulsion_loss : False
-  # use_repulsion_loss : True
+  # use_repulsion_loss : False
+  use_repulsion_loss : True
   
   use_frame_type: mid
   # use_frame_type: all
@@ -133,7 +135,7 @@ model_params:
   dynamic_gaussian_num : 1
   # dynamic_distance_type: generator
   use_gauss_limit : False
-  # # use_gauss_limit : True
+  # use_gauss_limit : True
 
   gaze_map_estimator_type : identity
   # gaze_map_estimator_type : normal
