@@ -716,7 +716,6 @@ class JointAttentionEstimatorTransformer(nn.Module):
         gt_box_y_mid = (gt_box[:, :, 1]+gt_box[:, :, 3])/2
         gt_box_xy_mid = torch.cat([gt_box_x_mid[:, :, None], gt_box_y_mid[:, :, None]], dim=-1)
         loss_regress_xy = ((gt_box_xy_mid-distance_mean_xy) ** 2)
-        # loss_regress_xy = (torch.abs(gt_box_xy_mid-distance_mean_xy))
         loss_regress_euc = (torch.sum(loss_regress_xy, dim=-1))
         loss_regress_all = loss_regress_euc * att_inside_flag
         loss_regress = torch.sum(loss_regress_all) / torch.sum(att_inside_flag)
@@ -761,7 +760,6 @@ class JointAttentionEstimatorTransformer(nn.Module):
             # loss_triple_same_id = -1 * (person_feat_all_matrix * gt_box_id_mask_same) * people_no_padding_mask[:, :, None] * people_no_padding_mask[:, None, :]
             # loss_triple_no_same_id = (person_feat_all_matrix * gt_box_id_mask_not_same) * people_no_padding_mask[:, :, None] * people_no_padding_mask[:, None, :]
 
-        # print(distance_mean_euc_matrix)
         # add positive loss and negative loss
         loss_attraction_all = loss_triple_same_id
         loss_repulsion_all = loss_triple_no_same_id
