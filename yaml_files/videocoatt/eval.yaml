@@ -6,10 +6,11 @@ data:
 exp_set:
   save_folder : saved_weights
   # model_name: videocoatt-head_pose_estimator
-  model_name: videocoatt-concat_independent
+  # model_name: videocoatt-concat_independent
   # model_name: videocoatt-concat_independent_wo_img
   # model_name: videocoatt-concat_independent_wo_gaze
   # model_name: videocoatt-concat_independent_wo_position
+  # model_name: videocoatt-concat_independent_wo_people_trans
   # model_name: videocoatt-concat_independent_w_attraction
   # model_name: videocoatt-concat_independent_w_repulstion
   # model_name: videocoatt-concat_independent_w_attraction_w_repulstion
