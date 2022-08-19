@@ -17,6 +17,7 @@ exp_set:
   # wandb_name: videocoatt-concat_independent_w_attraction_coord
   # wandb_name: videocoatt-concat_independent_w_repulstion_coord
   # wandb_name: videocoatt-concat_independent_w_attraction_coord_w_repulstion_coord
+  wandb_name : videocoatt-concat_independent_w_angle_rgb_feat_w_repulsion
 
   batch_size: 16
   num_workers: 16

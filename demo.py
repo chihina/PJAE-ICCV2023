@@ -162,6 +162,8 @@ for dir_name in save_image_dir_list:
 
 print("===> Starting demo processing")
 stop_iteration = 20
+if mode == 'test':
+    stop_iteration = 50
 for iteration, batch in enumerate(test_data_loader,1):
     if iteration > stop_iteration:
         break
