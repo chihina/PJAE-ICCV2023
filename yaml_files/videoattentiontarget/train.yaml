@@ -7,14 +7,13 @@ exp_set:
   wandb_log : True
   # wandb_name: videoattentiontarget-head_pose_estimator
   wandb_name: videoattentiontarget-concat_independent
-  # wandb_name: videoattentiontarget-concat_independent_wo_people_trans
 
   batch_size: 16
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 3
-  gpu_finish : 3
+  gpu_start : 4
+  gpu_finish : 4
 
   resize_height: 320
   resize_width: 480

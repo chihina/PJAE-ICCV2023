@@ -1,4 +1,3 @@
-from tokenize import triple_quoted
 import  numpy as np
 import torch
 import torch.nn as nn
@@ -9,9 +8,9 @@ import timm
 import math
 from einops.layers.torch import Rearrange
 
-class JointAttentionEstimatorCNN(nn.Module):
+class JointAttentionEstimatorTransformerRGBAtt(nn.Module):
     def __init__(self, cfg):
-        super(JointAttentionEstimatorCNN, self).__init__()
+        super(JointAttentionEstimatorTransformerRGBAtt, self).__init__()
 
         ## set useful variables
         self.epsilon = 1e-7
@@ -37,10 +36,12 @@ class JointAttentionEstimatorCNN(nn.Module):
 
         # gaze
         self.use_gaze = cfg.model_params.use_gaze
-        self.gaze_type = cfg.model_params.gaze_type
 
         # action
         self.use_action = cfg.model_params.use_action
+
+        # head embedding type
+        self.head_embedding_type = cfg.model_params.head_embedding_type
 
         # Whole image
         self.use_img = cfg.model_params.use_img
@@ -50,36 +51,54 @@ class JointAttentionEstimatorCNN(nn.Module):
         self.use_dynamic_angle = cfg.model_params.use_dynamic_angle
         self.use_dynamic_distance = cfg.model_params.use_dynamic_distance
         self.dynamic_distance_type = cfg.model_params.dynamic_distance_type
+        self.dynamic_gaussian_num = cfg.model_params.dynamic_gaussian_num
+        self.gaze_map_estimator_type = cfg.model_params.gaze_map_estimator_type
+        self.use_gauss_limit = cfg.model_params.use_gauss_limit
 
         # transformer
-        self.use_people_people_trans = cfg.model_params.use_people_people_trans
-        self.people_people_trans_enc_num = cfg.model_params.people_people_trans_enc_num
-        self.mha_num_heads_people_people = cfg.model_params.mha_num_heads_people_people
-
         self.rgb_cnn_extractor_type = cfg.model_params.rgb_cnn_extractor_type
         self.rgb_cnn_extractor_stage_idx = cfg.model_params.rgb_cnn_extractor_stage_idx
         self.rgb_embeding_dim = cfg.model_params.rgb_embeding_dim
         self.people_feat_dim = cfg.model_params.people_feat_dim
+        self.use_people_people_trans = cfg.model_params.use_people_people_trans
+        self.rgb_people_trans_type = cfg.model_params.rgb_people_trans_type
+        self.people_people_trans_enc_num = cfg.model_params.people_people_trans_enc_num
+        self.mha_num_heads_people_people = cfg.model_params.mha_num_heads_people_people
+        self.rgb_people_trans_enc_num = cfg.model_params.rgb_people_trans_enc_num
+        self.mha_num_heads_rgb_people = cfg.model_params.mha_num_heads_rgb_people
 
         # others
+        self.people_feat_aggregation_type = cfg.model_params.people_feat_aggregation_type
         self.angle_distance_fusion = cfg.model_params.angle_distance_fusion
 
         # define loss function
-        if cfg.exp_params.loss == 'mse':
+        self.loss = cfg.exp_params.loss
+        if self.loss == 'mse':
             print('Use MSE loss function')
             self.loss_func_joint_attention = nn.MSELoss()
-        elif cfg.exp_params.loss == 'bce':
+        elif self.loss == 'bce':
             print('Use BCE loss function')
             self.loss_func_joint_attention = nn.BCELoss()
+        elif self.loss == 'l1':
+            print('Use l1 loss function')
+            self.loss_func_joint_attention = nn.L1Loss()
+
         self.use_e_map_loss = cfg.exp_params.use_e_map_loss
         self.use_e_att_loss = cfg.exp_params.use_e_att_loss
         self.use_each_e_map_loss = cfg.exp_params.use_each_e_map_loss
         self.use_regression_loss = cfg.exp_params.use_regression_loss
+        self.use_regression_not_att_loss = cfg.exp_params.use_regression_not_att_loss
         self.use_attraction_loss = cfg.exp_params.use_attraction_loss
         self.use_repulsion_loss = cfg.exp_params.use_repulsion_loss
 
         # set people feat dim based on model params
-        self.people_feat_dim = self.rgb_embeding_dim
+        if self.rgb_people_trans_type == 'concat_direct':
+            self.people_feat_dim = self.rgb_embeding_dim
+        elif self.rgb_people_trans_type == 'concat_paralell' or self.rgb_people_trans_type == 'concat_independent':
+            self.people_feat_dim = self.rgb_embeding_dim
+        else:
+            print('Use correct rgb trans type')
+            sys.exit()
 
         embeding_param_num = 0
         if self.use_position:
@@ -91,38 +110,65 @@ class JointAttentionEstimatorCNN(nn.Module):
         if self.use_action:
             embeding_param_num += 9
 
-        if self.gaze_type == 'vector':
-            if self.use_gaze:
-                embeding_param_num += 2
-        elif self.gaze_type == 'feature':
-            gaze_feat_emb_dim = 64
-            if self.use_gaze:
-                embeding_param_num += gaze_feat_emb_dim
-            self.gaze_feat_embeding = nn.Sequential(
-                nn.Linear(512, gaze_feat_emb_dim),
-                nn.ReLU(inplace=False),
+        if self.use_gaze:
+            embeding_param_num += 2
+
+        if self.head_embedding_type == 'liner':
+            self.head_info_feat_embeding = nn.Sequential(
+                nn.Linear(embeding_param_num, self.people_feat_dim),
             )
+        elif self.head_embedding_type == 'mlp':
+            self.head_info_feat_embeding = nn.Sequential(
+                nn.Linear(embeding_param_num, self.people_feat_dim),
+                nn.ReLU(),
+                nn.Linear(self.people_feat_dim, self.people_feat_dim),
+                nn.ReLU(),
+                nn.Linear(self.people_feat_dim, self.people_feat_dim),
+            )
+        elif self.head_embedding_type == 'ident':
+            self.head_info_feat_embeding = nn.Sequential(
+                nn.Identity(),
+            )
+        elif self.head_embedding_type == 'each':
+            self.head_info_feat_embeding_action = nn.Sequential(
+                nn.Linear(9, self.people_feat_dim),
+                nn.ReLU(),
+                nn.Linear(self.people_feat_dim, self.people_feat_dim),
+            )
+            self.head_info_feat_embeding_gaze = nn.Sequential(
+                nn.Linear(2, self.people_feat_dim),
+                nn.ReLU(),
+                nn.Linear(self.people_feat_dim, self.people_feat_dim),
+            )
+            self.head_info_feat_embeding_position = nn.Sequential(
+                nn.Linear(2, self.people_feat_dim),
+                nn.ReLU(),
+                nn.Linear(self.people_feat_dim, self.people_feat_dim),
+            )
+        else:
+            self.head_info_feat_embeding = nn.Sequential(
+                nn.Linear(embeding_param_num, self.people_feat_dim),
+                nn.ReLU(),
+                nn.Linear(self.people_feat_dim, self.people_feat_dim),
+                nn.ReLU(),
+                nn.Linear(self.people_feat_dim, self.people_feat_dim),
+            )
+            print('please use correct head embedding type')
+            # sys.exit()
 
-        self.head_info_feat_embeding = nn.Sequential(
-            nn.Linear(embeding_param_num, self.people_feat_dim),
-            nn.ReLU(),
-            nn.Linear(self.people_feat_dim, self.people_feat_dim),
-            nn.ReLU(),
-            nn.Linear(self.people_feat_dim, self.people_feat_dim),
-        )
-
-        if self.use_people_people_trans:
-            print('Use tranformer encoder for people relation')
-            self.people_people_self_attention = nn.ModuleList([nn.MultiheadAttention(embed_dim=self.people_feat_dim, num_heads=self.mha_num_heads_people_people, batch_first=True) for _ in range(self.people_people_trans_enc_num)])
-            self.people_people_fc = nn.ModuleList(
-                                        [nn.Sequential(
-                                        nn.Linear(self.people_feat_dim, self.people_feat_dim),
-                                        nn.ReLU(),
-                                        nn.Linear(self.people_feat_dim, self.people_feat_dim),
-                                        )
-                                        for _ in range(self.people_people_trans_enc_num)
-                                        ])
-            # self.trans_layer_norm_people_people = nn.LayerNorm(normalized_shape=self.people_feat_dim)
+        if self.rgb_people_trans_type == 'concat_direct' or self.rgb_people_trans_type == 'concat_independent':
+            if self.use_people_people_trans:
+                print('Use tranformer encoder for people relation')
+                self.people_people_self_attention = nn.ModuleList([nn.MultiheadAttention(embed_dim=self.people_feat_dim, num_heads=self.mha_num_heads_people_people, batch_first=True) for _ in range(self.people_people_trans_enc_num)])
+                self.people_people_fc = nn.ModuleList(
+                                            [nn.Sequential(
+                                            nn.Linear(self.people_feat_dim, self.people_feat_dim),
+                                            nn.ReLU(),
+                                            nn.Linear(self.people_feat_dim, self.people_feat_dim),
+                                            )
+                                            for _ in range(self.people_people_trans_enc_num)
+                                            ])
+                # self.trans_layer_norm_people_people = nn.LayerNorm(normalized_shape=self.people_feat_dim)
 
         if self.rgb_cnn_extractor_type == 'normal':
             feat_ext_rgb = models.resnet50(pretrained=True)
@@ -132,7 +178,7 @@ class JointAttentionEstimatorCNN(nn.Module):
                                        nn.Conv2d(in_channels=2048, out_channels=self.rgb_embeding_dim, kernel_size=1),
                                        nn.ReLU(),
                                        )
-        elif self.rgb_cnn_extractor_type == 'patch':
+        elif self.rgb_cnn_extractor_type == 'rgb_patch':
             down_scale_ratio = 8
             patch_height = down_scale_ratio
             patch_width = down_scale_ratio
@@ -193,28 +239,98 @@ class JointAttentionEstimatorCNN(nn.Module):
 
         self.down_height = self.resize_height//down_scale_ratio
         self.down_width = self.resize_width//down_scale_ratio
+        self.pe_generator_rgb = PositionalEmbeddingGenerator(self.down_height, self.down_width, self.rgb_embeding_dim, self.use_position_enc_type)
 
-        nz = self.rgb_embeding_dim
-        self.attention_generator = nn.Sequential(
-            nn.ConvTranspose2d(nz, nz//2, 4, 2, 1, bias=False),
-            # nn.GroupNorm(1, nz//2),
-            nn.ReLU(True),
-            nn.ConvTranspose2d(nz//2, nz//4, 4, 2, 1, bias=False),
-            # nn.GroupNorm(1, nz//4),
-            nn.ReLU(True),
-            nn.ConvTranspose2d(nz//4, nz//4, 4, 2, 1, bias=False),
-            # nn.GroupNorm(1, nz//4),
-            nn.ReLU(True),
-            nn.ConvTranspose2d(nz//4, nz//4, 4, 2, 1, bias=False),
-            # nn.GroupNorm(1, nz//4),
-            nn.ReLU(True),
-            nn.Conv2d(nz//4, 1, kernel_size=(1, 1)),
-        )
+        self.rgb_people_trans_dim = self.rgb_embeding_dim
+        self.angle_att_generator = nn.Sequential(
+                                    nn.Linear(self.rgb_people_trans_dim, self.rgb_people_trans_dim),
+                                    nn.ReLU(),
+                                    nn.Linear(self.rgb_people_trans_dim, self.down_height*self.down_width),
+                                    nn.Softmax(dim=-1),
+                                    )
+        self.rgb_people_self_attention = nn.ModuleList([nn.MultiheadAttention(embed_dim=self.rgb_people_trans_dim, kdim=self.rgb_people_trans_dim, vdim=self.rgb_people_trans_dim, num_heads=self.mha_num_heads_rgb_people, batch_first=True) for _ in range(self.rgb_people_trans_enc_num)])
+        self.rgb_people_fc = nn.ModuleList(
+                                    [nn.Sequential(
+                                    nn.Linear(self.rgb_people_trans_dim, self.rgb_people_trans_dim),
+                                    nn.ReLU(),
+                                    nn.Linear(self.rgb_people_trans_dim, self.rgb_people_trans_dim),
+                                    )
+                                    for _ in range(self.rgb_people_trans_enc_num)
+                                    ])
+        self.trans_layer_norm_people_rgb = nn.LayerNorm(normalized_shape=self.rgb_people_trans_dim)
+
+        self.distance_map_generator = nn.Sequential(
+                                        nn.ConvTranspose2d(in_channels=self.rgb_embeding_dim,
+                                                           out_channels=self.rgb_embeding_dim//2,
+                                                           kernel_size=4, stride=2, padding=1),
+                                        nn.ReLU(),
+                                        nn.ConvTranspose2d(in_channels=self.rgb_embeding_dim//2,
+                                                           out_channels=self.rgb_embeding_dim//4,
+                                                           kernel_size=4, stride=2, padding=1),
+                                        nn.ReLU(),
+                                        nn.ConvTranspose2d(in_channels=self.rgb_embeding_dim//4,
+                                                           out_channels=self.rgb_embeding_dim//4,
+                                                           kernel_size=4, stride=2, padding=1),
+                                        nn.ReLU(),
+                                        nn.ConvTranspose2d(in_channels=self.rgb_embeding_dim//4,
+                                                           out_channels=self.rgb_embeding_dim//4,
+                                                           kernel_size=4, stride=2, padding=1),
+                                        nn.ReLU(),
+                                        nn.Conv2d(in_channels=self.rgb_embeding_dim//4, out_channels=1, kernel_size=1),
+                                        nn.Sigmoid(),
+                                    )
+
+        if self.dynamic_gaussian_num:
+            self.estimate_param_num_base = (1+1+2+1+1)
+        else:
+            self.dynamic_gaussian_num = 1
+            self.estimate_param_num_base = (1+1+4+2)
+
+        self.dynamic_distance_softmax = nn.Softmax(dim=-1)
+        estimate_param_num = self.estimate_param_num_base * self.dynamic_gaussian_num
+        self.estimate_param_num = estimate_param_num
+
+        if self.gaze_map_estimator_type == 'identity':
+            self.gaze_map_estimator = nn.Sequential(
+                nn.Linear(self.people_feat_dim, estimate_param_num),
+            )
+        elif self.gaze_map_estimator_type == 'normal':
+            self.gaze_map_estimator = nn.Sequential(
+                nn.Linear(self.people_feat_dim, self.people_feat_dim),
+                nn.ReLU(inplace=False),
+                nn.Linear(self.people_feat_dim, self.people_feat_dim),
+                nn.ReLU(inplace=False),
+                nn.Linear(self.people_feat_dim, estimate_param_num),
+            )
+        elif self.gaze_map_estimator_type == 'deep':
+            self.gaze_map_estimator = nn.Sequential(
+                nn.Linear(self.people_feat_dim, self.people_feat_dim),
+                nn.ReLU(inplace=False),
+                nn.Linear(self.people_feat_dim, self.people_feat_dim),
+                nn.ReLU(inplace=False),
+                nn.Linear(self.people_feat_dim, self.people_feat_dim),
+                nn.ReLU(inplace=False),
+                nn.Linear(self.people_feat_dim, estimate_param_num),
+            )
+        else:
+            print('Use correct gaze map etimator type')
+            sys.exit()
+
+        self.gaze_map_rotate_tanh = nn.Tanh()
+        self.dist_map_mean_sigmoid = nn.Sigmoid()
+        self.dist_map_mean_relu = nn.ReLU()
 
         if self.use_dynamic_angle:
             print(f'Use dynamic angle')
         if self.use_dynamic_distance:
             print(f'Use dynamic distance')
+            if self.dynamic_distance_type == 'gaussian':
+                print(f'Use distance gaze map (gaussian)')
+            elif self.dynamic_distance_type == 'generator':
+                print(f'Use distance gaze map (generator)')
+            else:
+                print(f'Use correct distance saliency field')
+                sys.exit()
             if self.angle_distance_fusion == 'mult':
                 print(f'Use mult fusion (angle and distance)')
             elif self.angle_distance_fusion == 'max':
@@ -247,14 +363,7 @@ class JointAttentionEstimatorCNN(nn.Module):
         # position and action info handing
         head_position = torch.cat([input_feature[:, :, :2]], dim=-1)
         head_action = torch.cat([input_feature[:, :, 2:]], dim=-1)
-
-        # gaze info handing
-        if self.gaze_type == 'vector':
-            head_gaze = torch.cat([input_gaze[:, :, :2]], dim=-1)
-        elif self.gaze_type == 'feature':
-            head_img_extract = head_img_extract.view(self.batch_size*people_num, -1)
-            head_gaze = self.gaze_feat_embeding(head_img_extract)
-            head_gaze = head_gaze.view(self.batch_size, people_num, -1)
+        head_gaze = torch.cat([input_gaze[:, :, :2]], dim=-1)
 
         if self.use_position and self.use_gaze and self.use_action:
             if self.use_position_enc_person:
@@ -284,30 +393,65 @@ class JointAttentionEstimatorCNN(nn.Module):
             sys.exit()
 
         # position encoding of person
-        head_info_params = self.head_info_feat_embeding(head_info_params)
+        
+        if self.head_embedding_type == 'each':
+            head_position_emb = self.head_info_feat_embeding_position(head_position)
+            head_action_emb = self.head_info_feat_embeding_action(head_action)
+            head_gaze_emb = self.head_info_feat_embeding_gaze(head_gaze)
+
+            if self.use_position and self.use_gaze and self.use_action:
+                if self.use_position_enc_person:
+                    head_info_params = head_gaze_emb+head_action_emb
+                else:
+                    head_info_params = head_position_emb+head_action_emb+head_gaze_emb
+            elif self.use_position and self.use_gaze:
+                if self.use_position_enc_person:
+                    head_info_params = head_gaze_emb
+                else:
+                    head_info_params = head_gaze_emb+head_position_emb
+            elif self.use_position and self.use_action:
+                if self.use_position_enc_person:
+                    head_info_params = head_action_emb
+                else:
+                    head_info_params = head_action_emb+head_position_emb
+            elif self.use_gaze and self.use_action:
+                head_info_params = head_action_emb+head_gaze_emb
+            elif self.use_position:
+                head_info_params = head_position_emb
+            elif self.use_gaze:
+                head_info_params = head_gaze_emb
+            elif self.use_action:
+                head_info_params = head_action_emb
+            else:
+                print('no person information')
+                sys.exit()
+        else:
+            head_info_params = self.head_info_feat_embeding(head_info_params)
+
         if self.use_position and self.use_position_enc_person:
             head_position_encoding = self.person_positional_encoding(head_position)
             head_info_params = head_info_params + head_position_encoding
 
         # people relation encoding
-        if self.use_people_people_trans:
-            key_padding_mask_people_people = (torch.sum(head_feature, dim=-1) == 0)
-            for i in range(self.people_people_trans_enc_num):
-                head_info_params_feat, people_people_trans_weights = self.people_people_self_attention[i](head_info_params, head_info_params, head_info_params, key_padding_mask=key_padding_mask_people_people)
-                head_info_params_feat_res = head_info_params_feat + head_info_params
-                head_info_params_feat_feed = self.people_people_fc[i](head_info_params_feat_res)
-                head_info_params_feat_feed_res = head_info_params_feat_res + head_info_params_feat_feed
-                # head_info_params_feat_feed_res = self.trans_layer_norm_people_people(head_info_params_feat_feed_res)
-                head_info_params_feat_feed_res = self.trans_layer_norm_people_rgb(head_info_params_feat_feed_res)
-                head_info_params = head_info_params_feat_feed_res
+        if self.rgb_people_trans_type == 'concat_direct' or self.rgb_people_trans_type == 'concat_independent':
+            if self.use_people_people_trans:
+                key_padding_mask_people_people = (torch.sum(head_feature, dim=-1) == 0)
+                for i in range(self.people_people_trans_enc_num):
+                    head_info_params_feat, people_people_trans_weights = self.people_people_self_attention[i](head_info_params, head_info_params, head_info_params, key_padding_mask=key_padding_mask_people_people)
+                    head_info_params_feat_res = head_info_params_feat + head_info_params
+                    head_info_params_feat_feed = self.people_people_fc[i](head_info_params_feat_res)
+                    head_info_params_feat_feed_res = head_info_params_feat_res + head_info_params_feat_feed
+                    # head_info_params_feat_feed_res = self.trans_layer_norm_people_people(head_info_params_feat_feed_res)
+                    head_info_params_feat_feed_res = self.trans_layer_norm_people_rgb(head_info_params_feat_feed_res)
+                    head_info_params = head_info_params_feat_feed_res
 
-                trans_att_people_people_i = people_people_trans_weights.view(self.batch_size, 1, people_num, people_num)
-                if i == 0:
-                    trans_att_people_people = trans_att_people_people_i
-                else:
-                    trans_att_people_people = torch.cat([trans_att_people_people, trans_att_people_people_i], dim=1)
-        else:
-            trans_att_people_people = torch.zeros(self.batch_size, self.people_people_trans_enc_num, people_num, people_num)
+                    trans_att_people_people_i = people_people_trans_weights.view(self.batch_size, 1, people_num, people_num)
+                    if i == 0:
+                        trans_att_people_people = trans_att_people_people_i
+                    else:
+                        trans_att_people_people = torch.cat([trans_att_people_people, trans_att_people_people_i], dim=1)
+            else:
+                trans_att_people_people = torch.zeros(self.batch_size, self.people_people_trans_enc_num, people_num, people_num)
 
         # generate head xy map
         head_xy_map = head_xy_map * head_feature[:, :, :2, None, None]
@@ -345,29 +489,41 @@ class JointAttentionEstimatorCNN(nn.Module):
             rgb_feat_set = self.rgb_feat_extractor(rgb_img)
             rgb_feat = rgb_feat_set[self.rgb_cnn_extractor_stage_idx]
             rgb_feat = self.one_by_one_conv(rgb_feat)
-        elif self.rgb_cnn_extractor_type == 'patch':
+        elif self.rgb_cnn_extractor_type == 'rgb_patch':
             rgb_feat_patch = self.rgb_feat_extractor(rgb_img)
         elif self.rgb_cnn_extractor_type == 'no_use':
             pass
         else:
             rgb_feat = self.rgb_feat_extractor(rgb_img)
 
-        rgb_feat_channel = rgb_feat.shape[1]
-        rgb_feat_view = rgb_feat.view(self.batch_size, 1, rgb_feat_channel, self.down_height, self.down_width)
-        rgb_feat_expand = rgb_feat_view.expand(self.batch_size, people_num, rgb_feat_channel, self.down_height, self.down_width)
+        if self.rgb_cnn_extractor_type != 'no_use':
+            rgb_feat_view = rgb_feat.view(self.batch_size, 1, self.rgb_embeding_dim, self.down_height, self.down_width)
+            rgb_feat_expand = rgb_feat_view.expand(self.batch_size, people_num, self.rgb_embeding_dim, self.down_height, self.down_width)
+            angle_att_map = self.angle_att_generator(head_info_params)
+            angle_att_map_view = angle_att_map.view(self.batch_size, people_num, 1, self.down_height, self.down_width)
+            rgb_feat_expand = rgb_feat_expand * angle_att_map_view
 
-        head_info_params_view = head_info_params.view(self.batch_size, people_num, rgb_feat_channel, 1, 1)
-        head_info_params_expand = head_info_params_view.expand(self.batch_size, people_num, rgb_feat_channel, self.down_height, self.down_width)
-
-        rgb_and_head_feat = head_info_params_expand * rgb_feat_expand
-        rgb_and_head_feat = rgb_and_head_feat.view(self.batch_size*people_num, rgb_feat_channel, self.down_height, self.down_width)
-
-        distance_dist = self.attention_generator(rgb_and_head_feat)
+        for i in range(self.rgb_people_trans_enc_num):
+            trans_att_people_rgb_i = torch.zeros(self.batch_size, people_num, 1, self.down_height, self.down_width)
+            if i == 0:
+                trans_att_people_rgb = trans_att_people_rgb_i
+            else:
+                trans_att_people_rgb = torch.cat([trans_att_people_rgb, trans_att_people_rgb_i], dim=2)
+        trans_att_people_rgb = angle_att_map_view.expand(self.batch_size, people_num, self.rgb_people_trans_enc_num, self.down_height, self.down_width)
+        
+        # multiply zero to padding maps
+        rgb_feat_expand = rgb_feat_expand.view(self.batch_size*people_num, self.rgb_embeding_dim, self.down_height, self.down_width)
+        distance_dist = self.distance_map_generator(rgb_feat_expand)
         distance_dist = distance_dist.view(self.batch_size, people_num, self.resize_height, self.resize_width)
+        # print(distance_dist[0, 0, :, :])
         distance_dist = distance_dist * (torch.sum(head_feature, dim=2) != 0)[:, :, None, None]
 
+        # multiply zero to padding maps
         angle_dist = torch.exp(-torch.pow(theta_x_y, 2)/(2* 0.5 ** 2))
         angle_dist = angle_dist * (torch.sum(head_feature, dim=2) != 0)[:, :, None, None]
+
+        # dummy
+        head_vector_params = self.gaze_map_estimator(head_info_params)
 
         # calc saliency map per person
         if self.use_dynamic_angle and self.use_dynamic_distance:
@@ -395,7 +551,8 @@ class JointAttentionEstimatorCNN(nn.Module):
         x_final = x_final[:, 0, :, :]
 
         # concat two features to return
-        head_tensor = torch.cat([head_vector], dim=2)
+        head_vector_params = head_vector_params.view(self.batch_size, people_num, self.dynamic_gaussian_num*self.estimate_param_num_base)
+        head_tensor = torch.cat([head_vector, head_vector_params], dim=2)
 
         # pack return values
         data = {}
@@ -405,9 +562,9 @@ class JointAttentionEstimatorCNN(nn.Module):
         data['head_tensor'] = head_tensor
         data['angle_dist'] = angle_dist
         data['distance_dist'] = distance_dist
-        # data['trans_att_people_rgb'] = trans_att_people_rgb
+        data['trans_att_people_rgb'] = trans_att_people_rgb
         data['trans_att_people_people'] = trans_att_people_people
-        # data['rgb_people_feat_all'] = rgb_people_feat_all
+        data['rgb_people_feat_all'] = head_info_params
         data['head_info_params'] = head_info_params
 
         return data
@@ -422,11 +579,7 @@ class JointAttentionEstimatorCNN(nn.Module):
         img_mid_pred = out['img_mid_pred']
         img_mid_mean_pred = out['img_mid_mean_pred']
         head_tensor = out['head_tensor']
-
-        # triplet loss
-        rgb_people_feat_all = out['head_info_params']
-        head_info_params = out['head_info_params']
-        distance_dist = out['distance_dist']
+        rgb_people_feat_all = out['rgb_people_feat_all']
         head_feature = inp['head_feature']
 
         # switch loss coeficient
@@ -444,6 +597,26 @@ class JointAttentionEstimatorCNN(nn.Module):
             loss_map_gaze_each_coef = 1
         else:
             loss_map_gaze_each_coef = 0
+
+        if self.use_regression_loss:
+            loss_regress_coef = 1
+        else:
+            loss_regress_coef = 0
+        
+        if self.use_regression_not_att_loss:
+            loss_regress_not_att_coef = 1
+        else:
+            loss_regress_not_att_coef = 0
+
+        if self.use_attraction_loss:
+            loss_attraction_coef = 1
+        else:
+            loss_attraction_coef = 0
+
+        if self.use_repulsion_loss:
+            loss_repulsion_coef = 1
+        else:
+            loss_repulsion_coef = 0
 
         batch_size, people_num, img_height, img_width = img_mid_pred.shape
 
@@ -463,10 +636,61 @@ class JointAttentionEstimatorCNN(nn.Module):
         loss_map_gaze_each = self.loss_func_joint_attention(img_mid_pred.float(), img_mid_gt.float())
         loss_map_gaze_each = loss_map_gaze_each_coef * loss_map_gaze_each
 
+        # calculate regression loss
+        distance_mean_xy = head_tensor[:, :, 3:5]
+        gt_box_x_mid = (gt_box[:, :, 0]+gt_box[:, :, 2])/2
+        gt_box_y_mid = (gt_box[:, :, 1]+gt_box[:, :, 3])/2
+        gt_box_xy_mid = torch.cat([gt_box_x_mid[:, :, None], gt_box_y_mid[:, :, None]], dim=-1)
+        loss_regress_xy = ((gt_box_xy_mid-distance_mean_xy) ** 2)
+        loss_regress_euc = (torch.sum(loss_regress_xy, dim=-1))
+        loss_regress_all = loss_regress_euc * att_inside_flag
+        loss_regress = torch.sum(loss_regress_all) / torch.sum(att_inside_flag)
+        loss_regress = loss_regress_coef * loss_regress
+
+        # calculate regression loss (not att people)
+        people_pad_mask = (torch.sum(head_feature, dim=-1) != 0)
+        exploit_gt_box = gt_box_xy_mid[:, 0, :][:, None, :]
+        not_att_mask = (att_inside_flag != people_pad_mask)
+        loss_regress_xy_not_att = ((exploit_gt_box-distance_mean_xy) ** 2)
+        loss_regress_euc_not_att = (torch.sum(loss_regress_xy_not_att, dim=-1))
+        loss_regress_all_not_att = loss_regress_euc_not_att * not_att_mask
+        if torch.sum(not_att_mask) != 0:
+            loss_regress_not_att = torch.sum(loss_regress_all_not_att) / torch.sum(not_att_mask)
+        else:
+            loss_regress_not_att = torch.sum(loss_regress_all_not_att)
+        loss_regress_not_att = loss_regress_not_att_coef * loss_regress_not_att
+
+        # calculate triplet loss
+        gt_box_id_base = gt_box_id.view(batch_size, -1, 1)
+        gt_box_id_t = gt_box_id_base.transpose(2, 1)
+        gt_box_id_mask_same = gt_box_id_base == gt_box_id_t
+        gt_box_id_mask_not_same = gt_box_id_base != gt_box_id_t
+        people_no_padding_mask = (torch.sum(head_feature, dim=-1) != 0)
+
+        # estimated person feature based loss
+        person_feat_all = rgb_people_feat_all.view(batch_size, people_num, -1)
+        person_feat_all = person_feat_all / torch.norm(person_feat_all, dim=-1)[:, :, None]
+        person_feat_all_t = person_feat_all.transpose(2, 1)
+        person_feat_all_matrix = torch.bmm(person_feat_all, person_feat_all_t)
+        loss_triple_same_id = -1 * (person_feat_all_matrix * gt_box_id_mask_same) * people_no_padding_mask[:, :, None] * people_no_padding_mask[:, None, :]
+        loss_triple_no_same_id = (person_feat_all_matrix * gt_box_id_mask_not_same) * people_no_padding_mask[:, :, None] * people_no_padding_mask[:, None, :]
+
+        # add positive loss and negative loss
+        loss_attraction_all = loss_triple_same_id
+        loss_repulsion_all = loss_triple_no_same_id
+        loss_attraction = torch.sum(loss_attraction_all) / torch.sum(att_inside_flag)
+        loss_repulsion = torch.sum(loss_repulsion_all) / torch.sum(att_inside_flag)
+        loss_attraction = loss_attraction_coef * loss_attraction
+        loss_repulsion = loss_repulsion_coef * loss_repulsion
+
         loss_set = {}
+        loss_set['loss_map_gaze_each'] = loss_map_gaze_each
         loss_set['loss_map_gaze'] = loss_map_gaze
         loss_set['loss_map'] = loss_map
-        loss_set['loss_map_gaze_each'] = loss_map_gaze_each
+        loss_set['loss_regress'] = loss_regress
+        loss_set['loss_regress_not_att'] = loss_regress_not_att
+        loss_set['loss_attraction'] = loss_attraction
+        loss_set['loss_repulsion'] = loss_repulsion
 
         return loss_set
 

@@ -8,12 +8,13 @@ exp_set:
   wandb_name: debug
   wandb_log : False
 
+  # batch_size: 16
   batch_size: 1
-  num_workers: 1
+  num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 3
-  gpu_finish : 3
+  gpu_start : 0
+  gpu_finish : 0
 
   resize_height: 320
   resize_width: 480
@@ -36,17 +37,25 @@ exp_params:
   # use_regression_loss : False
   use_regression_loss : True
 
-  # use_attraction_loss : False
-  use_attraction_loss : True
+  use_regression_not_att_loss : False
+  # use_regression_not_att_loss : True
 
-  # use_repulsion_loss : False
-  use_repulsion_loss : True
+  use_attraction_loss : False
+  # use_attraction_loss : True
+
+  use_repulsion_loss : False
+  # use_repulsion_loss : True
 
   use_frame_type: mid
   # use_frame_type: all
 
   use_gt_gaze: False
   # use_gt_gaze: True
+
+  # position augmentation
+  use_position_aug: False
+  # use_position_aug: True
+  position_aug_std: 0.05
 
   # loss function
   loss : mse
@@ -87,7 +96,8 @@ exp_params:
   # freeze_joint_attention_estimator: True
 
 model_params:
-  model_type: ja_transformer
+  # model_type: ja_transformer
+  model_type: ja_transformer_rgb_att
 
   # Position
   # use_position : False
@@ -106,6 +116,12 @@ model_params:
   # Action
   use_action : False
   # use_action : True
+
+  # Person embedding
+  # head_embedding_type : liner
+  head_embedding_type : mlp
+  # head_embedding_type : ident
+  # head_embedding_type : each
 
   # Whole image
   # use_img : False
@@ -151,6 +167,7 @@ model_params:
   # rgb_cnn_extractor_type : normal
   # rgb_cnn_extractor_type : no_use
   # rgb_cnn_extractor_type : saliency
+  # rgb_cnn_extractor_type : rgb_patch
   rgb_cnn_extractor_type : resnet18
   # rgb_cnn_extractor_type : resnet50
   # rgb_cnn_extractor_stage_idx : 1

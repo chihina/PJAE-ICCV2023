@@ -25,6 +25,8 @@ class VideoCoAttDataset(Dataset):
             print('Train the model by detetected heads')
         self.gaussian_sigma = cfg.exp_params.gaussian_sigma
         self.use_frame_type = cfg.exp_params.use_frame_type
+        self.use_position_aug = cfg.exp_params.use_position_aug
+        self.position_aug_std = cfg.exp_params.position_aug_std
 
         # test settings
         self.test_heads_type = cfg.exp_params.test_heads_type
@@ -140,6 +142,15 @@ class VideoCoAttDataset(Dataset):
 
         head_feature_tensor[:, 0] /= img_width
         head_feature_tensor[:, 1] /= img_height
+
+        # add position noise
+        if self.use_position_aug and self.mode == 'train':
+            normal_noise_mean = torch.zeros(self.max_num_people)
+            normal_noise_std = torch.ones(self.max_num_people)*self.position_aug_std
+            normal_noise_x = torch.normal(mean=normal_noise_mean, std=normal_noise_std)
+            normal_noise_y = torch.normal(mean=normal_noise_mean, std=normal_noise_std)
+            head_feature_tensor[:, 0] = head_feature_tensor[:, 0] + normal_noise_x
+            head_feature_tensor[:, 1] = head_feature_tensor[:, 1] + normal_noise_y
 
         gt_img_pad = torch.zeros(self.max_num_people, self.resize_height, self.resize_width)
         gt_img = torch.tensor(gt_img).float()

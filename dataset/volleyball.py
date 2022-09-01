@@ -31,6 +31,8 @@ class VolleyBallDataset(Dataset):
 
         # exp params
         self.use_frame_type = cfg.exp_params.use_frame_type
+        self.use_position_aug = cfg.exp_params.use_position_aug
+        self.position_aug_std = cfg.exp_params.position_aug_std
         self.bbox_types = cfg.exp_params.bbox_types
         self.action_types = cfg.exp_params.action_types
         self.gaussian_sigma_head = cfg.exp_params.gaussian_sigma
@@ -251,7 +253,7 @@ class VolleyBallDataset(Dataset):
                     self.head_radius_list.append(self.head_radius_img)
 
                 # one seq in demo mode
-                if 'debug' in self.wandb_name:
+                if self.wandb_name == 'debug' and seq_cnt > 10:
                     break
                 if self.wandb_name == 'demo' and seq_cnt > 3:
                     break
@@ -308,6 +310,15 @@ class VolleyBallDataset(Dataset):
 
         head_feature_tensor[:, 0] /= img_width
         head_feature_tensor[:, 1] /= img_height
+
+        # add position noise
+        if self.use_position_aug and self.mode == 'train':
+            normal_noise_mean = torch.zeros(self.max_num_people)
+            normal_noise_std = torch.ones(self.max_num_people)*self.position_aug_std
+            normal_noise_x = torch.normal(mean=normal_noise_mean, std=normal_noise_std)
+            normal_noise_y = torch.normal(mean=normal_noise_mean, std=normal_noise_std)
+            head_feature_tensor[:, 0] = head_feature_tensor[:, 0] + normal_noise_x
+            head_feature_tensor[:, 1] = head_feature_tensor[:, 1] + normal_noise_y
 
         # transform tensor
         if self.transforms_rgb:

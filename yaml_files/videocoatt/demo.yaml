@@ -11,18 +11,28 @@ exp_set:
   # model_name: videocoatt-concat_independent_wo_gaze
   # model_name: videocoatt-concat_independent_wo_position
   # model_name: videocoatt-concat_independent_w_attraction
-  model_name: videocoatt-concat_independent_w_repulstion
+  # model_name: videocoatt-concat_independent_w_repulstion
   # model_name: videocoatt-concat_independent_w_attraction_w_repulstion
   # model_name: videocoatt-concat_independent_w_attraction_coord
   # model_name: videocoatt-concat_independent_w_repulstion_coord
   # model_name: videocoatt-concat_independent_w_attraction_coord_w_repulstion_coord
-  # model_name : videocoatt-concat_independent_w_angle_rgb_feat
-  # model_name : videocoatt-concat_independent_w_angle_rgb_feat_w_repulsion
+
+  # model_name: videocoatt-concat_independent_w_repulstion_wo_img
+  # model_name: videocoatt-concat_independent_w_repulstion_wo_gaze
+  # model_name: videocoatt-concat_independent_w_repulstion_wo_position
+  # model_name: videocoatt-concat_independent_w_repulstion_w_saliency_img
+  # model_name: videocoatt-concat_independent_w_reg_not_att
+
+  # model_name: videocoatt-concat_independent_w_att
+  # model_name: videocoatt-concat_independent_w_repulstion_w_att
+  # model_name: videocoatt-concat_independent_wo_people_trans
+
+  model_name: videocoatt-isa
 
   seed_num : 777
   gpu_mode : True
-  gpu_start : 7
-  gpu_finish : 7
+  gpu_start : 2
+  gpu_finish : 2
   num_workers : 1
   batch_size : 1
   wandb_name : demo

@@ -18,13 +18,30 @@ exp_set:
   # wandb_name: volleyball-concat_independent_wo_action_wo_gaze
   # wandb_name: volleyball-concat_independent_wo_action_wo_position
   # wandb_name: volleyball-concat_independent_wo_gaze_wo_position
+  # wandb_name: volleyball-concat_independent_wo_img_wo_action
+
+  # wandb_name: volleyball-concat_independent_direct_pos
+  # wandb_name: volleyball-concat_independent_direct_pos_wo_action
+  # wandb_name: volleyball-concat_independent_direct_pos_wo_gaze
+  # wandb_name: volleyball-concat_independent_direct_pos_wo_position
+  # wandb_name: volleyball-concat_independent_direct_pos_person_liner
+  # wandb_name: volleyball-concat_independent_direct_pos_person_liner_wo_action
+  # wandb_name: volleyball-concat_independent_direct_pos_person_liner_wo_gaze
+  # wandb_name: volleyball-concat_independent_direct_pos_person_liner_wo_position
+  # wandb_name: volleyball-concat_independent_direct_pos_person_each
+  # wandb_name: volleyball-concat_independent_direct_pos_person_each_wo_action
+  # wandb_name: volleyball-concat_independent_direct_pos_person_each_wo_gaze
+  # wandb_name: volleyball-concat_independent_direct_pos_person_each_wo_position
+  # wandb_name: volleyball-concat_independent_direct_pos_w_pos_aug
+  # wandb_name: volleyball-concat_independent_direct_pos_person_ident
+  wandb_name: volleyball-concat_independent_direct_pos_w_norm_estimator
 
   batch_size: 8
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 6
-  gpu_finish : 6
+  gpu_start : 5
+  gpu_finish : 5
 
   resize_height : 320
   resize_width : 640
@@ -49,6 +66,9 @@ exp_params:
   # use_regression_loss : False
   use_regression_loss : True
 
+  use_regression_not_att_loss : False
+  # use_regression_not_att_loss : True
+
   use_attraction_loss : False
   # use_attraction_loss : True
 
@@ -60,6 +80,11 @@ exp_params:
 
   use_gt_gaze: False
   # use_gt_gaze: True
+
+  # position augmentation
+  use_position_aug: False
+  # use_position_aug: True
+  position_aug_std: 0.05
 
   iar_type: gt
   # iar_type: pred_label
@@ -105,20 +130,24 @@ model_params:
   # Position
   # use_position : False
   use_position : True
-  # use_position_enc_person : False
-  use_position_enc_person : True
+  use_position_enc_person : False
+  # use_position_enc_person : True
   use_position_enc_type : sine
   # use_position_enc_type : learnable
 
   # Gaze
   # use_gaze : False
   use_gaze : True
-  gaze_type: vector
-  # gaze_type: feature
 
   # Action
   # use_action : False
   use_action : True
+
+  # Person embedding
+  # head_embedding_type : liner
+  head_embedding_type : mlp
+  # head_embedding_type : ident
+  # head_embedding_type : each
 
   # Whole image
   # use_img : False
@@ -141,9 +170,9 @@ model_params:
   use_gauss_limit : False
   # # use_gauss_limit : True
 
-  gaze_map_estimator_type : identity
+  # gaze_map_estimator_type : identity
   # gaze_map_estimator_type : deep
-  # gaze_map_estimator_type : normal
+  gaze_map_estimator_type : normal
   # gaze_map_estimator_type : shallow
 
   # transformer

@@ -17,14 +17,28 @@ exp_set:
   # wandb_name: videocoatt-concat_independent_w_attraction_coord
   # wandb_name: videocoatt-concat_independent_w_repulstion_coord
   # wandb_name: videocoatt-concat_independent_w_attraction_coord_w_repulstion_coord
-  wandb_name : videocoatt-concat_independent_w_angle_rgb_feat_w_repulsion
+  # wandb_name: videocoatt-concat_independent_w_reg_not_att
+
+  # wandb_name: videocoatt-concat_independent_w_repulstion_wo_img
+  # wandb_name: videocoatt-concat_independent_w_repulstion_wo_gaze
+  # wandb_name: videocoatt-concat_independent_w_repulstion_wo_position
+  # wandb_name: videocoatt-concat_independent_w_repulstion_w_saliency_img
+  # wandb_name: videocoatt-concat_independent_w_repulstion_w_rgb_img_patch
+  # wandb_name: videocoatt-concat_independent_w_repulstion_w_resnet_stage4
+
+  # wandb_name: videocoatt-concat_independent_w_att
+  # wandb_name: videocoatt-concat_independent_w_repulstion_w_att
+  wandb_name: videocoatt-concat_independent_wo_people_trans_di_pos_w_pos_aug
 
   batch_size: 16
+  # batch_size: 8
+  # batch_size: 4
+  # batch_size: 1
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 3
-  gpu_finish : 3
+  gpu_start : 6
+  gpu_finish : 6
 
   resize_height: 320
   resize_width: 480
@@ -47,6 +61,9 @@ exp_params:
   # use_regression_loss : False
   use_regression_loss : True
 
+  use_regression_not_att_loss : False
+  # use_regression_not_att_loss : True
+
   use_attraction_loss : False
   # use_attraction_loss : True
 
@@ -58,6 +75,11 @@ exp_params:
   
   use_gt_gaze: False
   # use_gt_gaze: True
+
+  # position augmentation
+  use_position_aug: False
+  # use_position_aug: True
+  position_aug_std: 0.05
 
   # loss function
   loss : mse
@@ -103,8 +125,8 @@ model_params:
   # Position
   # use_position : False
   use_position : True
-  # use_position_enc_person : False
-  use_position_enc_person : True
+  use_position_enc_person : False
+  # use_position_enc_person : True
   use_position_enc_type : sine
   # use_position_enc_type : learnable
 
@@ -117,6 +139,12 @@ model_params:
   # Action
   use_action : False
   # use_action : True
+
+  # Person embedding
+  # head_embedding_type : liner
+  head_embedding_type : mlp
+  # head_embedding_type : ident
+  # head_embedding_type : each
 
   # Whole image
   # use_img : False
@@ -144,8 +172,8 @@ model_params:
   # gaze_map_estimator_type : deep
 
   # transformer
-  # use_people_people_trans: False
-  use_people_people_trans: True
+  use_people_people_trans: False
+  # use_people_people_trans: True
 
   # rgb_people_trans_type : concat_direct
   # rgb_people_trans_type : concat_paralell
@@ -154,7 +182,8 @@ model_params:
   people_people_trans_enc_num : 2
   mha_num_heads_people_people : 2
 
-  rgb_people_trans_enc_num : 4
+  # rgb_people_trans_enc_num : 4
+  rgb_people_trans_enc_num : 1
   mha_num_heads_rgb_people : 4
   rgb_embeding_dim : 64
   people_feat_dim : 16
@@ -162,6 +191,7 @@ model_params:
   # rgb_cnn_extractor_type : normal
   # rgb_cnn_extractor_type : no_use
   # rgb_cnn_extractor_type : saliency
+  # rgb_cnn_extractor_type : rgb_patch
   rgb_cnn_extractor_type : resnet18
   # rgb_cnn_extractor_type : resnet50
   # rgb_cnn_extractor_stage_idx : 1

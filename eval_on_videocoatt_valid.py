@@ -109,7 +109,7 @@ if cuda:
     model_attention.eval()
 
 print("===> Loading dataset")
-mode = cfg.exp_set.mode
+mode = 'validate'
 cfg.data.name = 'videocoatt_no_att'
 test_set = dataset_generator(cfg, mode)
 cfg.data.name = 'videocoatt'
@@ -130,9 +130,17 @@ if not os.path.exists(save_results_dir):
     os.makedirs(save_results_dir)
 
 print("===> Starting eval processing")
-l2_dist_list = []
-pred_acc_list = []
+# mean sift parameters
+ms_bw_min = 1
+ms_bw_max = 20
+ms_bw_interval = 0.01
+stop_iter = 300
+# stop_iter = 1000000
+
+l2_dist_array = np.zeros((len(test_data_loader), ms_bw_max, 4))
+pred_acc_array = np.zeros((len(test_data_loader), ms_bw_max, 2))
 each_data_type_id_dic = {}
+
 for iteration, batch in enumerate(test_data_loader):
     print(f'{iteration}/{len(test_data_loader)}')
 
@@ -220,11 +228,14 @@ for iteration, batch in enumerate(test_data_loader):
             gt_box_ja_list.append(save_gt_peak)
     gt_box_ja_array = np.array(gt_box_ja_list)
 
-    if cfg.model_params.dynamic_distance_type == 'gaussian':
-        # clsutering by mean shift
-        no_pad_peak_xy_pred = head_tensor[:people_padding_num, 3:5]
-        mean_sift = MeanShift(bandwidth=0.1).fit(no_pad_peak_xy_pred)
+    # clsutering by mean shift
+    no_pad_peak_xy_pred = head_tensor[:people_padding_num, 3:5]
+
+    for ms_bw_idx, ms_bw in enumerate(range(ms_bw_min, ms_bw_max)):
+        ms_bw_10 = ms_bw * ms_bw_interval
+        mean_sift = MeanShift(bandwidth=ms_bw_10).fit(no_pad_peak_xy_pred)
         pred_cluster = mean_sift.labels_
+        print(pred_cluster)
         cluster_num = np.max(pred_cluster)+1
         cluster_array = np.zeros((cluster_num, 3))
         for cluster_idx in range(cluster_num):
@@ -237,7 +248,7 @@ for iteration, batch in enumerate(test_data_loader):
         cluster_array_multi_people = cluster_array[cluster_array[:, 2] >= 2, :]
         co_att_flag_gt = np.sum(gt_box, axis=(0, 1)) != 0
         co_att_flag_pred = cluster_array_multi_people.shape[0] != 0
-        pred_acc_list.append([co_att_flag_gt, co_att_flag_pred])
+        pred_acc_array[iteration, ms_bw_idx, :] = [co_att_flag_gt, co_att_flag_pred]
         if not co_att_flag_gt:
             continue
 
@@ -273,77 +284,30 @@ for iteration, batch in enumerate(test_data_loader):
                 # peak_x_mid_pred, peak_y_mid_pred = peak_xy_pred[select_peak_idx, :]
                 peak_x_mid_pred, peak_y_mid_pred = map(int, [peak_x_mid_pred, peak_y_mid_pred])
 
-            print(f'Dist {l2_dist_euc:.0f}, ({peak_x_mid_pred},{peak_y_mid_pred}), GT:({peak_x_mid_gt},{peak_y_mid_gt})')
-            l2_dist_list.append([l2_dist_x, l2_dist_y, l2_dist_euc, each_data_type_id_idx])
-    else:
-        co_att_flag_gt = np.sum(gt_box, axis=(0, 1)) != 0
-        peak_val = np.max(img_pred)
-        co_att_flag_pred = peak_val > 0.15
-        pred_acc_list.append([co_att_flag_gt, co_att_flag_pred])
-        if not co_att_flag_gt:
-            continue
+            # print(f'Dist {l2_dist_euc:.0f}, ({peak_x_mid_pred},{peak_y_mid_pred}), GT:({peak_x_mid_gt},{peak_y_mid_gt})')
+            l2_dist_array[iteration, ms_bw_idx, :] = [l2_dist_x, l2_dist_y, l2_dist_euc, each_data_type_id_idx]
 
-        peak_y_mid_pred, peak_x_mid_pred = np.unravel_index(np.argmax(img_pred), img_pred.shape)
-        for gt_box_idx in range(gt_box_ja_array.shape[0]):
-            peak_x_mid_gt, peak_y_mid_gt = gt_box_ja_array[gt_box_idx, :]
-            l2_dist_x = np.linalg.norm(peak_x_mid_gt-peak_x_mid_pred)
-            l2_dist_y = np.linalg.norm(peak_y_mid_gt-peak_y_mid_pred)
-            l2_dist_euc = np.power(np.power(l2_dist_x, 2)+np.power(l2_dist_y, 2), 0.5)
-            print(f'Dist {l2_dist_euc:.0f}, ({peak_x_mid_pred},{peak_y_mid_pred}), GT:({peak_x_mid_gt},{peak_y_mid_gt})')
-            l2_dist_list.append([l2_dist_x, l2_dist_y, l2_dist_euc, each_data_type_id_idx])
+    if iteration > stop_iter:
+        break
+
+l2_dist_array = l2_dist_array[:stop_iter, :, :]
+pred_acc_array = pred_acc_array[:stop_iter, :, :]
 
 # save metrics in a dict
 metrics_dict = {}
 
 # save l2 dist
-l2_dist_array = np.array(l2_dist_list)
 l2_dist_mean = np.mean(l2_dist_array, axis=0)
-l2_dist_list = ['l2_dist_x', 'l2_dist_y', 'l2_dist_euc']
-for l2_dist_idx, l2_dist_type in enumerate(l2_dist_list):
-    metrics_dict[l2_dist_type] = l2_dist_mean[l2_dist_idx]
-
-# save l2 dist (Detailed analysis)
-for each_data_id, each_data_id_idx in each_data_type_id_dic.items():
-    l2_dist_array_each_data_id = l2_dist_array[l2_dist_array[:, 3] == each_data_id_idx]
-    sample_ratio = l2_dist_array_each_data_id.shape[0]/l2_dist_array.shape[0]*100
-    l2_dist_array_each_data_id_mean = np.mean(l2_dist_array_each_data_id, axis=0)
-    metrics_dict[f'l2_dist_euc ({each_data_id}) ({sample_ratio:.0f}%)'] = l2_dist_array_each_data_id_mean[2]
-
-# save l2 dist (Histgrad analysis)
-for l2_dist_idx, l2_dist_type in enumerate(l2_dist_list):
-    save_figure_path = os.path.join(save_results_dir, f'{l2_dist_type}_hist.png')
-    plt.figure()
-    plt.hist(l2_dist_array[:, l2_dist_idx])
-    plt.xlim(0, 200)
-    plt.savefig(save_figure_path)
+for ms_idx, ms_bw in enumerate(range(ms_bw_min, ms_bw_max)):
+    print(ms_idx, ms_idx*ms_bw_interval, l2_dist_mean[ms_idx, 2])
 
 # save prediction accuracy
-pred_acc_array = np.array(pred_acc_list)
-co_att_gt_array = pred_acc_array[:, 0]
-co_att_pred_array = pred_acc_array[:, 1]
-cm = confusion_matrix(co_att_gt_array, co_att_pred_array)
-plt.figure()
-sns.heatmap(cm, annot=True, cmap='Blues')
-save_cm_path = os.path.join(save_results_dir, 'confusion_matrix.png')
-plt.savefig(save_cm_path)
-metrics_dict['accuracy'] = accuracy_score(co_att_gt_array, co_att_pred_array)
-metrics_dict['precision'] = precision_score(co_att_gt_array, co_att_pred_array)
-metrics_dict['recall'] = recall_score(co_att_gt_array, co_att_pred_array)
-metrics_dict['f1'] = f1_score(co_att_gt_array, co_att_pred_array)
-
-# save detection rate
-det_rate_list = [f'Det (Thr={det_thr})' for det_thr in range(0, 110, 10)]
-for det_rate_idx, det_rate_type in enumerate(det_rate_list, 1):
-    det_rate = l2_dist_array[:, 2]<(det_rate_idx*10)
-    det_rate_mean = np.mean(det_rate) * 100
-    metrics_dict[det_rate_type] = det_rate_mean
-
-# save metrics into json files
-save_results_path = os.path.join(save_results_dir, 'eval_results.json')
-with open(save_results_path, 'w') as f:
-    json.dump(metrics_dict, f, indent=4)
-
-# print metrics into a command line
-print(metrics_dict)
-for met_name, met_val in metrics_dict.items():
-    print(met_name, met_val)
+for ms_idx, ms_bw in enumerate(range(ms_bw_min, ms_bw_max)):
+    co_att_gt_array = pred_acc_array[:, ms_idx, 0]
+    co_att_pred_array = pred_acc_array[:, ms_idx, 1]
+    cm = confusion_matrix(co_att_gt_array, co_att_pred_array)
+    acc = accuracy_score(co_att_gt_array, co_att_pred_array)
+    prec = precision_score(co_att_gt_array, co_att_pred_array)
+    recall = recall_score(co_att_gt_array, co_att_pred_array)
+    f1 = f1_score(co_att_gt_array, co_att_pred_array)
+    print(ms_idx, acc, prec, recall, f1)

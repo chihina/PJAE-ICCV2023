@@ -5,9 +5,8 @@ data:
 exp_set:
   save_folder : saved_weights
   # model_name: videoattentiontarget-head_pose_estimator
-  model_name: videoattentiontarget-concat_independent
-  # model_name: videoattentiontarget-concat_independent_wo_people_trans
-  # model_name: videoattentiontarget-concat_direct_bce
+  # model_name: videoattentiontarget-concat_independent
+  model_name: videoattentiontarget-joint
 
   seed_num : 777
   gpu_mode : True

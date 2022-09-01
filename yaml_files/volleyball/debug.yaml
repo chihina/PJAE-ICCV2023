@@ -15,8 +15,8 @@ exp_set:
   num_workers: 1
   seed_num: 777
   gpu_mode : True
-  gpu_start : 1
-  gpu_finish : 1
+  gpu_start : 5
+  gpu_finish : 5
 
   # resize_height : 720
   # resize_width : 1280
@@ -41,6 +41,9 @@ exp_params:
   # use_regression_loss : False
   use_regression_loss : True
 
+  use_regression_not_att_loss : False
+  # use_regression_not_att_loss : True
+
   use_attraction_loss : False
   # use_attraction_loss : True
 
@@ -52,6 +55,11 @@ exp_params:
 
   use_gt_gaze: False
   # use_gt_gaze: True
+  
+  # position augmentation
+  use_position_aug: False
+  # use_position_aug: True
+  position_aug_std: 0.05
 
   iar_type: gt
   # iar_type: pred_label
@@ -103,14 +111,18 @@ model_params:
   # use_position_enc_type : learnable
 
   # Gaze
-  use_gaze : False
-  # use_gaze : True
-  gaze_type: vector
-  # gaze_type: feature
+  # use_gaze : False
+  use_gaze : True
 
   # Action
-  use_action : False
-  # use_action : True
+  # use_action : False
+  use_action : True
+
+  # Person embedding
+  # head_embedding_type : liner
+  # head_embedding_type : mlp
+  # head_embedding_type : ident
+  head_embedding_type : each
 
   # Whole image
   # use_img : False

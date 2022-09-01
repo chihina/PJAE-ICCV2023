@@ -163,7 +163,7 @@ for dir_name in save_image_dir_list:
 print("===> Starting demo processing")
 stop_iteration = 20
 if mode == 'test':
-    stop_iteration = 50
+    stop_iteration = 20
 for iteration, batch in enumerate(test_data_loader,1):
     if iteration > stop_iteration:
         break
@@ -238,9 +238,7 @@ for iteration, batch in enumerate(test_data_loader,1):
     gt_box = out['gt_box'].to('cpu').detach()[0]
     att_inside_flag = out['att_inside_flag'].to('cpu').detach()[0]
     img_path = out['rgb_path'][0]
-
-    if cfg.model_params.model_type == 'ja_transformer':
-        trans_att_people_rgb = out['trans_att_people_rgb'].to('cpu').detach()[0]
+    trans_att_people_rgb = out['trans_att_people_rgb'].to('cpu').detach()[0]
 
     # redefine image size
     img = cv2.imread(img_path)
@@ -265,23 +263,23 @@ for iteration, batch in enumerate(test_data_loader,1):
     save_image(img_pred, os.path.join(save_image_dir_dic['joint_attention'], data_type_id, f'{mode}_{data_id}_joint_attention.png'))
 
     key_no_padding_num = torch.sum((torch.sum(head_feature, dim=-1) != 0)).numpy()
-    if cfg.model_params.model_type == 'ja_transformer':
     # save attention of transformers (people and rgb attention)
-        people_num, rgb_people_trans_enc_num, rgb_feat_height, rgb_feat_width = trans_att_people_rgb.shape
-        trans_att_people_rgb = trans_att_people_rgb.view(rgb_people_trans_enc_num*people_num, 1, rgb_feat_height, rgb_feat_width)
-        trans_att_people_rgb = F.interpolate(trans_att_people_rgb, (cfg.exp_set.resize_height, cfg.exp_set.resize_width), mode='nearest')
-        trans_att_people_rgb = trans_att_people_rgb.view(people_num, rgb_people_trans_enc_num, 1, cfg.exp_set.resize_height, cfg.exp_set.resize_width)
+    people_num, rgb_people_trans_enc_num, rgb_feat_height, rgb_feat_width = trans_att_people_rgb.shape
+    trans_att_people_rgb = trans_att_people_rgb.view(rgb_people_trans_enc_num*people_num, 1, rgb_feat_height, rgb_feat_width)
+    trans_att_people_rgb = F.interpolate(trans_att_people_rgb, (cfg.exp_set.resize_height, cfg.exp_set.resize_width), mode='nearest')
+    trans_att_people_rgb = trans_att_people_rgb.view(people_num, rgb_people_trans_enc_num, 1, cfg.exp_set.resize_height, cfg.exp_set.resize_width)
 
-        for person_idx in range(key_no_padding_num):
-            for i in range(cfg.model_params.rgb_people_trans_enc_num):
-                trans_att_people_rgb_save = trans_att_people_rgb[person_idx, i, 0, :, :]
-                trans_att_people_rgb_save_max, trans_att_people_rgb_save_min = torch.max(trans_att_people_rgb_save), torch.min(trans_att_people_rgb_save)
-                trans_att_people_rgb_save = (trans_att_people_rgb_save-trans_att_people_rgb_save_min)/(trans_att_people_rgb_save_max-trans_att_people_rgb_save_min)
-                save_image(trans_att_people_rgb_save, os.path.join(save_image_dir_dic['people_rgb_att'], data_type_id, f'{data_id}', f'{mode}_{data_id}_p{person_idx}_enc{i}_people_rgb_attention.png'))
+    for person_idx in range(key_no_padding_num):
+        for i in range(cfg.model_params.rgb_people_trans_enc_num):
+            trans_att_people_rgb_save = trans_att_people_rgb[person_idx, i, 0, :, :]
+            trans_att_people_rgb_save_max, trans_att_people_rgb_save_min = torch.max(trans_att_people_rgb_save), torch.min(trans_att_people_rgb_save)
+            trans_att_people_rgb_save = (trans_att_people_rgb_save-trans_att_people_rgb_save_min)/(trans_att_people_rgb_save_max-trans_att_people_rgb_save_min)
+            save_image(trans_att_people_rgb_save, os.path.join(save_image_dir_dic['people_rgb_att'], data_type_id, f'{data_id}', f'{mode}_{data_id}_p{person_idx}_enc{i}_people_rgb_attention.png'))
 
     # save attention of transformers (people and people attention)
     df_person = [person_idx for person_idx in range(key_no_padding_num)]
-    for i in range(cfg.model_params.people_people_trans_enc_num):
+    people_people_trans_enc_num = cfg.model_params.people_people_trans_enc_num
+    for i in range(people_people_trans_enc_num):
         plt.figure(figsize=(8, 6))
         trans_att_people_people_enc = pd.DataFrame(data=trans_att_people_people[i, :key_no_padding_num, :key_no_padding_num], index=df_person, columns=df_person)
         sns.heatmap(trans_att_people_people_enc, cmap='jet')
@@ -304,14 +302,15 @@ for iteration, batch in enumerate(test_data_loader,1):
     img_heatmap_norm = cv2.applyColorMap(img_heatmap_norm, cv2.COLORMAP_JET)
 
     if cfg.model_params.dynamic_distance_type == 'gaussian':
-        superimposed_image = cv2.addWeighted(img, 1.0, img_heatmap_norm, 0, 0)
+        # superimposed_image = cv2.addWeighted(img, 1.0, img_heatmap_norm, 0, 0)
+        superimposed_image = cv2.addWeighted(img, 0.5, img_heatmap_norm, 0.5, 0)
     else:
         superimposed_image = cv2.addWeighted(img, 0.5, img_heatmap_norm, 0.5, 0)
 
     # calculate metrics for each attetntion estimation
     for person_idx in range(key_no_padding_num):
         # calc a centers of pred bboxes
-        if cfg.model_params.dynamic_distance_type == 'gaussian':
+        if cfg.model_params.dynamic_distance_type == 'ja_transformer':
             peak_x_mid_pred, peak_y_mid_pred = head_tensor[person_idx, 3], head_tensor[person_idx, 4]
             peak_x_mid_pred, peak_y_mid_pred = peak_x_mid_pred*cfg.exp_set.resize_width, peak_y_mid_pred*cfg.exp_set.resize_height
             peak_x_mid_pred, peak_y_mid_pred = map(int, [peak_x_mid_pred, peak_y_mid_pred])
@@ -372,18 +371,17 @@ for iteration, batch in enumerate(test_data_loader,1):
         arrow_set = (255, 255, 255)
         # arrow_set = (0, 0, 0)
 
-        if cfg.model_params.model_type == 'ja_transformer':
-            # save attention of people and rgb
-            for i in range(cfg.model_params.rgb_people_trans_enc_num):            
-                people_rgb_att_one = cv2.imread(os.path.join(save_image_dir_dic['people_rgb_att'], data_type_id, f'{data_id}', f'{mode}_{data_id}_p{person_idx}_enc{i}_people_rgb_attention.png'), cv2.IMREAD_GRAYSCALE)
-                people_rgb_att_one = people_rgb_att_one.astype(np.uint8)
-                people_rgb_att_one = cv2.applyColorMap(cv2.resize(people_rgb_att_one, (img.shape[1], img.shape[0])), cv2.COLORMAP_JET)
-                superimposed_people_rgb_att_one = cv2.addWeighted(img, 0.5, people_rgb_att_one, 0.5, 0)
-                superimposed_people_rgb_att_one = cv2.arrowedLine(superimposed_people_rgb_att_one, (head_x, head_y), (pred_x, pred_y), arrow_set, thickness=3)
-                cv2.circle(superimposed_people_rgb_att_one, (peak_x_mid_pred, peak_y_mid_pred), 10, (128, 0, 128), thickness=-1)
-                if att_inside_flag[person_idx]:
-                    cv2.circle(superimposed_people_rgb_att_one, (peak_x_mid_gt, peak_y_mid_gt), 10, (0, 255, 0), thickness=-1)
-                cv2.imwrite(os.path.join(save_image_dir_dic['people_rgb_att'], data_type_id, f'{data_id}', f'{mode}_{data_id}_p{person_idx}_enc{i}_people_rgb_attention.png'), superimposed_people_rgb_att_one)
+        # save attention of people and rgb
+        for i in range(cfg.model_params.rgb_people_trans_enc_num):            
+            people_rgb_att_one = cv2.imread(os.path.join(save_image_dir_dic['people_rgb_att'], data_type_id, f'{data_id}', f'{mode}_{data_id}_p{person_idx}_enc{i}_people_rgb_attention.png'), cv2.IMREAD_GRAYSCALE)
+            people_rgb_att_one = people_rgb_att_one.astype(np.uint8)
+            people_rgb_att_one = cv2.applyColorMap(cv2.resize(people_rgb_att_one, (img.shape[1], img.shape[0])), cv2.COLORMAP_JET)
+            superimposed_people_rgb_att_one = cv2.addWeighted(img, 0.5, people_rgb_att_one, 0.5, 0)
+            superimposed_people_rgb_att_one = cv2.arrowedLine(superimposed_people_rgb_att_one, (head_x, head_y), (pred_x, pred_y), arrow_set, thickness=3)
+            cv2.circle(superimposed_people_rgb_att_one, (peak_x_mid_pred, peak_y_mid_pred), 10, (128, 0, 128), thickness=-1)
+            if att_inside_flag[person_idx]:
+                cv2.circle(superimposed_people_rgb_att_one, (peak_x_mid_gt, peak_y_mid_gt), 10, (0, 255, 0), thickness=-1)
+            cv2.imwrite(os.path.join(save_image_dir_dic['people_rgb_att'], data_type_id, f'{data_id}', f'{mode}_{data_id}_p{person_idx}_enc{i}_people_rgb_attention.png'), superimposed_people_rgb_att_one)
 
         superimposed_image= cv2.arrowedLine(superimposed_image, (head_x, head_y), (pred_x, pred_y), arrow_set, thickness=3)
         superimposed_image_person = cv2.arrowedLine(superimposed_image_person, (head_x, head_y), (pred_x, pred_y), arrow_set, thickness=3)
