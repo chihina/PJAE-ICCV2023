@@ -53,8 +53,8 @@ exp_params:
   scheduler_iter : 1100000
 
   det_heads_model : dets_txt_nk_faster_rcnn_20220421
-  # train_det_heads : False
-  train_det_heads : True
+  train_det_heads : False
+  # train_det_heads : True
   train_heads_conf : 0.6
   test_heads_conf : 0.6
 

@@ -236,7 +236,8 @@ class JointAttentionEstimatorTransformer(nn.Module):
                 nn.Linear(patch_dim, 64),
             )
         elif self.rgb_cnn_extractor_type == 'no_use':
-            pass
+            # dummy
+            down_scale_ratio = 1
         else:
             print('Please use correct rgb cnn extractor type')
 
@@ -571,7 +572,7 @@ class JointAttentionEstimatorTransformer(nn.Module):
                     else:
                         trans_att_people_rgb_i = torch.zeros(self.batch_size, people_num, 1, rgb_feat_height, rgb_feat_width)
                         trans_att_people_people_i = torch.zeros(self.batch_size, 1, people_num, people_num)
-                
+
                 if i == 0:
                     trans_att_people_rgb = trans_att_people_rgb_i
                     if self.rgb_people_trans_type == 'concat_paralell':
@@ -588,6 +589,8 @@ class JointAttentionEstimatorTransformer(nn.Module):
                 if self.use_img:
                     rgb_people_feat_all = rgb_people_feat_all[:, (rgb_feat_height*rgb_feat_width):, :]
         else:
+            # dummy
+            trans_att_people_rgb = torch.zeros(self.batch_size, people_num, self.rgb_people_trans_enc_num, self.down_height, self.down_width)
             rgb_people_feat_all = head_info_params
 
         # gaze map estimation

@@ -39,6 +39,9 @@ class VideoCoAttDataset(Dataset):
         self.resize_head_width = cfg.exp_set.resize_head_width
         self.resize_head_height = cfg.exp_set.resize_head_height
 
+        # model params
+        self.model_type = cfg.model_params.model_type
+
         self.feature_list = []
         self.head_bbox_list = []
         self.gt_bbox = []
@@ -342,7 +345,11 @@ class VideoCoAttDataset(Dataset):
         for co_idx in range(co_bbox_num):
             x_min, y_min, x_max, y_max = map(int, bbox[co_idx])
             x_center, y_center = int((x_max + x_min)//2), int((y_max + y_min)//2)
-            gt_gaussian[co_idx, :, :] = self.generate_2d_gaussian(img_height, img_width, (x_center, y_center), gamma)
+
+            if self.model_type == 'isa':
+                gt_gaussian[co_idx, :, :] = self.generate_2d_bbox(img_height, img_width, bbox[co_idx])
+            else:
+                gt_gaussian[co_idx, :, :] = self.generate_2d_gaussian(img_height, img_width, (x_center, y_center), gamma)
         
         return gt_gaussian
 
@@ -410,6 +417,14 @@ class VideoCoAttDataset(Dataset):
         heatmap = np.exp(- ((X-peak_x) ** 2 + (Y-peak_y) ** 2) / (2 * sigma ** 2))
 
         return heatmap.reshape(1, heatmap.shape[0], heatmap.shape[1])
+
+    # generator gt bbox
+    def generate_2d_bbox(self, img_height, img_width, bbox):
+        x_min, y_min, x_max, y_max = map(int, bbox)
+        heatmap = np.zeros((1, img_height, img_width))
+        heatmap[:, y_min:y_max, x_min:x_max] = 1
+
+        return heatmap
 
     def nms_fast(self, bboxes, scores, classes, iou_threshold=0.5):
         areas = (bboxes[:,2] - bboxes[:,0] + 1) \
@@ -516,3 +531,73 @@ class VideoCoAttDatasetNoAtt(VideoCoAttDataset):
                     break
             if self.wandb_name == 'demo' and video_cnt > 40:
                 break
+
+    # read valid information
+    def generate_train_dataset_list(self):
+        video_cnt = 0
+        for video_num in tqdm(sorted(os.listdir(os.path.join(self.dataset_dir, 'images_nk', self.mode)))):
+            video_cnt += 1
+            seq_cnt = 0
+            annotation_path = os.path.join(self.dataset_dir, 'annotations', self.mode, f'{video_num}.txt')
+            ann_dic = self.read_annotation_file(annotation_path)
+
+            for file_name in sorted(os.listdir(os.path.join(self.dataset_dir, 'images_nk', self.mode, str(video_num)))):
+
+                # get rgb file path
+                frame_id = file_name.split('.')[0].split('_')[0]
+                rgb_img_file_path = os.path.join(self.dataset_dir, 'images_nk', self.mode, str(video_num), file_name)
+
+                # get saliency file path
+                saliency_file_path = os.path.join(self.saliency_dataset_dir, 'images', self.mode, str(video_num), file_name)
+
+                # following authors setting
+                if self.use_frame_type == 'mid': 
+                    if (int(frame_id) - 1) % 10 != 0:
+                        continue
+                else:
+                    pass
+
+                # if annotation is not exists
+                if int(frame_id) not in ann_dic.keys():
+                    co_att_bbox = np.zeros((1, 4))
+                    co_att_id = np.zeros((1, 1))
+                else:
+                    # # get annotation data
+                    ann_info = ann_dic[int(frame_id)]
+                    co_att_bbox = np.array(ann_info['co_att_bbox_list'], dtype=np.int32).reshape(-1, 4)
+                    co_att_id = np.array(ann_info['co_att_id_list'], dtype=np.int32).reshape(-1, 1)
+
+                # get detection results
+                if self.train_det_heads:
+                    det_file_path = os.path.join(self.dataset_dir, self.det_heads_model, self.mode, str(video_num), file_name.replace('jpg', 'txt'))
+                    det_bbox_conf = self.read_det_file(det_file_path, self.mode)
+                    det_bboxes, det_conf = det_bbox_conf[:, :-1], det_bbox_conf[:, -1]
+                    use_head_boxes_dets = np.array(det_bboxes)
+                    use_head_boxes_gt = np.array(ann_info['head_bbox_list'], dtype=np.int32).reshape(-1, 4)
+                    use_head_boxes = np.array(ann_info['head_bbox_list'], dtype=np.int32).reshape(-1, 4)
+
+                    for det_idx in range(use_head_boxes_dets.shape[0]):
+                        det_box = use_head_boxes_dets[det_idx].reshape(1, -1)
+                        use_head_boxes_concat = np.concatenate([use_head_boxes_gt, det_box], 0)
+                        use_head_boxes_concat_af_nms, _, _ = self.nms_fast(use_head_boxes_concat, np.ones(use_head_boxes_concat.shape[0]), np.ones(use_head_boxes_concat.shape[0]), 0.1)
+                        add_flag = use_head_boxes_concat.shape[0] == use_head_boxes_concat_af_nms.shape[0]
+                        if add_flag:
+                            use_head_boxes = np.concatenate([use_head_boxes, det_box], 0)
+                            co_att_id_add = np.array([[np.max(co_att_id)+1]])
+                            co_att_id = np.concatenate([co_att_id, co_att_id_add], 0)
+                else:
+                    use_head_boxes = np.array(ann_info['head_bbox_list'], dtype=np.int32).reshape(-1, 4)
+
+                # calculate each person head position
+                use_head_feature = np.zeros((use_head_boxes.shape[0], 2))
+                if use_head_boxes.shape[0] != 0:
+                    use_head_feature[:, 0] = (use_head_boxes[:, 0] + use_head_boxes[:, 2]) / 2
+                    use_head_feature[:, 1] = (use_head_boxes[:, 1] + use_head_boxes[:, 3]) / 2
+
+                self.gt_bbox.append(co_att_bbox)
+                self.gt_bbox_id.append(co_att_id)
+                self.rgb_path_list.append(rgb_img_file_path)
+                self.saliency_path_list.append(saliency_file_path)
+                self.head_bbox_list.append(use_head_boxes)
+                self.feature_list.append(use_head_feature)
+                seq_cnt += 1

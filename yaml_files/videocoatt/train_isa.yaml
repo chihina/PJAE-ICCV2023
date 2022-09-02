@@ -15,8 +15,10 @@ exp_set:
   gpu_start : 3
   gpu_finish : 3
 
-  resize_height: 320
-  resize_width: 480
+  # resize_height: 320
+  resize_height: 28
+  # resize_width: 480
+  resize_width: 28
   resize_head_height: 64
   resize_head_width: 64
 
@@ -36,8 +38,8 @@ exp_params:
   position_aug_std: 0.05
 
   # loss function
-  loss : mse
-  # loss : bce
+  # loss : mse
+  loss : bce
 
   # learning rate
   lr : 0.0001
@@ -53,8 +55,8 @@ exp_params:
   scheduler_iter : 1100000
 
   det_heads_model : dets_txt_nk_faster_rcnn_20220421
-  # train_det_heads : False
-  train_det_heads : True
+  train_det_heads : False
+  # train_det_heads : True
   train_heads_conf : 0.6
   test_heads_conf : 0.6
 

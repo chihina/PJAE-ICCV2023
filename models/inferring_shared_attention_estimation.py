@@ -44,25 +44,17 @@ class InferringSharedAttentionEstimator(nn.Module):
             nn.Conv2d(in_channels=16, out_channels=8, kernel_size=3, padding=1),
             nn.ReLU(inplace=False),
             nn.Conv2d(in_channels=8, out_channels=1, kernel_size=1),
-            nn.Sigmoid()
+            nn.Sigmoid(),
         )
 
     def forward(self, inp):
-        input_feature = inp['input_feature']
-        input_gaze = inp['input_gaze']
         head_vector = inp['head_vector']
         head_feature = inp['head_feature']
         xy_axis_map = inp['xy_axis_map']
         head_xy_map = inp['head_xy_map']
         gaze_xy_map = inp['gaze_xy_map']
         saliency_img = inp['saliency_img']
-        rgb_img = inp['rgb_img']
-        head_img_extract = inp['head_img_extract']
-        att_inside_flag = inp['att_inside_flag']
         
-        # get usuful variable
-        batch_size, people_num, _, img_height, img_width = xy_axis_map.shape
-
         # generate head xy map
         head_xy_map = head_xy_map * head_feature[:, :, :2, None, None]
 
@@ -86,22 +78,21 @@ class InferringSharedAttentionEstimator(nn.Module):
         angle_dist = angle_dist * (torch.sum(head_feature, dim=2) != 0)[:, :, None, None]
 
         # sum all gaze maps (divide people num excluding padding people)
-        no_pad_idx = torch.sum((torch.sum(head_feature, dim=2) != 0), dim=1)[:, None, None, None]
-        angle_dist_sum_pooling = torch.sum(angle_dist, dim=1)[:, None, :, :] / no_pad_idx
+        angle_dist_sum_pooling = torch.sum(angle_dist, dim=1)[:, None, :, :]
 
         # cat angle img and saliency img
         # spatial detection module
         angle_saliency_img = torch.cat([angle_dist_sum_pooling, saliency_img], dim=1)
-        angle_saliency_img = self.spatial_detection_module(angle_saliency_img)
+        estimated_joint_attention = self.spatial_detection_module(angle_saliency_img)
 
         # return final img
-        final_img = angle_saliency_img
-        final_img = final_img[:, 0, :, :]
+        estimated_joint_attention = estimated_joint_attention[:, 0, :, :]
 
         # pack return values
         data = {}
-        data['img_pred'] = final_img
+        data['img_pred'] = estimated_joint_attention
         data['angle_dist'] = angle_dist
+        data['head_tensor'] = head_vector
 
         return data
 
@@ -118,7 +109,9 @@ class InferringSharedAttentionEstimator(nn.Module):
             loss_map_coef = 0
 
         # calculate final map loss
-        img_gt_att = torch.sum(img_gt, dim=1)/torch.sum(att_inside_flag, dim=-1)[:, None, None]
+        img_gt_att = torch.sum(img_gt, dim=1)
+        img_gt_att_thresh = torch.ones(1, dtype=img_gt_att.dtype, device=img_gt_att.device)        
+        img_gt_att = torch.where(img_gt_att>img_gt_att_thresh, img_gt_att_thresh, img_gt_att)
         loss_map = self.loss_func_joint_attention(img_pred.float(), img_gt_att.float())
         loss_map = loss_map_coef * loss_map
 

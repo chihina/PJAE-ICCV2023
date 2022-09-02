@@ -106,7 +106,6 @@ parser.add_argument("config", type=str, help="configuration yaml file path")
 args = parser.parse_args()
 cfg_arg = Dict(yaml.safe_load(open(args.config)))
 saved_yaml_file_path = glob.glob(os.path.join(cfg_arg.exp_set.save_folder, cfg_arg.data.name, cfg_arg.exp_set.model_name, 'train*.yaml'))[0]
-
 cfg = Dict(yaml.safe_load(open(saved_yaml_file_path)))
 cfg.update(cfg_arg)
 print(cfg)

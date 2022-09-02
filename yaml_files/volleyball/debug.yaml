@@ -15,8 +15,8 @@ exp_set:
   num_workers: 1
   seed_num: 777
   gpu_mode : True
-  gpu_start : 5
-  gpu_finish : 5
+  gpu_start : 3
+  gpu_finish : 3
 
   # resize_height : 720
   # resize_width : 1280
@@ -120,9 +120,9 @@ model_params:
 
   # Person embedding
   # head_embedding_type : liner
-  # head_embedding_type : mlp
+  head_embedding_type : mlp
   # head_embedding_type : ident
-  head_embedding_type : each
+  # head_embedding_type : each
 
   # Whole image
   # use_img : False
@@ -167,8 +167,8 @@ model_params:
   people_feat_dim : 16
 
   # rgb_cnn_extractor_type : normal
-  # rgb_cnn_extractor_type : no_use
-  rgb_cnn_extractor_type : resnet18
+  rgb_cnn_extractor_type : no_use
+  # rgb_cnn_extractor_type : resnet18
   # rgb_cnn_extractor_type : resnet50
   # rgb_cnn_extractor_stage_idx : 1
   # rgb_cnn_extractor_stage_idx : 2

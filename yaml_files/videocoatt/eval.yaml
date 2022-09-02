@@ -28,13 +28,12 @@ exp_set:
   # model_name: videocoatt-concat_independent_w_repulstion_w_rgb_img_patch
   # model_name: videocoatt-concat_independent_w_repulstion_w_resnet_stage4
 
-  # model_name: videocoatt-concat_independent_w_att
-  model_name: videocoatt-concat_independent_w_repulstion_w_att
+  model_name: videocoatt-isa
 
   seed_num : 777
   gpu_mode : True
-  gpu_start : 7
-  gpu_finish : 7
+  gpu_start : 3
+  gpu_finish : 3
   num_workers : 1
   batch_size : 1
   wandb_name : test

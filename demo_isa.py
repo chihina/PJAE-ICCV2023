@@ -14,7 +14,7 @@ import cv2
 import os
 import numpy as np
 import warnings
-warnings.filterwarnings("ignore") 
+warnings.filterwarnings("ignore")
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -99,6 +99,21 @@ def norm_heatmap(img_heatmap):
         img_heatmap *= 255
 
     return img_heatmap
+
+def get_edge_boxes(im):
+    model = os.path.join('saved_weights', 'videocoatt', 'model.yml.gz')
+    edge_detection = cv2.ximgproc.createStructuredEdgeDetection(model)
+    im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+    edges = edge_detection.detectEdges(np.float32(im) / 255.0)
+
+    orimap = edge_detection.computeOrientation(edges)
+    edges = edge_detection.edgesNms(edges, orimap)
+
+    edge_boxes = cv2.ximgproc.createEdgeBoxes()
+    edge_boxes.setMaxBoxes(50)
+    boxes = edge_boxes.getBoundingBoxes(edges, orimap)
+
+    return boxes
 
 print("===> Getting configuration")
 parser = argparse.ArgumentParser(description="parameters for training")
@@ -226,20 +241,22 @@ for iteration, batch in enumerate(test_data_loader,1):
         out = {**out_head, **out_attention, **batch}
 
     img_gt = out['img_gt'].to('cpu').detach()[0]
+
     img_pred = out['img_pred'].to('cpu').detach()[0]
     angle_dist = out['angle_dist'].to('cpu').detach()[0]
     gt_box = out['gt_box'].to('cpu').detach()[0]
+    head_tensor = out['head_tensor'].to('cpu').detach()[0].numpy()
+    head_feature = out['head_feature'].to('cpu').detach()[0].numpy()
+    head_vector_gt = out['head_vector_gt'].to('cpu').detach()[0].numpy()
     att_inside_flag = out['att_inside_flag'].to('cpu').detach()[0]
     img_path = out['rgb_path'][0]
 
     # redefine image size
     img = cv2.imread(img_path)
     original_height, original_width, _ = img.shape
-    cfg.exp_set.resize_height = original_height
-    cfg.exp_set.resize_width = original_width
 
     # define data id
-    data_type_id = ''
+    data_type_id = data_type_id_generator(head_vector_gt, head_tensor, gt_box, cfg)
     data_id = data_id_generator(img_path, cfg)
     print(f'Iter:{iteration}, {data_id}, {data_type_id}')
 
@@ -255,15 +272,48 @@ for iteration, batch in enumerate(test_data_loader,1):
     save_image(img_pred, os.path.join(save_image_dir_dic['joint_attention'], data_type_id, f'{mode}_{data_id}_joint_attention.png'))
 
     # save joint attention estimation as a superimposed image
-    img = cv2.resize(img, (cfg.exp_set.resize_width, cfg.exp_set.resize_height))
+    img = cv2.resize(img, (original_width, original_height))
     img_heatmap = cv2.imread(os.path.join(save_image_dir_dic['joint_attention'], data_type_id, f'{mode}_{data_id}_joint_attention.png'), cv2.IMREAD_GRAYSCALE)
     img_heatmap = cv2.resize(img_heatmap, (img.shape[1], img.shape[0]))
-    print(f'min:{np.min(img_heatmap)}, max:{np.max(img_heatmap)}')
     img_heatmap_norm = norm_heatmap(img_heatmap)
     img_heatmap_norm = img_heatmap_norm.astype(np.uint8)
     img_heatmap_norm = cv2.applyColorMap(img_heatmap_norm, cv2.COLORMAP_JET)
     superimposed_image = cv2.addWeighted(img, 0.5, img_heatmap_norm, 0.5, 0)
-    cv2.imwrite(os.path.join(save_image_dir_dic['joint_attention_superimposed'], data_type_id, f'{mode}_{data_id}_superimposed.png'), superimposed_image)
 
     for person_idx in range(angle_dist.shape[0]):
         save_image(angle_dist[person_idx], os.path.join(save_image_dir_dic['attention_fan'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_fan.png'))
+        save_image(img_gt[person_idx], os.path.join(save_image_dir_dic['gt_map'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_gt.png'))
+
+    # get region proposals
+    edge_boxes = get_edge_boxes(img)
+    edge_boxes_score = np.zeros((len(edge_boxes[0]), 4+1))
+    for idx in range(len(edge_boxes[0])):
+        (x, y, w, h), conf = edge_boxes[0][idx], edge_boxes[1][idx]
+        edge_boxes_score[idx, :4] = np.array([x, y, x+w, y+h])
+        atn_score = np.mean(img_heatmap[y:y+h, x:x+w])
+        edge_boxes_score[idx, 4] = atn_score
+
+    score_max_idx = np.argmax(edge_boxes_score[:, 4])
+    pred_bbox = edge_boxes_score[score_max_idx, :4]
+    x_min_pred, y_min_pred, x_max_pred, y_max_pred = map(int, pred_bbox)
+    x_mid_pred, y_mid_pred = (x_min_pred+x_max_pred)//2, (y_min_pred+y_max_pred)//2
+
+    # calc distances for each co att box
+    gt_box = gt_box.numpy()
+    gt_box_num = np.sum(np.sum(gt_box, axis=1)!=0)
+    for gt_box_idx in range(gt_box_num):
+        x_min_gt, y_min_gt, x_max_gt, y_max_gt = map(float, gt_box[gt_box_idx])
+        x_min_gt, x_max_gt = map(lambda x: int(x*original_width), [x_min_gt, x_max_gt])
+        y_min_gt, y_max_gt = map(lambda x: int(x*original_height), [y_min_gt, y_max_gt])
+        x_mid_gt, y_mid_gt = (x_min_gt+x_max_gt)//2, (y_min_gt+y_max_gt)//2
+
+    l2_dist = ((x_mid_gt-x_mid_pred)**2+(y_mid_gt-y_mid_pred)**2)**0.5
+    print(l2_dist)
+
+    # cv2.circle(superimposed_image, (x_mid_pred, y_mid_pred), 10, (128, 0, 128), thickness=-1)
+    # cv2.circle(superimposed_image, (x_mid_gt, y_mid_gt), 10, (0, 255, 0), thickness=-1)
+    cv2.rectangle(superimposed_image, (x_min_pred, y_min_pred), (x_max_pred, y_max_pred), (128, 0, 128), thickness=1)
+    cv2.rectangle(superimposed_image, (x_min_gt, y_min_gt), (x_max_gt, y_max_gt), (0, 255, 0), thickness=1)
+
+
+    cv2.imwrite(os.path.join(save_image_dir_dic['joint_attention_superimposed'], data_type_id, f'{mode}_{data_id}_superimposed.png'), superimposed_image)
