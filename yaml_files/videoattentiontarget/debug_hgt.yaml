@@ -1,0 +1,46 @@
+data: 
+  name: videoattentiontarget
+  dataset_dir : data/videoattentiontarget
+
+exp_set:
+  save_folder: saved_weights
+  wandb_name: debug
+  wandb_log : False
+
+  batch_size: 2
+  num_workers: 1
+  seed_num: 777
+  gpu_mode : True
+  gpu_start : 2
+  gpu_finish : 2
+
+  resize_height: 320
+  resize_width: 480
+  resize_head_height: 64
+  resize_head_width: 64
+
+exp_params:
+  # learning rate
+  lr : 0.0001
+
+  # gt gaussian
+  gaussian_sigma: 10
+
+  # learning schedule
+  nEpochs : 500
+  start_iter : 0
+  snapshots : 100
+  scheduler_start : 1000
+  scheduler_iter : 1100000
+
+  # pretrained models
+  pretrained_models_dir: saved_weights
+
+  use_pretrained_joint_attention_estimator: False
+  # use_pretrained_head_pose_estimator: True
+  pretrained_joint_attention_estimator_name: pretrain_head_estimator
+  freeze_joint_attention_estimator: False
+  # freeze_joint_attention_estimator: True
+
+model_params:
+  model_type: human_gaze_target_transformer

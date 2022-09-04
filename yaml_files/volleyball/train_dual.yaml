@@ -8,52 +8,25 @@ data:
 
 exp_set:
   save_folder: saved_weights
+  wandb_name: volleyball-dual
+  # wandb_name: volleyball-dual_wo_action
+  # wandb_name: volleyball-dual_wo_gaze
+  wandb_name: volleyball-dual_wo_position
+
   wandb_log : True
-  # wandb_name: volleyball-head_pose_estimator
-  # wandb_name: volleyball-concat_independent
-  # wandb_name: volleyball-concat_independent_wo_img
-  # wandb_name: volleyball-concat_independent_wo_action
-  # wandb_name: volleyball-concat_independent_wo_gaze
-  # wandb_name: volleyball-concat_independent_wo_position
-  # wandb_name: volleyball-concat_independent_wo_action_wo_gaze
-  # wandb_name: volleyball-concat_independent_wo_action_wo_position
-  # wandb_name: volleyball-concat_independent_wo_gaze_wo_position
-  # wandb_name: volleyball-concat_independent_wo_img_wo_action
 
-  # wandb_name: volleyball-concat_independent_direct_pos
-  # wandb_name: volleyball-concat_independent_direct_pos_wo_action
-  # wandb_name: volleyball-concat_independent_direct_pos_wo_gaze
-  # wandb_name: volleyball-concat_independent_direct_pos_wo_position
-  # wandb_name: volleyball-concat_independent_direct_pos_person_liner
-  # wandb_name: volleyball-concat_independent_direct_pos_person_liner_wo_action
-  # wandb_name: volleyball-concat_independent_direct_pos_person_liner_wo_gaze
-  # wandb_name: volleyball-concat_independent_direct_pos_person_liner_wo_position
-  # wandb_name: volleyball-concat_independent_direct_pos_person_each
-  # wandb_name: volleyball-concat_independent_direct_pos_person_each_wo_action
-  # wandb_name: volleyball-concat_independent_direct_pos_person_each_wo_gaze
-  # wandb_name: volleyball-concat_independent_direct_pos_person_each_wo_position
-  # wandb_name: volleyball-concat_independent_direct_pos_w_pos_aug
-  # wandb_name: volleyball-concat_independent_direct_pos_person_ident
-  # wandb_name: volleyball-concat_independent_direct_pos_person_ident_wo_action
-  # wandb_name: volleyball-concat_independent_direct_pos_person_ident_wo_position
-
-  # wandb_name: volleyball-concat_independent_direct_pos_w_rgb_no_use
-  # wandb_name: volleyball-concat_independent_direct_pos_w_rgb_no_use_wo_action
-  # wandb_name: volleyball-concat_independent_direct_pos_w_rgb_no_use_wo_position
-  wandb_name: volleyball-concat_independent_direct_pos_w_rgb_no_use_wo_gaze
-
-  batch_size: 32
-  # batch_size: 8
+  # batch_size: 16
+  batch_size: 8
   num_workers: 16
   seed_num: 777
   gpu_mode : True
   gpu_start : 5
   gpu_finish : 5
 
-  resize_height : 320
-  resize_width : 640
   # resize_height : 720
   # resize_width : 1280
+  resize_height : 320
+  resize_width : 640
   resize_head_width: 64
   resize_head_height: 64
 
@@ -87,7 +60,7 @@ exp_params:
 
   use_gt_gaze: False
   # use_gt_gaze: True
-
+  
   # position augmentation
   use_position_aug: False
   # use_position_aug: True
@@ -132,19 +105,19 @@ exp_params:
   # freeze_joint_attention_estimator: True
 
 model_params:
-  model_type: ja_transformer
+  model_type: ja_transformer_dual
 
   # Position
-  # use_position : False
-  use_position : True
+  use_position : False
+  # use_position : True
   use_position_enc_person : False
   # use_position_enc_person : True
   use_position_enc_type : sine
   # use_position_enc_type : learnable
 
   # Gaze
-  use_gaze : False
-  # use_gaze : True
+  # use_gaze : False
+  use_gaze : True
 
   # Action
   # use_action : False
@@ -152,8 +125,8 @@ model_params:
 
   # Person embedding
   # head_embedding_type : liner
-  # head_embedding_type : mlp
-  head_embedding_type : ident
+  head_embedding_type : mlp
+  # head_embedding_type : ident
   # head_embedding_type : each
 
   # Whole image
@@ -186,10 +159,6 @@ model_params:
   # use_people_people_trans: False
   use_people_people_trans: True
 
-  # rgb_people_trans_type : concat_direct
-  # rgb_people_trans_type : concat_paralell
-  rgb_people_trans_type : concat_independent
-
   people_people_trans_enc_num : 2
   mha_num_heads_people_people : 2
 
@@ -199,8 +168,8 @@ model_params:
   people_feat_dim : 16
 
   # rgb_cnn_extractor_type : normal
-  rgb_cnn_extractor_type : no_use
-  # rgb_cnn_extractor_type : resnet18
+  # rgb_cnn_extractor_type : no_use
+  rgb_cnn_extractor_type : resnet18
   # rgb_cnn_extractor_type : resnet50
   # rgb_cnn_extractor_stage_idx : 1
   # rgb_cnn_extractor_stage_idx : 2
@@ -211,7 +180,3 @@ model_params:
   # rgb_cnn_extractor_stage_idx : 3
   # rgb_cnn_extractor_type : convnext
   # rgb_cnn_extractor_stage_idx : 2
-
-  # angle_distance_fusion: max
-  # angle_distance_fusion: mean
-  angle_distance_fusion: mult
