@@ -41,10 +41,10 @@ exp_set:
   # model_name: volleyball-concat_independent_direct_pos_w_rgb_no_use_wo_position
   # model_name: volleyball-concat_independent_direct_pos_w_rgb_no_use_wo_gaze
 
-  # model_name: volleyball-dual
+  model_name: volleyball-dual
   # model_name: volleyball-dual_wo_position
   # model_name: volleyball-dual_wo_gaze
-  model_name: volleyball-dual_wo_action
+  # model_name: volleyball-dual_wo_action
 
   seed_num : 777
   gpu_mode : True

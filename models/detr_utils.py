@@ -32,34 +32,13 @@ class SetCriterion(nn.Module):
         empty_weight[-1] = self.eos_coef
         self.register_buffer('empty_weight', empty_weight)
 
-    def loss_labels(self, outputs, targets, indices, num_boxes, log=True):
-        """Classification loss (NLL)
-        targets dicts must contain the key "labels" containing a tensor of dim [nb_target_boxes]
-        """
-        assert 'pred_logits' in outputs
-        src_logits = outputs['pred_logits']
-
-        idx = self._get_src_permutation_idx(indices)
-        target_classes_o = torch.cat([t["labels"][J] for t, (_, J) in zip(targets, indices)])
-        target_classes = torch.full(src_logits.shape[:2], self.num_classes,
-                                    dtype=torch.int64, device=src_logits.device)
-        target_classes[idx] = target_classes_o
-
-        loss_ce = F.cross_entropy(src_logits.transpose(1, 2), target_classes, self.empty_weight)
-        losses = {'loss_ce': loss_ce}
-
-        if log:
-            # TODO this should probably be a separate loss, not hacked in this one here
-            losses['class_error'] = 100 - accuracy(src_logits[idx], target_classes_o)[0]
-        return losses
-
     def loss_boxes(self, outputs, targets, indices, num_boxes):
         """Compute the losses related to the bounding boxes, the L1 regression loss and the GIoU loss
            targets dicts must contain the key "boxes" containing a tensor of dim [nb_target_boxes, 4]
            The target boxes are expected in format (center_x, center_y, w, h), normalized by the image size.
         """
         idx = self._get_src_permutation_idx(indices)
-        src_boxes = outputs['head_loc_pred'][idx]
+        src_boxes = box_cxcywh_to_xyxy(outputs['head_loc_pred'][idx])
         target_boxes = torch.cat([targets['head_loc_gt'][b_idx] for b_idx, (_, i) in enumerate(indices)], dim=0)
 
         loss_bbox = F.l1_loss(src_boxes, target_boxes, reduction='none')
@@ -179,12 +158,12 @@ class HungarianMatcher(nn.Module):
         self.cost_giou = cost_giou
         assert cost_class != 0 or cost_bbox != 0 or cost_giou != 0, "all costs cant be 0"
 
-        self.alpha1 = 1
-        self.alpha2 = 1
-        self.beta1 = 1
-        self.beta2 = 1
-        self.beta3 = 1
-        self.beta4 = 1
+        self.alpha1 = 1.0
+        self.alpha2 = 2.5
+        self.beta1 = 2.0
+        self.beta2 = 1.0
+        self.beta3 = 1.0
+        self.beta4 = 2.0
 
     @torch.no_grad()
     def forward(self, outputs, targets):

@@ -21,6 +21,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 import glob
+import sys
 
 # original module
 from dataset.dataset_selector import dataset_generator
@@ -256,6 +257,22 @@ for iteration, batch in enumerate(test_data_loader,1):
     data_type_id = ''
     data_id = data_id_generator(img_path, cfg)
     print(f'Iter:{iteration}, {data_id}, {data_type_id}')
+    
+    head_query_num = is_head_pred.shape[0]
+    head_conf_thresh = 0.8
+    for head_idx in range(head_query_num):
+        head_conf = is_head_pred[head_idx][0]
+        watch_outside_conf = watch_outside_pred[head_idx][0]
+        head_bbox = head_loc_pred[head_idx, :]
+        gaze_map = gaze_heatmap_pred[head_idx, :]
+        
+        if head_conf > head_conf_thresh:
+            print(f'Idx:{head_idx}, Head conf:{head_conf:.2f}, Watch conf:{watch_outside_conf:.2f}')
+            print(watch_outside_conf)
+            print(head_bbox)
+            # print(gaze_map)
+
+    sys.exit()
 
     # expand directories
     for dir_name in ['joint_attention', 'joint_attention_superimposed', 'people_people_att']:
@@ -266,33 +283,19 @@ for iteration, batch in enumerate(test_data_loader,1):
             os.makedirs(os.path.join(save_image_dir_dic[dir_name], data_type_id, f'{data_id}'))
 
     # save joint attention estimation
-    save_image(img_pred, os.path.join(save_image_dir_dic['joint_attention'], data_type_id, f'{mode}_{data_id}_joint_attention.png'))
+    # save_image(img_pred, os.path.join(save_image_dir_dic['joint_attention'], data_type_id, f'{mode}_{data_id}_joint_attention.png'))
 
     # save joint attention estimation as a superimposed image
     img = cv2.resize(img, (original_width, original_height))
-    img_heatmap = cv2.imread(os.path.join(save_image_dir_dic['joint_attention'], data_type_id, f'{mode}_{data_id}_joint_attention.png'), cv2.IMREAD_GRAYSCALE)
-    img_heatmap = cv2.resize(img_heatmap, (img.shape[1], img.shape[0]))
-    img_heatmap_norm = norm_heatmap(img_heatmap)
-    img_heatmap_norm = img_heatmap_norm.astype(np.uint8)
-    img_heatmap_norm = cv2.applyColorMap(img_heatmap_norm, cv2.COLORMAP_JET)
-    superimposed_image = cv2.addWeighted(img, 0.5, img_heatmap_norm, 0.5, 0)
+    # img_heatmap = cv2.imread(os.path.join(save_image_dir_dic['joint_attention'], data_type_id, f'{mode}_{data_id}_joint_attention.png'), cv2.IMREAD_GRAYSCALE)
+    # img_heatmap = cv2.resize(img_heatmap, (img.shape[1], img.shape[0]))
+    # img_heatmap_norm = norm_heatmap(img_heatmap)
+    # img_heatmap_norm = img_heatmap_norm.astype(np.uint8)
+    # img_heatmap_norm = cv2.applyColorMap(img_heatmap_norm, cv2.COLORMAP_JET)
+    # superimposed_image = cv2.addWeighted(img, 0.5, img_heatmap_norm, 0.5, 0)
 
     for person_idx in range(img_gt.shape[0]):
         save_image(img_gt[person_idx], os.path.join(save_image_dir_dic['gt_map'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_gt.png'))
-
-    # get region proposals
-    edge_boxes = get_edge_boxes(img)
-    edge_boxes_score = np.zeros((len(edge_boxes[0]), 4+1))
-    for idx in range(len(edge_boxes[0])):
-        (x, y, w, h), conf = edge_boxes[0][idx], edge_boxes[1][idx]
-        edge_boxes_score[idx, :4] = np.array([x, y, x+w, y+h])
-        atn_score = np.mean(img_heatmap[y:y+h, x:x+w])
-        edge_boxes_score[idx, 4] = atn_score
-
-    score_max_idx = np.argmax(edge_boxes_score[:, 4])
-    pred_bbox = edge_boxes_score[score_max_idx, :4]
-    x_min_pred, y_min_pred, x_max_pred, y_max_pred = map(int, pred_bbox)
-    x_mid_pred, y_mid_pred = (x_min_pred+x_max_pred)//2, (y_min_pred+y_max_pred)//2
 
     # calc distances for each co att box
     gt_box = gt_box.numpy()

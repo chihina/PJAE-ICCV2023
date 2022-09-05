@@ -12,7 +12,7 @@ exp_set:
   # model_name: videocoatt-concat_independent_wo_position
   # model_name: videocoatt-concat_independent_wo_people_trans
   # model_name: videocoatt-concat_independent_w_attraction
-  model_name: videocoatt-concat_independent_w_repulstion
+  # model_name: videocoatt-concat_independent_w_repulstion
   # model_name: videocoatt-concat_independent_w_attraction_w_repulstion
   # model_name: videocoatt-concat_independent_w_attraction_coord
   # model_name: videocoatt-concat_independent_w_repulstion_coord
@@ -29,11 +29,12 @@ exp_set:
   # model_name: videocoatt-concat_independent_w_repulstion_w_resnet_stage4
 
   # model_name: videocoatt-isa
+  model_name: videocoatt-dual
 
   seed_num : 777
   gpu_mode : True
-  gpu_start : 2
-  gpu_finish : 2
+  gpu_start : 4
+  gpu_finish : 4
   num_workers : 1
   batch_size : 1
   wandb_name : test

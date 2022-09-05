@@ -49,8 +49,8 @@ class EndToEndHumanGazeTargetTransformer(nn.Module):
         self.pe_generator_rgb = PositionalEmbeddingGenerator(self.down_height, self.down_width, self.rgb_embeding_dim, 'sine')
 
         # transformer encoder
-        self.trans_enc_self_att_heads = 4
-        self.trans_enc_num = 4
+        self.trans_enc_self_att_heads = 8
+        self.trans_enc_num = 6
         self.trans_enc_dim = self.rgb_embeding_dim
         self.trans_encoder_self_attention = nn.ModuleList([nn.MultiheadAttention(embed_dim=self.trans_enc_dim, num_heads=self.trans_enc_self_att_heads, batch_first=True) for _ in range(self.trans_enc_num)])
         self.trans_encoder_feed_forward = nn.ModuleList(
@@ -64,8 +64,8 @@ class EndToEndHumanGazeTargetTransformer(nn.Module):
         self.trans_encoder_norm = nn.LayerNorm(normalized_shape=self.trans_enc_dim)
 
         # transformer decoder
-        self.trans_dec_self_att_heads = 4
-        self.trans_dec_num = 4
+        self.trans_dec_self_att_heads = 8
+        self.trans_dec_num = 6
         self.trans_dec_dim = self.rgb_embeding_dim
         self.hgt_max_num = 20
         self.hgt_embedding = nn.Parameter(torch.zeros(1, self.hgt_max_num, self.trans_dec_dim))
@@ -230,11 +230,6 @@ class EndToEndHumanGazeTargetTransformer(nn.Module):
         outputs['gaze_heatmap_pred'] = gaze_heatmap_pred
         outputs['is_head_pred'] = is_head_pred
         outputs['watch_outside_pred'] = watch_outside_pred
-        # print('====== Pred =======')
-        # print('head_loc_pred', head_loc_pred.shape)
-        # print('gaze_heatmap_pred', gaze_heatmap_pred.shape)
-        # print('is_head_pred', is_head_pred.shape)
-        # print('watch_outside_pred', watch_outside_pred.shape)
 
         # get ground-truth
         head_loc_gt_no_pad = gt_box
@@ -243,24 +238,8 @@ class EndToEndHumanGazeTargetTransformer(nn.Module):
         gaze_heatmap_gt_no_pad = gaze_heatmap_gt_no_pad.view(self.batch_size, people_num, self.down_height*self.down_width)
         is_head_gt_no_pad = (torch.sum(head_feature, dim=-1) != 0)
         is_head_gt_no_pad = is_head_gt_no_pad.view(self.batch_size, people_num, 1)
-        watch_outside_gt_no_pad = att_inside_flag
+        watch_outside_gt_no_pad = att_inside_flag != 1
         watch_outside_gt_no_pad = watch_outside_gt_no_pad.view(self.batch_size, people_num, 1)
-
-        # get ground-truth padding
-        # head_loc_gt_pad = torch.zeros(self.batch_size, self.hgt_max_num-people_num, 4, device=img_gt.device, 
-        #                                 requires_grad=True)
-        # gaze_heatmap_gt_pad = torch.zeros(self.batch_size, self.hgt_max_num-people_num, self.down_height*self.down_width, device=img_gt.device,
-        #                                 requires_grad=True)
-        # is_head_gt_pad = torch.zeros(self.batch_size, self.hgt_max_num-people_num, 1, device=img_gt.device,
-        #                                 requires_grad=True)
-        # watch_outside_gt_pad = torch.zeros(self.batch_size, self.hgt_max_num-people_num, 1, device=img_gt.device,
-        #                                 requires_grad=True)
-
-        # expand groud-truth tensors
-        # head_loc_gt = torch.cat([head_loc_gt_no_pad, head_loc_gt_pad], dim=1)
-        # gaze_heatmap_gt = torch.cat([gaze_heatmap_gt_no_pad, gaze_heatmap_gt_pad], dim=1)
-        # is_head_gt = torch.cat([is_head_gt_no_pad, is_head_gt_pad], dim=1)
-        # watch_outside_gt = torch.cat([watch_outside_gt_no_pad, watch_outside_gt_pad], dim=1)
         head_loc_gt = torch.cat([head_loc_gt_no_pad], dim=1)
         gaze_heatmap_gt = torch.cat([gaze_heatmap_gt_no_pad], dim=1)
         is_head_gt = torch.cat([is_head_gt_no_pad], dim=1)
@@ -272,11 +251,6 @@ class EndToEndHumanGazeTargetTransformer(nn.Module):
         targets['gaze_heatmap_gt'] = gaze_heatmap_gt
         targets['is_head_gt'] = is_head_gt
         targets['watch_outside_gt'] = watch_outside_gt
-        # print('====== Groud-truth =======')
-        # print('head_loc_gt', targets['head_loc_gt'].shape)
-        # print('gaze_heatmap_gt', targets['gaze_heatmap_gt'].shape)
-        # print('is_head_gt', targets['is_head_gt'].shape)
-        # print('watch_outside_gt', targets['watch_outside_gt'].shape)
 
         loss_set = self.criterion(outputs, targets)
 
