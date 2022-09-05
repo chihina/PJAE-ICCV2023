@@ -25,7 +25,7 @@ import sys
 import json
 from PIL import Image
 from sklearn.cluster import MeanShift
-from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score
+from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 
 # original module
 from dataset.dataset_selector import dataset_generator
@@ -330,6 +330,7 @@ metrics_dict['accuracy'] = accuracy_score(co_att_gt_array, co_att_pred_array)
 metrics_dict['precision'] = precision_score(co_att_gt_array, co_att_pred_array)
 metrics_dict['recall'] = recall_score(co_att_gt_array, co_att_pred_array)
 metrics_dict['f1'] = f1_score(co_att_gt_array, co_att_pred_array)
+metrics_dict['auc'] = roc_auc_score(co_att_gt_array, co_att_pred_array)
 
 # save detection rate
 det_rate_list = [f'Det (Thr={det_thr})' for det_thr in range(0, 110, 10)]
