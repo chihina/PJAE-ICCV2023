@@ -10,10 +10,11 @@ data:
 exp_set:
   save_folder : saved_weights
   # model_name: volleyball-concat_independent
-  # model_name: volleyball-concat_independent_wo_img
   # model_name: volleyball-concat_independent_wo_action
   # model_name: volleyball-concat_independent_wo_gaze
   # model_name: volleyball-concat_independent_wo_position
+  # model_name: volleyball-concat_independent_wo_img
+
   # model_name: volleyball-concat_independent_wo_action_wo_gaze
   # model_name: volleyball-concat_independent_wo_action_wo_position
   # model_name: volleyball-concat_independent_wo_gaze_wo_position
@@ -23,14 +24,17 @@ exp_set:
   # model_name: volleyball-concat_independent_direct_pos_wo_action
   # model_name: volleyball-concat_independent_direct_pos_wo_gaze
   # model_name: volleyball-concat_independent_direct_pos_wo_position
+
   # model_name: volleyball-concat_independent_direct_pos_person_liner
   # model_name: volleyball-concat_independent_direct_pos_person_liner_wo_action
   # model_name: volleyball-concat_independent_direct_pos_person_liner_wo_gaze
   # model_name: volleyball-concat_independent_direct_pos_person_liner_wo_position
+  
   # model_name: volleyball-concat_independent_direct_pos_person_each
   # model_name: volleyball-concat_independent_direct_pos_person_each_wo_action
   # model_name: volleyball-concat_independent_direct_pos_person_each_wo_gaze
   # model_name: volleyball-concat_independent_direct_pos_person_each_wo_position
+  
   # model_name: volleyball-concat_independent_direct_pos_w_pos_aug
   # model_name: volleyball-concat_independent_direct_pos_person_ident
   # model_name: volleyball-concat_independent_direct_pos_person_ident_wo_action
@@ -41,7 +45,7 @@ exp_set:
   # model_name: volleyball-concat_independent_direct_pos_w_rgb_no_use_wo_position
   # model_name: volleyball-concat_independent_direct_pos_w_rgb_no_use_wo_gaze
 
-  model_name: volleyball-dual
+  # model_name: volleyball-dual
   # model_name: volleyball-dual_wo_position
   # model_name: volleyball-dual_wo_gaze
   # model_name: volleyball-dual_wo_action
@@ -60,12 +64,12 @@ exp_params:
   use_frame_type: mid
   # use_frame_type: all
 
-  # bbox_types: GT
-  bbox_types: PRED
-  # action_types: GT
-  action_types: PRED
-  # gaze_types: GT
-  gaze_types: PRED
+  bbox_types: GT
+  # bbox_types: PRED
+  action_types: GT
+  # action_types: PRED
+  gaze_types: GT
+  # gaze_types: PRED
   # gaze_types: NONE
 
   # use_action: True

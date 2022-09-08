@@ -145,6 +145,10 @@ class VideoCoAttDataset(Dataset):
 
         head_feature_tensor[:, 0] /= img_width
         head_feature_tensor[:, 1] /= img_height
+        head_bbox_tensor[:, 0] /= img_width
+        head_bbox_tensor[:, 1] /= img_height
+        head_bbox_tensor[:, 2] /= img_width
+        head_bbox_tensor[:, 3] /= img_height
 
         # add position noise
         if self.use_position_aug and self.mode == 'train':
@@ -179,6 +183,7 @@ class VideoCoAttDataset(Dataset):
         data = {}
         data['head_img'] = head_img
         data['head_feature'] = head_feature_tensor
+        data['head_bbox'] = head_bbox_tensor
         data['head_vector_gt'] = head_vector_gt_tensor
         data['img_gt'] = gt_img_pad
         data['gt_box'] = bboxes

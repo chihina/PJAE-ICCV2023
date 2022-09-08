@@ -268,7 +268,6 @@ for iteration, batch in enumerate(test_data_loader,1):
         
         if head_conf > head_conf_thresh:
             print(f'Idx:{head_idx}, Head conf:{head_conf:.2f}, Watch conf:{watch_outside_conf:.2f}')
-            print(watch_outside_conf)
             print(head_bbox)
             # print(gaze_map)
 

@@ -49,8 +49,10 @@ class JointAttentionEstimatorTransformer(nn.Module):
         # Whole image
         self.use_img = cfg.model_params.use_img
 
+        # attention map
+        self.use_attention_map_rgb = cfg.model_params.use_attention_map_rgb
+
         # gaze map
-        self.use_angle_dist_rgb_type = cfg.model_params.use_angle_dist_rgb_type
         self.use_dynamic_angle = cfg.model_params.use_dynamic_angle
         self.use_dynamic_distance = cfg.model_params.use_dynamic_distance
         self.dynamic_distance_type = cfg.model_params.dynamic_distance_type
@@ -238,12 +240,32 @@ class JointAttentionEstimatorTransformer(nn.Module):
         elif self.rgb_cnn_extractor_type == 'no_use':
             # dummy
             down_scale_ratio = 1
+        elif self.rgb_cnn_extractor_type == 'scene_davt':
+            # dummy
+            down_scale_ratio = 1
+            self.one_by_one_conv = nn.Sequential(
+                                       nn.Conv2d(in_channels=512, out_channels=self.rgb_embeding_dim, kernel_size=1),
+                                       nn.ReLU(),
+                                       )  
         else:
             print('Please use correct rgb cnn extractor type')
 
-        self.down_height = self.resize_height//down_scale_ratio
-        self.down_width = self.resize_width//down_scale_ratio
+        if self.rgb_cnn_extractor_type == 'scene_davt':
+            self.down_height = 7
+            self.down_width = 7
+        else:
+            self.down_height = self.resize_height//down_scale_ratio
+            self.down_width = self.resize_width//down_scale_ratio
+        
         self.pe_generator_rgb = PositionalEmbeddingGenerator(self.down_height, self.down_width, self.rgb_embeding_dim, self.use_position_enc_type)
+
+        if self.use_attention_map_rgb:
+            self.attention_map_estimator_rgb = nn.Sequential(
+                                        nn.Linear(self.rgb_embeding_dim, self.rgb_embeding_dim),
+                                        nn.ReLU(),
+                                        nn.Linear(self.rgb_embeding_dim, self.down_height*self.down_width),
+                                        nn.Softmax(dim=-1),
+                                        )
 
         if self.rgb_people_trans_type == 'concat_paralell':
             self.rgb_people_trans_dim = self.rgb_embeding_dim
@@ -277,7 +299,6 @@ class JointAttentionEstimatorTransformer(nn.Module):
             if self.rgb_people_trans_type == 'concat_direct':
                 self.distance_map_generator = nn.Sequential(
                                         nn.Linear(self.rgb_people_trans_dim, 1),
-                                        nn.Sigmoid(),
                                         )
 
         if self.dynamic_gaussian_num:
@@ -356,7 +377,7 @@ class JointAttentionEstimatorTransformer(nn.Module):
         att_inside_flag = inp['att_inside_flag']
 
         torch.autograd.set_detect_anomaly(True)
-        
+
         # get usuful variable
         self.batch_size, people_num, _, _, _ = xy_axis_map.shape
 
@@ -492,12 +513,20 @@ class JointAttentionEstimatorTransformer(nn.Module):
             rgb_feat_patch = self.rgb_feat_extractor(rgb_img)
         elif self.rgb_cnn_extractor_type == 'no_use':
             pass
+        elif self.rgb_cnn_extractor_type == 'scene_davt':
+            encoded_scene_davt = inp['encoded_scene_davt']
+            rgb_feat = self.one_by_one_conv(encoded_scene_davt)
         else:
             rgb_feat = self.rgb_feat_extractor(rgb_img)
 
         if self.rgb_cnn_extractor_type != 'no_use':
             if self.rgb_cnn_extractor_type == 'rgb_patch' or self.rgb_cnn_extractor_type == 'saliency':
                 rgb_feat_channel, rgb_feat_height, rgb_feat_width = rgb_feat_patch.shape[-1], self.down_height, self.down_width
+            elif self.rgb_cnn_extractor_type == 'scene_davt':
+                # extract rgb position encoding
+                rgb_feat_channel, rgb_feat_height, rgb_feat_width = rgb_feat.shape[-3:]
+                rgb_feat_patch = rgb_feat.view(self.batch_size*people_num, rgb_feat_channel, -1)
+                rgb_feat_patch = torch.transpose(rgb_feat_patch, 1, 2)
             else:
                 # extract rgb position encoding
                 rgb_feat_channel, rgb_feat_height, rgb_feat_width = rgb_feat.shape[-3:]
@@ -506,17 +535,21 @@ class JointAttentionEstimatorTransformer(nn.Module):
 
             if self.rgb_people_trans_type == 'concat_direct' or self.rgb_people_trans_type == 'concat_independent':
 
-                rgb_feat_patch_view = rgb_feat_patch.view(self.batch_size, 1, -1, self.rgb_embeding_dim)
-                rgb_feat_patch_expand = rgb_feat_patch_view.expand(self.batch_size, people_num, rgb_feat_patch.shape[1], self.rgb_embeding_dim)
+                if self.rgb_cnn_extractor_type == 'scene_davt':
+                    rgb_feat_patch_view = rgb_feat_patch.view(self.batch_size, people_num, -1, self.rgb_embeding_dim)
+                    rgb_feat_patch_expand = rgb_feat_patch_view.expand(self.batch_size, people_num, rgb_feat_patch.shape[1], self.rgb_embeding_dim)
+                else:
+                    rgb_feat_patch_view = rgb_feat_patch.view(self.batch_size, 1, -1, self.rgb_embeding_dim)
+                    rgb_feat_patch_expand = rgb_feat_patch_view.expand(self.batch_size, people_num, rgb_feat_patch.shape[1], self.rgb_embeding_dim)
+
                 head_info_params_view = head_info_params.view(self.batch_size, people_num, 1, self.people_feat_dim)
                 head_info_params_expand = head_info_params_view.expand(self.batch_size, people_num, rgb_feat_patch.shape[1], self.people_feat_dim)
 
-                # angle distribution
-                if self.use_angle_dist_rgb_type == 'feat':
-                    angle_dist_rgb_mask = torch.exp(-torch.pow(theta_x_y, 2)/(2* 0.1 ** 2))
-                    angle_dist_rgb_mask_down = F.interpolate(angle_dist_rgb_mask, (self.down_height, self.down_width), mode='bilinear')
-                    angle_dist_rgb_mask_down_patch = angle_dist_rgb_mask_down.view(self.batch_size, people_num, -1, 1)
-                    rgb_feat_patch_expand = rgb_feat_patch_expand * angle_dist_rgb_mask_down_patch
+                # attention map for rgb
+                if self.use_attention_map_rgb:
+                    attention_map_rgb = self.attention_map_estimator_rgb(head_info_params)
+                    attention_map_rgb = attention_map_rgb[:, :, :, None]
+                    rgb_feat_patch_expand = rgb_feat_patch_expand * attention_map_rgb
 
                 # pos encording
                 rgb_pos_embedding = self.pe_generator_rgb.pos_embedding
@@ -541,7 +574,7 @@ class JointAttentionEstimatorTransformer(nn.Module):
                 rgb_people_feat_all = rgb_people_feat_all_pos
 
             for i in range(self.rgb_people_trans_enc_num):
-                key_padding_mask_rgb_trans_rgb = torch.sum(rgb_feat_patch, dim=-1)*0
+                key_padding_mask_rgb_trans_rgb = torch.zeros(self.batch_size, self.down_height*self.down_width, device=rgb_feat.device)
                 key_padding_mask_rgb_trans_people = (torch.sum(head_feature, dim=-1) == 0)
                 key_padding_mask_rgb_trans = torch.cat([key_padding_mask_rgb_trans_rgb, key_padding_mask_rgb_trans_people], dim=-1).bool()
 
@@ -693,7 +726,14 @@ class JointAttentionEstimatorTransformer(nn.Module):
         data['img_mid_pred'] = x_mid
         data['img_mid_mean_pred'] = x_mid_mean
         data['head_tensor'] = head_tensor
-        data['angle_dist'] = angle_dist
+
+        if self.use_attention_map_rgb:
+            attention_map_rgb = attention_map_rgb[:, :, :, 0].view(self.batch_size, people_num, self.down_height, self.down_width)
+            attention_map_rgb = (attention_map_rgb - torch.min(attention_map_rgb)) / (torch.max(attention_map_rgb)-torch.min(attention_map_rgb))
+            data['angle_dist'] = attention_map_rgb
+        else:
+            data['angle_dist'] = angle_dist
+
         data['distance_dist'] = distance_dist
         data['trans_att_people_rgb'] = trans_att_people_rgb
         data['trans_att_people_people'] = trans_att_people_people

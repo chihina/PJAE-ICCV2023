@@ -9,12 +9,14 @@ exp_set:
   wandb_log : False
 
   # batch_size: 16
-  batch_size: 1
+  # batch_size: 8
+  batch_size: 2
+  # batch_size: 1
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 0
-  gpu_finish : 0
+  gpu_start : 5
+  gpu_finish : 5
 
   resize_height: 320
   resize_width: 480
@@ -89,6 +91,12 @@ exp_params:
   # freeze_head_pose_estimator: False
   freeze_head_pose_estimator: True
 
+  # use_pretrained_saliency_extractor: False
+  use_pretrained_saliency_extractor: True
+  pretrained_saliency_extractor_name: pretrained_scene_extractor_davt
+  # freeze_saliency_extractor: False
+  freeze_saliency_extractor: True
+
   use_pretrained_joint_attention_estimator: False
   # use_pretrained_head_pose_estimator: True
   pretrained_joint_attention_estimator_name: pretrain_head_estimator
@@ -96,14 +104,13 @@ exp_params:
   # freeze_joint_attention_estimator: True
 
 model_params:
-  # model_type: ja_transformer
-  model_type: ja_transformer_rgb_att
+  model_type: ja_transformer
 
   # Position
   # use_position : False
   use_position : True
-  # use_position_enc_person : False
-  use_position_enc_person : True
+  use_position_enc_person : False
+  # use_position_enc_person : True
   use_position_enc_type : sine
   # use_position_enc_type : learnable
 
@@ -126,6 +133,9 @@ model_params:
   # Whole image
   # use_img : False
   use_img : True
+
+  # use_attention_map_rgb : False
+  use_attention_map_rgb : True
 
   # Gaze map
   use_angle_dist_rgb_type : none
@@ -156,19 +166,20 @@ model_params:
   # rgb_people_trans_type : concat_paralell
   rgb_people_trans_type : concat_independent
 
-  people_people_trans_enc_num : 2
+  people_people_trans_enc_num : 1
   mha_num_heads_people_people : 2
 
-  rgb_people_trans_enc_num : 4
-  mha_num_heads_rgb_people : 4
+  rgb_people_trans_enc_num : 1
+  mha_num_heads_rgb_people : 2
   rgb_embeding_dim : 64
   people_feat_dim : 16
 
   # rgb_cnn_extractor_type : normal
   # rgb_cnn_extractor_type : no_use
   # rgb_cnn_extractor_type : saliency
+  rgb_cnn_extractor_type : scene_davt
   # rgb_cnn_extractor_type : rgb_patch
-  rgb_cnn_extractor_type : resnet18
+  # rgb_cnn_extractor_type : resnet18
   # rgb_cnn_extractor_type : resnet50
   # rgb_cnn_extractor_stage_idx : 1
   # rgb_cnn_extractor_stage_idx : 2

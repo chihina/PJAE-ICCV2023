@@ -173,7 +173,6 @@ class EndToEndHumanGazeTargetTransformer(nn.Module):
         # tranformer encoder
         for i in range(self.trans_enc_num):
             feat_self_att, _ = self.trans_encoder_self_attention[i](rgb_feature_flatten_pos, rgb_feature_flatten_pos, rgb_feature_flatten)
-
             feat_self_att_res = feat_self_att + rgb_feature_flatten
             feat_feed_forward = self.trans_encoder_feed_forward[i](feat_self_att_res)
             feat_feed_forward_res = feat_self_att_res + feat_feed_forward

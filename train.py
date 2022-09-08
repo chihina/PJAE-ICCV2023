@@ -37,16 +37,22 @@ def process_epoch(epoch, data_set, mode):
     if mode == 'train':
         model_head.train()
         model_attention.train()
+        model_saliency.train()
         if cfg.exp_params.freeze_head_pose_estimator:
             model_head.eval()
+        if cfg.exp_params.freeze_saliency_extractor:
+            model_saliency.eval()
     else:
         model_head.eval()
         model_attention.eval()
+        model_saliency.eval()
 
     for iteration, batch in enumerate(data_set, 1):
         # init graph
         if not cfg.exp_params.freeze_head_pose_estimator:
             optimizer_head.zero_grad()
+        if not cfg.exp_params.freeze_saliency_extractor:
+            optimizer_saliency.zero_grad()
         optimizer_attention.zero_grad()
 
         # init heatmaps
@@ -99,6 +105,11 @@ def process_epoch(epoch, data_set, mode):
         else:
             batch['input_gaze'] = batch['head_vector'].clone() * 0
 
+        # scene feature extraction
+        out_scene_feat = model_saliency(batch)
+        batch['encoded_scene_davt'] = out_scene_feat['encoded_scene_davt']
+        batch['encoded_heatmap_davt'] = out_scene_feat['encoded_heatmap_davt']
+
         # joint attention estimation
         out_attention = model_attention(batch)
 
@@ -119,6 +130,8 @@ def process_epoch(epoch, data_set, mode):
 
             if not cfg.exp_params.freeze_head_pose_estimator:
                 optimizer_head.step()
+            if not cfg.exp_params.freeze_saliency_extractor:
+                optimizer_saliency.step()
             optimizer_attention.step()
 
         for loss_name, loss_val in loss_set.items():
@@ -145,8 +158,10 @@ def process_epoch(epoch, data_set, mode):
 def checkpoint(epoch):
     weights_save_dir = os.path.join(cfg.exp_set.save_folder, cfg.data.name, cfg.exp_set.wandb_name)
     model_head_out_path = os.path.join(weights_save_dir, f"model_head_epoch_{epoch}.pth")
+    model_saliency_out_path = os.path.join(weights_save_dir, f"model_saliency_epoch_{epoch}.pth")
     model_attention_out_path = os.path.join(weights_save_dir, f"model_gaussian_epoch_{epoch}.pth")
     torch.save(model_head.state_dict(), model_head_out_path)
+    torch.save(model_saliency.state_dict(), model_saliency_out_path)
     torch.save(model_attention.state_dict(), model_attention_out_path)
     print(f"Checkpoint saved to {weights_save_dir}")
 
@@ -154,8 +169,10 @@ def checkpoint(epoch):
 def best_checkpoint(epoch):
     weights_save_dir = os.path.join(cfg.exp_set.save_folder, cfg.data.name, cfg.exp_set.wandb_name)
     model_head_out_path = os.path.join(weights_save_dir, "model_head_best.pth.tar")
+    model_saliency_out_path = os.path.join(weights_save_dir, "model_saliency_best.pth.tar")
     model_attention_out_path = os.path.join(weights_save_dir, "model_gaussian_best.pth.tar")
     torch.save(model_head.state_dict(), model_head_out_path)
+    torch.save(model_saliency.state_dict(), model_saliency_out_path)
     torch.save(model_attention.state_dict(), model_attention_out_path)
     print(f"Best Checkpoint saved to {weights_save_dir}")
 
@@ -205,7 +222,7 @@ print('{} Train samples found'.format(len(train_set)))
 print('{} Test samples found'.format(len(val_set)))
 
 print("===> Building model")
-model_head, model_attention, cfg = model_generator(cfg)
+model_head, model_attention, model_saliency, cfg = model_generator(cfg)
 
 if cfg.exp_params.use_pretrained_head_pose_estimator:
     print("===> Load pretrained model (head pose estimator)")
@@ -213,6 +230,16 @@ if cfg.exp_params.use_pretrained_head_pose_estimator:
     model_weight_path = os.path.join(cfg.exp_params.pretrained_models_dir, cfg.data.name, model_name, "model_head_best.pth.tar")
     fixed_model_state_dict = load_multi_gpu_models(torch.load(model_weight_path,  map_location='cuda:'+str(gpus_list[0])))
     model_head.load_state_dict(fixed_model_state_dict)
+
+if cfg.exp_params.use_pretrained_saliency_extractor:
+    print("===> Load pretrained model (saliecny extractor)")
+    model_name = cfg.exp_params.pretrained_saliency_extractor_name
+    model_weight_path = os.path.join(cfg.exp_params.pretrained_models_dir, cfg.data.name, model_name, "model_demo.pt")
+    model_saliency_dict = model_saliency.state_dict()
+    pretrained_dict = torch.load(model_weight_path,  map_location='cuda:'+str(gpus_list[0]))
+    pretrained_dict = pretrained_dict['model']
+    model_saliency_dict.update(pretrained_dict)
+    model_saliency.load_state_dict(model_saliency_dict)
 
 if cfg.exp_params.use_pretrained_joint_attention_estimator:
     print("===> Load pretrained model (joint attention estimator)")
@@ -224,11 +251,15 @@ if cfg.exp_params.use_pretrained_joint_attention_estimator:
 # scheduling learning rate 
 optimizer_head = optim.Adam(model_head.parameters(), lr=cfg.exp_params.lr)
 optimizer_attention = optim.Adam(model_attention.parameters(), lr=cfg.exp_params.lr)
+optimizer_saliency = optim.Adam(model_saliency.parameters(), lr=cfg.exp_params.lr)
 
 scheduler_head = optim.lr_scheduler.MultiStepLR(optimizer_head, 
                                            milestones=[i for i in range(cfg.exp_params.scheduler_start, cfg.exp_params.nEpochs, cfg.exp_params.scheduler_iter)],
                                            gamma=0.1)
 scheduler_attention = optim.lr_scheduler.MultiStepLR(optimizer_attention, 
+                                           milestones=[i for i in range(cfg.exp_params.scheduler_start, cfg.exp_params.nEpochs, cfg.exp_params.scheduler_iter)],
+                                           gamma=0.1)
+scheduler_saliency = optim.lr_scheduler.MultiStepLR(optimizer_saliency, 
                                            milestones=[i for i in range(cfg.exp_params.scheduler_start, cfg.exp_params.nEpochs, cfg.exp_params.scheduler_iter)],
                                            gamma=0.1)
 
@@ -237,12 +268,14 @@ if cuda:
         print("===> Use multiple GPUs")
         model_head = torch.nn.DataParallel(model_head, device_ids=gpus_list)
         model_attention = torch.nn.DataParallel(model_attention, device_ids=gpus_list)
+        model_saliency = torch.nn.DataParallel(model_saliency, device_ids=gpus_list)
 
     else:
         print("===> Use single GPU")
     
     model_head = model_head.cuda(gpus_list[0])
     model_attention = model_attention.cuda(gpus_list[0])
+    model_saliency = model_saliency.cuda(gpus_list[0])
 
 if cfg.exp_set.wandb_log:
     print("===> Generate wandb system")
@@ -250,6 +283,7 @@ if cfg.exp_set.wandb_log:
     wandb.init(project=f"config-action-aware-joint-attention-estimation-{cfg.data.name}", name=cfg.exp_set.wandb_name, config=cfg)
     wandb.watch(model_head)
     wandb.watch(model_attention)
+    wandb.watch(model_saliency)
 
 # Training
 best_loss = 10000000000.0
@@ -260,6 +294,7 @@ for epoch in range(cfg.exp_params.start_iter, cfg.exp_params.nEpochs + 1):
     # schedule learning rate
     scheduler_head.step()
     scheduler_attention.step()
+    scheduler_saliency.step()
 
     current_val_loss = process_epoch(epoch, validation_data_loader, 'valid')
 

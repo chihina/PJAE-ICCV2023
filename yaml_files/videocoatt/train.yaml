@@ -5,40 +5,19 @@ data:
 
 exp_set:
   save_folder: saved_weights
+  # wandb_name: videocoatt-concat_independent_w_davt_scene
+  wandb_name: videocoatt-concat_direct_w_davt_scene
   wandb_log : True
-  # wandb_name: videocoatt-head_pose_estimator
-  # wandb_name: videocoatt-concat_independent
-  # wandb_name: videocoatt-concat_independent_wo_img
-  # wandb_name: videocoatt-concat_independent_wo_gaze
-  # wandb_name: videocoatt-concat_independent_wo_position
-  # wandb_name: videocoatt-concat_independent_w_attraction
-  # wandb_name: videocoatt-concat_independent_w_repulstion
-  # wandb_name: videocoatt-concat_independent_w_attraction_w_repulstion
-  # wandb_name: videocoatt-concat_independent_w_attraction_coord
-  # wandb_name: videocoatt-concat_independent_w_repulstion_coord
-  # wandb_name: videocoatt-concat_independent_w_attraction_coord_w_repulstion_coord
-  # wandb_name: videocoatt-concat_independent_w_reg_not_att
 
-  # wandb_name: videocoatt-concat_independent_w_repulstion_wo_img
-  # wandb_name: videocoatt-concat_independent_w_repulstion_wo_gaze
-  # wandb_name: videocoatt-concat_independent_w_repulstion_wo_position
-  # wandb_name: videocoatt-concat_independent_w_repulstion_w_saliency_img
-  # wandb_name: videocoatt-concat_independent_w_repulstion_w_rgb_img_patch
-  # wandb_name: videocoatt-concat_independent_w_repulstion_w_resnet_stage4
-
-  # wandb_name: videocoatt-concat_independent_w_att
-  # wandb_name: videocoatt-concat_independent_w_repulstion_w_att
-  wandb_name: videocoatt-concat_independent_wo_people_trans_di_pos_w_pos_aug
-
-  batch_size: 16
-  # batch_size: 8
-  # batch_size: 4
+  # batch_size: 16
+  batch_size: 8
+  # batch_size: 2
   # batch_size: 1
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 6
-  gpu_finish : 6
+  gpu_start : 4
+  gpu_finish : 4
 
   resize_height: 320
   resize_width: 480
@@ -55,11 +34,11 @@ exp_params:
   use_e_att_loss : False
   # use_e_att_loss : True
 
-  use_each_e_map_loss : False
-  # use_each_e_map_loss : True
+  # use_each_e_map_loss : False
+  use_each_e_map_loss : True
 
-  # use_regression_loss : False
-  use_regression_loss : True
+  use_regression_loss : False
+  # use_regression_loss : True
 
   use_regression_not_att_loss : False
   # use_regression_not_att_loss : True
@@ -113,6 +92,12 @@ exp_params:
   # freeze_head_pose_estimator: False
   freeze_head_pose_estimator: True
 
+  # use_pretrained_saliency_extractor: False
+  use_pretrained_saliency_extractor: True
+  pretrained_saliency_extractor_name: pretrained_scene_extractor_davt
+  # freeze_saliency_extractor: False
+  freeze_saliency_extractor: True
+
   use_pretrained_joint_attention_estimator: False
   # use_pretrained_head_pose_estimator: True
   pretrained_joint_attention_estimator_name: pretrain_head_estimator
@@ -150,6 +135,9 @@ model_params:
   # use_img : False
   use_img : True
 
+  use_attention_map_rgb : False
+  # use_attention_map_rgb : True
+
   # Gaze map
   use_angle_dist_rgb_type : none
   # use_angle_dist_rgb_type : raw
@@ -161,9 +149,9 @@ model_params:
   # use_dynamic_distance : False
   use_dynamic_distance : True
 
-  dynamic_distance_type: gaussian
-  dynamic_gaussian_num : 1
-  # dynamic_distance_type: generator
+  # dynamic_distance_type: gaussian
+  # dynamic_gaussian_num : 1
+  dynamic_distance_type: generator
   use_gauss_limit : False
   # use_gauss_limit : True
 
@@ -172,31 +160,31 @@ model_params:
   # gaze_map_estimator_type : deep
 
   # transformer
-  use_people_people_trans: False
-  # use_people_people_trans: True
+  # use_people_people_trans: False
+  use_people_people_trans: True
 
-  # rgb_people_trans_type : concat_direct
+  rgb_people_trans_type : concat_direct
   # rgb_people_trans_type : concat_paralell
-  rgb_people_trans_type : concat_independent
+  # rgb_people_trans_type : concat_independent
 
-  people_people_trans_enc_num : 2
+  people_people_trans_enc_num : 1
   mha_num_heads_people_people : 2
 
-  # rgb_people_trans_enc_num : 4
   rgb_people_trans_enc_num : 1
-  mha_num_heads_rgb_people : 4
+  mha_num_heads_rgb_people : 2
   rgb_embeding_dim : 64
   people_feat_dim : 16
 
   # rgb_cnn_extractor_type : normal
   # rgb_cnn_extractor_type : no_use
   # rgb_cnn_extractor_type : saliency
+  rgb_cnn_extractor_type : scene_davt
   # rgb_cnn_extractor_type : rgb_patch
-  rgb_cnn_extractor_type : resnet18
+  # rgb_cnn_extractor_type : resnet18
   # rgb_cnn_extractor_type : resnet50
   # rgb_cnn_extractor_stage_idx : 1
   # rgb_cnn_extractor_stage_idx : 2
-  rgb_cnn_extractor_stage_idx : 3
+  # rgb_cnn_extractor_stage_idx : 3
   # rgb_cnn_extractor_stage_idx : 4
   # rgb_cnn_extractor_type : hrnet_w18_small
   # rgb_cnn_extractor_type : hrnet_w32
