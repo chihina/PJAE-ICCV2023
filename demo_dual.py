@@ -231,8 +231,7 @@ for iteration, batch in enumerate(test_data_loader,1):
 
         # scene feature extraction
         out_scene_feat = model_saliency(batch)
-        batch['encoded_scene_davt'] = out_scene_feat['encoded_scene_davt']
-        batch['encoded_heatmap_davt'] = out_scene_feat['encoded_heatmap_davt']
+        batch = {**batch, **out_scene_feat}
 
         # joint attention estimation
         out_attention = model_attention(batch)
@@ -310,7 +309,6 @@ for iteration, batch in enumerate(test_data_loader,1):
     for person_idx in range(key_no_padding_num):
         save_image(img_gt[person_idx], os.path.join(save_image_dir_dic['gt_map'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_gt.png'))
         save_image(hm_person_to_scene[person_idx], os.path.join(save_image_dir_dic['ja_middle_scene_each'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_ja_middle_scene_each.png'))
-        print(torch.min(hm_person_to_scene[person_idx]), torch.max(hm_person_to_scene[person_idx]))
 
     # save joint attention estimation as a superimposed image
     img = cv2.resize(img, (cfg.exp_set.resize_width, cfg.exp_set.resize_height))
@@ -348,4 +346,10 @@ for iteration, batch in enumerate(test_data_loader,1):
         ja_middle_scene_each = ja_middle_scene_each.astype(np.uint8)
         ja_middle_scene_each = cv2.applyColorMap(cv2.resize(ja_middle_scene_each, (img.shape[1], img.shape[0])), cv2.COLORMAP_JET)
         superimposed_image_middle_scene_each = cv2.addWeighted(img, 0.5, ja_middle_scene_each, 0.5, 0)
+
+        head_feature_person = head_feature[person_idx]
+        head_x, head_y = head_feature_person[0:2]
+        head_x, head_y = int(head_x*cfg.exp_set.resize_width), int(head_y*cfg.exp_set.resize_height)
+        cv2.circle(superimposed_image_middle_scene_each, (head_x, head_y), 10, (128, 0, 128), thickness=-1)
+
         cv2.imwrite(os.path.join(save_image_dir_dic['ja_middle_scene_each_superimposed'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_superimposed.png'), superimposed_image_middle_scene_each)

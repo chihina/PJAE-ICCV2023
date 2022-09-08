@@ -69,6 +69,7 @@ class EndToEndHumanGazeTargetTransformer(nn.Module):
         self.trans_dec_dim = self.rgb_embeding_dim
         self.hgt_max_num = 20
         self.hgt_embedding = nn.Parameter(torch.zeros(1, self.hgt_max_num, self.trans_dec_dim))
+        self.hgt_embedding_pos = nn.Parameter(torch.zeros(1, self.hgt_max_num, self.trans_dec_dim))
 
         # transformer decoder
         self.trans_decoder_self_attention = nn.ModuleList(
@@ -182,6 +183,8 @@ class EndToEndHumanGazeTargetTransformer(nn.Module):
 
         # tranformer decoder
         hgt_embedding = self.hgt_embedding
+        hgt_embedding_pos = self.hgt_embedding_pos
+        hgt_embedding = hgt_embedding + hgt_embedding_pos
         hgt_embedding = hgt_embedding.expand(self.batch_size, self.hgt_max_num, self.trans_dec_dim)
         for i in range(self.trans_dec_num):
             hgt_embedding_self_att, _ = self.trans_decoder_self_attention[i](hgt_embedding, hgt_embedding, hgt_embedding)

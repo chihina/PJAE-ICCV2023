@@ -107,8 +107,7 @@ def process_epoch(epoch, data_set, mode):
 
         # scene feature extraction
         out_scene_feat = model_saliency(batch)
-        batch['encoded_scene_davt'] = out_scene_feat['encoded_scene_davt']
-        batch['encoded_heatmap_davt'] = out_scene_feat['encoded_heatmap_davt']
+        batch = {**batch, **out_scene_feat}
 
         # joint attention estimation
         out_attention = model_attention(batch)

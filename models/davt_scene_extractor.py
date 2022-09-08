@@ -254,21 +254,14 @@ class ModelSpatial(nn.Module):
 class ModelSpatialDummy(nn.Module):
     # Define a ResNet 50-ish arch
     def __init__(self, block = Bottleneck, layers_scene = [3, 4, 6, 3, 2], layers_face = [3, 4, 6, 3, 2]):
-        # Resnet Feature Extractor
-        self.inplanes_scene = 64
-        self.inplanes_face = 64
-        super(ModelSpatial, self).__init__()
-        # common
-        self.relu = nn.ReLU(inplace=True)
-        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
-        self.avgpool = nn.AvgPool2d(7, stride=1)
-
+        super(ModelSpatialDummy, self).__init__()
+        self.fc = nn.Linear(1, 1)
 
     def forward(self, inp):
         images = inp['rgb_img']
 
         # pack output data
         out = {}
-        out['encoded_scene_davt'] = images
+        out['encoded_heatmap_davt'] = images
 
         return out
