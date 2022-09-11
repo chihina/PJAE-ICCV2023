@@ -40,6 +40,8 @@ class SetCriterion(nn.Module):
         idx = self._get_src_permutation_idx(indices)
         src_boxes = box_cxcywh_to_xyxy(outputs['head_loc_pred'][idx])
         target_boxes = torch.cat([targets['head_loc_gt'][b_idx] for b_idx, (_, i) in enumerate(indices)], dim=0)
+        # print(src_boxes)
+        # print(target_boxes)
 
         loss_bbox = F.l1_loss(src_boxes, target_boxes, reduction='none')
 
@@ -225,7 +227,6 @@ class HungarianMatcher(nn.Module):
 
         # Final cost matrix
         C = self.beta1 * cost_bbox + self.beta2 * cost_is_head + self.beta3 * cost_watch + self.beta4 * cost_gaze_map
-
         C = C.view(bs, num_queries, -1).cpu()
 
         sizes = [num_gt for _ in range(bs)]

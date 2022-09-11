@@ -134,3 +134,4 @@ data
 saved_weights
 results
 .vscode
+models/detr

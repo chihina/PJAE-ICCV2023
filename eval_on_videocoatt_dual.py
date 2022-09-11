@@ -24,8 +24,10 @@ import seaborn as sns
 import sys
 import json
 from PIL import Image
+import glob
+
 from sklearn.cluster import MeanShift
-from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score
+from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 
 # original module
 from dataset.dataset_selector import dataset_generator
@@ -76,13 +78,13 @@ parser = argparse.ArgumentParser(description="parameters for training")
 parser.add_argument("config", type=str, help="configuration yaml file path")
 args = parser.parse_args()
 cfg_arg = Dict(yaml.safe_load(open(args.config)))
-saved_yaml_file_path = os.path.join(cfg_arg.exp_set.save_folder, cfg_arg.data.name, cfg_arg.exp_set.model_name, 'train.yaml')
+saved_yaml_file_path = glob.glob(os.path.join(cfg_arg.exp_set.save_folder, cfg_arg.data.name, cfg_arg.exp_set.model_name, 'train*.yaml'))[0]
 cfg = Dict(yaml.safe_load(open(saved_yaml_file_path)))
 cfg.update(cfg_arg)
 print(cfg)
 
 print("===> Building model")
-model_head, model_attention, cfg = model_generator(cfg)
+model_head, model_attention, model_saliency, cfg = model_generator(cfg)
 
 print("===> Building gpu configuration")
 cuda = cfg.exp_set.gpu_mode
@@ -99,13 +101,17 @@ print("===> Loading trained model")
 model_name = cfg.exp_set.model_name
 weight_saved_dir = os.path.join(cfg.exp_set.save_folder,cfg.data.name, model_name)
 model_head_weight_path = os.path.join(weight_saved_dir, "model_head_best.pth.tar")
+model_saliency_weight_path = os.path.join(weight_saved_dir, "model_saliency_best.pth.tar")
 model_attention_weight_path = os.path.join(weight_saved_dir, "model_gaussian_best.pth.tar")
 model_head.load_state_dict(torch.load(model_head_weight_path,  map_location='cuda:'+str(gpus_list[0])))
+model_saliency.load_state_dict(torch.load(model_saliency_weight_path,  map_location='cuda:'+str(gpus_list[0])))
 model_attention.load_state_dict(torch.load(model_attention_weight_path,  map_location='cuda:'+str(gpus_list[0])))
 if cuda:
     model_head = model_head.cuda(gpus_list[0])
+    model_saliency = model_saliency.cuda(gpus_list[0])
     model_attention = model_attention.cuda(gpus_list[0])
     model_head.eval()
+    model_saliency.eval()
     model_attention.eval()
 
 print("===> Loading dataset")
@@ -187,17 +193,25 @@ for iteration, batch in enumerate(test_data_loader):
         else:
             batch['input_gaze'] = head_vector.clone() * 0
 
+        # scene feature extraction
+        out_scene_feat = model_saliency(batch)
+        batch = {**batch, **out_scene_feat}
+
         out_attention = model_attention(batch)
         out = {**out_head, **out_attention, **batch}
 
-    img_pred = out['img_pred'].to('cpu').detach()[0].numpy()
-    gt_box = out['gt_box'].to('cpu').detach()[0].numpy()
-    head_tensor = out['head_tensor'].to('cpu').detach()[0].numpy()
+    img_gt = out['img_gt'].to('cpu').detach()[0]
+    hm_final = out['hm_final'].to('cpu').detach()[0].numpy()
+    hm_person_to_person = out['hm_person_to_person'].to('cpu').detach()[0].numpy()
+    hm_person_to_person_regression = out['hm_person_to_person_regression'].to('cpu').detach()[0]
+    hm_person_to_scene = out['hm_person_to_scene'].to('cpu').detach()[0].numpy()
+    hm_person_to_scene_mean = out['hm_person_to_scene_mean'].to('cpu').detach()[0].numpy()
     head_feature = out['head_feature'].to('cpu').detach()[0].numpy()
-    head_vector_gt = out['head_vector_gt'].to('cpu').detach()[0].numpy()
+    gt_box = out['gt_box'].to('cpu').detach()[0].numpy()
+    att_inside_flag = out['att_inside_flag'].to('cpu').detach()[0]
 
     # generate each data id
-    each_data_type_id = each_data_type_id_generator(head_vector_gt, head_tensor, gt_box, cfg)
+    each_data_type_id = ''
     if not each_data_type_id in each_data_type_id_dic.keys():
         each_data_type_id_dic[each_data_type_id] = len(each_data_type_id_dic.keys())
     each_data_type_id_idx = each_data_type_id_dic[each_data_type_id]
@@ -221,13 +235,16 @@ for iteration, batch in enumerate(test_data_loader):
     gt_box_ja_array = np.array(gt_box_ja_list)
 
     co_att_flag_gt = np.sum(gt_box, axis=(0, 1)) != 0
-    peak_val = np.max(img_pred)
+    hm_final = cv2.resize(hm_final, (cfg.exp_set.resize_width, cfg.exp_set.resize_height))
+    peak_val = np.max(hm_final)
     co_att_flag_pred = peak_val > 0.15
     pred_acc_list.append([co_att_flag_gt, co_att_flag_pred])
     if not co_att_flag_gt:
         continue
-    
-    peak_y_mid_pred, peak_x_mid_pred = np.unravel_index(np.argmax(img_pred), img_pred.shape)
+
+    peak_y_mid_pred, peak_x_mid_pred = np.unravel_index(np.argmax(hm_final), hm_final.shape)
+    peak_x_mid_pred, peak_y_mid_pred = hm_person_to_person_regression.numpy()
+    peak_x_mid_pred, peak_y_mid_pred = int(peak_x_mid_pred*cfg.exp_set.resize_width), int(peak_y_mid_pred*cfg.exp_set.resize_height)
     for gt_box_idx in range(gt_box_ja_array.shape[0]):
         peak_x_mid_gt, peak_y_mid_gt = gt_box_ja_array[gt_box_idx, :]
         l2_dist_x = np.linalg.norm(peak_x_mid_gt-peak_x_mid_pred)
@@ -235,9 +252,6 @@ for iteration, batch in enumerate(test_data_loader):
         l2_dist_euc = np.power(np.power(l2_dist_x, 2)+np.power(l2_dist_y, 2), 0.5)
         print(f'Dist {l2_dist_euc:.0f}, ({peak_x_mid_pred},{peak_y_mid_pred}), GT:({peak_x_mid_gt},{peak_y_mid_gt})')
         l2_dist_list.append([l2_dist_x, l2_dist_y, l2_dist_euc, each_data_type_id_idx])
-
-    # if iteration > 100:
-        # break
 
 # save metrics in a dict
 metrics_dict = {}
@@ -277,6 +291,7 @@ metrics_dict['accuracy'] = accuracy_score(co_att_gt_array, co_att_pred_array)
 metrics_dict['precision'] = precision_score(co_att_gt_array, co_att_pred_array)
 metrics_dict['recall'] = recall_score(co_att_gt_array, co_att_pred_array)
 metrics_dict['f1'] = f1_score(co_att_gt_array, co_att_pred_array)
+metrics_dict['auc'] = roc_auc_score(co_att_gt_array, co_att_pred_array)
 
 # save detection rate
 det_rate_list = [f'Det (Thr={det_thr})' for det_thr in range(0, 110, 10)]

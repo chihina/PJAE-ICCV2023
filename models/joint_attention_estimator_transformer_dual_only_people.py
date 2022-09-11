@@ -4,9 +4,9 @@ from torch.nn import functional as F
 import sys
 import  numpy as np
 
-class JointAttentionEstimatorTransformerDual(nn.Module):
+class JointAttentionEstimatorTransformerDualOnlyPeople(nn.Module):
     def __init__(self, cfg):
-        super(JointAttentionEstimatorTransformerDual, self).__init__()
+        super(JointAttentionEstimatorTransformerDualOnlyPeople, self).__init__()
 
         ## set useful variables
         self.epsilon = 1e-7
@@ -118,29 +118,6 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
             final_activation_layer,
         )
 
-        self.person_person_preconv = nn.Sequential(
-            nn.Conv2d(in_channels=1, out_channels=4, kernel_size=3, stride=2, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(in_channels=4, out_channels=8, kernel_size=3, stride=2, padding=1),
-            nn.ReLU(),
-        )
-
-        self.person_scene_preconv = nn.Sequential(
-            nn.Conv2d(in_channels=1, out_channels=4, kernel_size=3, stride=2, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(in_channels=4, out_channels=8, kernel_size=3, stride=2, padding=1),
-            nn.ReLU(),
-        )
-
-        self.final_joint_atention_heatmap = nn.Sequential(
-            nn.ConvTranspose2d(in_channels=16, out_channels=8, kernel_size=5, padding=2, stride=2, output_padding=1),
-            nn.ReLU(),
-            nn.ConvTranspose2d(in_channels=8, out_channels=8, kernel_size=5, padding=2, stride=2, output_padding=1),
-            nn.ReLU(),
-            nn.Conv2d(in_channels=8, out_channels=1, kernel_size=1),
-            final_activation_layer,
-        )
-
     def forward(self, inp):
 
         input_feature = inp['input_feature']
@@ -218,22 +195,6 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
         person_person_joint_attention_heatmap = person_person_joint_attention_heatmap.view(self.batch_size, 1, self.hm_height_middle, self.hm_width_middle)
         person_person_joint_attention_heatmap = F.interpolate(person_person_joint_attention_heatmap, (self.hm_height, self.hm_width), mode='bilinear')
 
-        # attention estimation of person-to-scene path
-        person_scene_attention_heatmap = inp['encoded_heatmap_davt']
-        person_scene_attention_heatmap = person_scene_attention_heatmap.view(self.batch_size, people_num, self.hm_height, self.hm_width)
-        person_scene_attention_heatmap = person_scene_attention_heatmap * (torch.sum(head_feature, dim=2) != 0)[:, :, None, None]
-        # joint attention estimation of person-to-scene path
-        person_scene_joint_attention_heatmap = torch.sum(person_scene_attention_heatmap, dim=1)
-        no_pad_idx_cnt = torch.sum((torch.sum(head_feature, dim=2) != 0), dim=1)
-        person_scene_joint_attention_heatmap = person_scene_joint_attention_heatmap / no_pad_idx_cnt[:, None, None]
-        person_scene_joint_attention_heatmap = person_scene_joint_attention_heatmap[:, None, :, :]
-
-        # final joint attention estimation
-        person_person_joint_attention_heatmap_preconv = self.person_person_preconv(person_person_joint_attention_heatmap)
-        person_scene_joint_attention_heatmap_preconv = self.person_scene_preconv(person_scene_joint_attention_heatmap)
-        dual_heatmap = torch.cat([person_person_joint_attention_heatmap_preconv, person_scene_joint_attention_heatmap_preconv], dim=1)
-        final_joint_attention_heatmap = self.final_joint_atention_heatmap(dual_heatmap)
-
         # generate head xy map
         head_xy_map = head_xy_map * head_feature[:, :, :2, None, None]
 
@@ -266,9 +227,10 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
         data = {}
         data['person_person_attention_heatmap'] = person_person_attention_heatmap
         data['person_person_joint_attention_heatmap'] = person_person_joint_attention_heatmap
-        data['person_scene_attention_heatmap'] = person_scene_attention_heatmap
-        data['person_scene_joint_attention_heatmap'] = person_scene_joint_attention_heatmap
-        data['final_joint_attention_heatmap'] = final_joint_attention_heatmap
+        # dummy
+        data['person_scene_attention_heatmap'] = person_person_attention_heatmap
+        data['person_scene_joint_attention_heatmap'] = person_person_joint_attention_heatmap
+        data['final_joint_attention_heatmap'] = person_person_joint_attention_heatmap
 
         data['angle_dist'] = angle_dist
         data['distance_dist'] = distance_dist
@@ -288,15 +250,8 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
         # unpack data (output)
         person_person_attention_heatmap = out['person_person_attention_heatmap']
         person_person_joint_attention_heatmap = out['person_person_joint_attention_heatmap']
-        person_scene_attention_heatmap = out['person_scene_attention_heatmap']
-        person_scene_joint_attention_heatmap = out['person_scene_joint_attention_heatmap']
-        final_joint_attention_heatmap = out['final_joint_attention_heatmap']
-
         self.use_person_person_att_loss = cfg.exp_params.use_person_person_att_loss
         self.use_person_person_jo_att_loss = cfg.exp_params.use_person_person_jo_att_loss
-        self.use_person_scene_att_loss = cfg.exp_params.use_person_scene_att_loss
-        self.use_person_scene_jo_att_loss = cfg.exp_params.use_person_scene_jo_att_loss
-        self.use_final_jo_att_loss = cfg.exp_params.use_final_jo_att_loss
 
         # switch loss coeficient
         if self.use_person_person_att_loss:
@@ -308,21 +263,6 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
             use_person_person_jo_att_coef = 1
         else:
             use_person_person_jo_att_coef = 0
-
-        if self.use_person_scene_att_loss:
-            use_person_scene_att_coef = 1
-        else:
-            use_person_scene_att_coef = 0
-
-        if self.use_person_scene_jo_att_loss:
-            use_person_scene_jo_att_coef = 1
-        else:
-            use_person_scene_jo_att_coef = 0
-    
-        if self.use_final_jo_att_loss:
-            use_final_jo_att_coef = 1
-        else:
-            use_final_jo_att_coef = 0
 
         # generate gt map
         img_gt_joint_attention = torch.sum(img_gt_attention, dim=1)
@@ -341,31 +281,9 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
         # print('loss_p_p_att', loss_p_p_att)
         # print('loss_p_p_jo_att', loss_p_p_jo_att)
 
-        # calculate person-scene path loss
-        person_scene_attention_heatmap = F.interpolate(person_scene_attention_heatmap, (self.resize_height, self.resize_width), mode='bilinear')
-        loss_p_s_att = self.loss_func_hm_sum(person_scene_attention_heatmap.float(), img_gt_attention.float())
-        loss_p_s_att = loss_p_s_att/(torch.sum(att_inside_flag)*self.resize_height*self.resize_width)
-        loss_p_s_att = use_person_scene_att_coef * loss_p_s_att
-        person_scene_joint_attention_heatmap = F.interpolate(person_scene_joint_attention_heatmap, (self.resize_height, self.resize_width), mode='bilinear')
-        person_scene_joint_attention_heatmap = person_scene_joint_attention_heatmap[:, 0, :, :]
-        loss_p_s_jo_att = self.loss_func_hm_mean(person_scene_joint_attention_heatmap.float(), img_gt_joint_attention.float())
-        loss_p_s_jo_att = use_person_scene_jo_att_coef * loss_p_s_jo_att
-        # print('loss_p_s_att', loss_p_s_att)
-        # print('loss_p_s_jo_att', loss_p_s_jo_att)
-
-        # calculate final loss
-        final_joint_attention_heatmap = F.interpolate(final_joint_attention_heatmap, (self.resize_height, self.resize_width), mode='bilinear')
-        final_joint_attention_heatmap = final_joint_attention_heatmap[:, 0, :, :]
-        loss_final_jo_att = self.loss_func_hm_mean(final_joint_attention_heatmap.float(), img_gt_joint_attention.float())
-        loss_final_jo_att = use_final_jo_att_coef * loss_final_jo_att
-        # print('loss_final_jo_att', loss_final_jo_att)
-
         # pack loss
         loss_set = {}
         loss_set['loss_p_p_att'] = loss_p_p_att
         loss_set['loss_p_p_jo_att'] = loss_p_p_jo_att
-        loss_set['loss_p_s_att'] = loss_p_s_att
-        loss_set['loss_p_s_jo_att'] = loss_p_s_jo_att
-        loss_set['loss_final_jo_att'] = loss_final_jo_att
 
         return loss_set

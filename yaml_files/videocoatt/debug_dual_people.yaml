@@ -5,16 +5,16 @@ data:
 
 exp_set:
   save_folder: saved_weights
-  wandb_name: videocoatt-dual
-  wandb_log : True
+  wandb_name: debug
+  wandb_log : False
 
   batch_size: 8
   # batch_size: 2
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 7
-  gpu_finish : 7
+  gpu_start : 6
+  gpu_finish : 6
 
   resize_height: 320
   resize_width: 480
@@ -28,15 +28,6 @@ exp_params:
 
   # use_person_person_jo_att_loss : False
   use_person_person_jo_att_loss : True
-
-  use_person_scene_att_loss : False
-  # use_person_scene_att_loss : True
-
-  use_person_scene_jo_att_loss : False
-  # use_person_scene_jo_att_loss : True
-
-  # use_final_jo_att_loss : False
-  use_final_jo_att_loss : True
 
   use_frame_type: mid
   # use_frame_type: all
@@ -81,11 +72,11 @@ exp_params:
   # freeze_head_pose_estimator: False
   freeze_head_pose_estimator: True
 
-  # use_pretrained_saliency_extractor: False
-  use_pretrained_saliency_extractor: True
+  use_pretrained_saliency_extractor: False
+  # use_pretrained_saliency_extractor: True
   pretrained_saliency_extractor_name: pretrained_scene_extractor_davt
-  # freeze_saliency_extractor: False
-  freeze_saliency_extractor: True
+  freeze_saliency_extractor: False
+  # freeze_saliency_extractor: True
 
   use_pretrained_joint_attention_estimator: False
   # use_pretrained_head_pose_estimator: True
@@ -94,7 +85,7 @@ exp_params:
   # freeze_joint_attention_estimator: True
 
 model_params:
-  model_type: ja_transformer_dual
+  model_type: ja_transformer_only_people
 
   # Position
   # use_position : False
@@ -122,4 +113,4 @@ model_params:
 
   people_people_trans_enc_num : 2
   mha_num_heads_people_people : 2
-  people_feat_dim : 32
+  people_feat_dim : 16

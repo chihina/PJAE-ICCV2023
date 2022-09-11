@@ -128,7 +128,7 @@ cfg.update(cfg_arg)
 print(cfg)
 
 print("===> Building model")
-model_head, model_attention, cfg = model_generator(cfg)
+model_head, model_attention, model_saliency, cfg = model_generator(cfg)
 
 print("===> Building gpu configuration")
 cuda = cfg.exp_set.gpu_mode
@@ -169,8 +169,7 @@ if cfg.exp_set.test_gt_gaze:
     model_name = model_name + f'_use_gt_gaze'
 
 save_image_dir_dic = {}
-save_image_dir_list = ['joint_attention', 'joint_attention_superimposed', 'attention', 'attention_fan', 'attention_dist',
-                    'gt_map', 'people_people_att', 'people_rgb_att']
+save_image_dir_list = ['attention', 'attention_superimposed', 'gt_map']
 for dir_name in save_image_dir_list:
     save_image_dir_dic[dir_name] = os.path.join('results', cfg.data.name, model_name, dir_name)
     if not os.path.exists(save_image_dir_dic[dir_name]):
@@ -257,9 +256,20 @@ for iteration, batch in enumerate(test_data_loader,1):
     data_type_id = ''
     data_id = data_id_generator(img_path, cfg)
     print(f'Iter:{iteration}, {data_id}, {data_type_id}')
-    
+
+    # expand directories
+    # for dir_name in ['joint_attention']:
+        # if not os.path.exists(os.path.join(save_image_dir_dic[dir_name], data_type_id)):
+            # os.makedirs(os.path.join(save_image_dir_dic[dir_name], data_type_id))
+    # save_image(img_pred, os.path.join(save_image_dir_dic['joint_attention'], data_type_id, f'{mode}_{data_id}_joint_attention.png'))
+
+    for dir_name in ['attention', 'gt_map']:
+        if not os.path.exists(os.path.join(save_image_dir_dic[dir_name], data_type_id, f'{data_id}')):
+            os.makedirs(os.path.join(save_image_dir_dic[dir_name], data_type_id, f'{data_id}'))
+
+    img = cv2.resize(img, (original_width, original_height))
     head_query_num = is_head_pred.shape[0]
-    head_conf_thresh = 0.8
+    head_conf_thresh = 0.7
     for head_idx in range(head_query_num):
         head_conf = is_head_pred[head_idx][0]
         watch_outside_conf = watch_outside_pred[head_idx][0]
@@ -269,49 +279,33 @@ for iteration, batch in enumerate(test_data_loader,1):
         if head_conf > head_conf_thresh:
             print(f'Idx:{head_idx}, Head conf:{head_conf:.2f}, Watch conf:{watch_outside_conf:.2f}')
             print(head_bbox)
-            # print(gaze_map)
+
+            gaze_map_view = gaze_map.view(20, 30)
+            save_image(gaze_map_view, os.path.join(save_image_dir_dic['attention'], data_type_id, f'{mode}_{data_id}_attention_{head_idx}.png'))
+            gaze_map = cv2.imread(os.path.join(save_image_dir_dic['attention'], data_type_id, f'{mode}_{data_id}_attention_{head_idx}.png'), cv2.IMREAD_GRAYSCALE)
+            gaze_map = cv2.resize(gaze_map, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_NEAREST)
+            gaze_map_norm = norm_heatmap(gaze_map)
+            gaze_map_norm = gaze_map_norm.astype(np.uint8)
+            gaze_map_norm = cv2.applyColorMap(gaze_map_norm, cv2.COLORMAP_JET)
+            gaze_map_norm_superimposed = cv2.addWeighted(img, 0.5, gaze_map_norm, 0.5, 0)
+            cv2.imwrite(os.path.join(save_image_dir_dic['attention_superimposed'], data_type_id, f'{mode}_{data_id}_superimposed_{head_idx}.png'), gaze_map_norm_superimposed)
 
     sys.exit()
-
-    # expand directories
-    for dir_name in ['joint_attention', 'joint_attention_superimposed', 'people_people_att']:
-        if not os.path.exists(os.path.join(save_image_dir_dic[dir_name], data_type_id)):
-            os.makedirs(os.path.join(save_image_dir_dic[dir_name], data_type_id))
-    for dir_name in ['attention', 'attention_fan', 'attention_dist', 'people_people_att', 'people_rgb_att', 'gt_map']:
-        if not os.path.exists(os.path.join(save_image_dir_dic[dir_name], data_type_id, f'{data_id}')):
-            os.makedirs(os.path.join(save_image_dir_dic[dir_name], data_type_id, f'{data_id}'))
-
-    # save joint attention estimation
-    # save_image(img_pred, os.path.join(save_image_dir_dic['joint_attention'], data_type_id, f'{mode}_{data_id}_joint_attention.png'))
-
     # save joint attention estimation as a superimposed image
-    img = cv2.resize(img, (original_width, original_height))
-    # img_heatmap = cv2.imread(os.path.join(save_image_dir_dic['joint_attention'], data_type_id, f'{mode}_{data_id}_joint_attention.png'), cv2.IMREAD_GRAYSCALE)
-    # img_heatmap = cv2.resize(img_heatmap, (img.shape[1], img.shape[0]))
-    # img_heatmap_norm = norm_heatmap(img_heatmap)
-    # img_heatmap_norm = img_heatmap_norm.astype(np.uint8)
-    # img_heatmap_norm = cv2.applyColorMap(img_heatmap_norm, cv2.COLORMAP_JET)
-    # superimposed_image = cv2.addWeighted(img, 0.5, img_heatmap_norm, 0.5, 0)
-
-    for person_idx in range(img_gt.shape[0]):
-        save_image(img_gt[person_idx], os.path.join(save_image_dir_dic['gt_map'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_gt.png'))
+    # for person_idx in range(img_gt.shape[0]):
+        # save_image(img_gt[person_idx], os.path.join(save_image_dir_dic['gt_map'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_gt.png'))
 
     # calc distances for each co att box
-    gt_box = gt_box.numpy()
-    gt_box_num = np.sum(np.sum(gt_box, axis=1)!=0)
-    for gt_box_idx in range(gt_box_num):
-        x_min_gt, y_min_gt, x_max_gt, y_max_gt = map(float, gt_box[gt_box_idx])
-        x_min_gt, x_max_gt = map(lambda x: int(x*original_width), [x_min_gt, x_max_gt])
-        y_min_gt, y_max_gt = map(lambda x: int(x*original_height), [y_min_gt, y_max_gt])
-        x_mid_gt, y_mid_gt = (x_min_gt+x_max_gt)//2, (y_min_gt+y_max_gt)//2
-
-    l2_dist = ((x_mid_gt-x_mid_pred)**2+(y_mid_gt-y_mid_pred)**2)**0.5
-    print(l2_dist)
+    # gt_box = gt_box.numpy()
+    # gt_box_num = np.sum(np.sum(gt_box, axis=1)!=0)
+    # for gt_box_idx in range(gt_box_num):
+    #     x_min_gt, y_min_gt, x_max_gt, y_max_gt = map(float, gt_box[gt_box_idx])
+    #     x_min_gt, x_max_gt = map(lambda x: int(x*original_width), [x_min_gt, x_max_gt])
+    #     y_min_gt, y_max_gt = map(lambda x: int(x*original_height), [y_min_gt, y_max_gt])
+    #     x_mid_gt, y_mid_gt = (x_min_gt+x_max_gt)//2, (y_min_gt+y_max_gt)//2
 
     # cv2.circle(superimposed_image, (x_mid_pred, y_mid_pred), 10, (128, 0, 128), thickness=-1)
     # cv2.circle(superimposed_image, (x_mid_gt, y_mid_gt), 10, (0, 255, 0), thickness=-1)
-    cv2.rectangle(superimposed_image, (x_min_pred, y_min_pred), (x_max_pred, y_max_pred), (128, 0, 128), thickness=1)
-    cv2.rectangle(superimposed_image, (x_min_gt, y_min_gt), (x_max_gt, y_max_gt), (0, 255, 0), thickness=1)
-
-
-    cv2.imwrite(os.path.join(save_image_dir_dic['joint_attention_superimposed'], data_type_id, f'{mode}_{data_id}_superimposed.png'), superimposed_image)
+    # cv2.rectangle(superimposed_image, (x_min_pred, y_min_pred), (x_max_pred, y_max_pred), (128, 0, 128), thickness=1)
+    # cv2.rectangle(superimposed_image, (x_min_gt, y_min_gt), (x_max_gt, y_max_gt), (0, 255, 0), thickness=1)
+    # cv2.imwrite(os.path.join(save_image_dir_dic['joint_attention_superimposed'], data_type_id, f'{mode}_{data_id}_superimposed.png'), superimposed_image)
