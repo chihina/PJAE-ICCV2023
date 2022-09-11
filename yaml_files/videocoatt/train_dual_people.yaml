@@ -6,6 +6,7 @@ data:
 exp_set:
   save_folder: saved_weights
   wandb_name: videocoatt-dual-people
+
   wandb_log : True
 
   batch_size: 8
@@ -13,8 +14,8 @@ exp_set:
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 6
-  gpu_finish : 6
+  gpu_start : 4
+  gpu_finish : 4
 
   resize_height: 320
   resize_width: 480
@@ -85,7 +86,7 @@ exp_params:
   # freeze_joint_attention_estimator: True
 
 model_params:
-  model_type: ja_transformer_only_people
+  model_type: ja_transformer_dual_only_people
 
   # Position
   # use_position : False

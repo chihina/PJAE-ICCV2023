@@ -85,7 +85,7 @@ exp_params:
   # freeze_joint_attention_estimator: True
 
 model_params:
-  model_type: ja_transformer_only_people
+  model_type: ja_transformer_dual_only_people
 
   # Position
   # use_position : False

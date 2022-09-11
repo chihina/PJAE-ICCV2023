@@ -235,19 +235,20 @@ class ModelSpatial(nn.Module):
         x = self.relu(x)
         x = self.conv4(x)
 
-        # print('x raw', torch.min(x), torch.max(x))
         raw_hm = x * 255
         inout = 1 / (1 + torch.exp(-encoding_inout))
         inout = (1 - inout) * 255
         x = raw_hm - inout[:, :, None, None]
         x = x / 255
-        # print('x add', torch.min(x), torch.max(x))
+        print(x.shape)
 
         # pack output data
         out = {}
-        out['encoded_scene_davt'] = encoding
-        out['encoding_inout'] = encoding_inout
-        out['encoded_heatmap_davt'] = x
+        # out['encoded_scene_davt'] = encoding
+        # out['encoding_inout'] = encoding_inout
+        out['person_scene_attention_heatmap'] = x.view(batch_size, people_num, 64, 64)
+        print(out['person_scene_attention_heatmap'].shape)
+        sys.exit()
 
         return out
 
@@ -258,10 +259,12 @@ class ModelSpatialDummy(nn.Module):
         self.fc = nn.Linear(1, 1)
 
     def forward(self, inp):
-        images = inp['rgb_img']
-
+        head_img = inp['head_img']
+        batch_size, people_num, _, resize_head_height, resize_head_width = head_img.shape
+        person_scene_attention_heatmap = torch.zeros(batch_size, people_num, 64, 64, device=head_img.device)
+        
         # pack output data
         out = {}
-        out['encoded_heatmap_davt'] = images
+        out['person_scene_attention_heatmap'] = person_scene_attention_heatmap
 
         return out

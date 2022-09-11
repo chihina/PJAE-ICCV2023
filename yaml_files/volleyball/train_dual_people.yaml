@@ -1,25 +1,27 @@
 data: 
-  name: videocoatt
-  dataset_dir : data/VideoCoAtt_Dataset
-  saliency_dataset_dir : data/deepgaze_output_loader
+  name: volleyball
+  sendo_dataset_dir: data/volleyball_tracking_annotation
+  train_dataset_dir: data/social_saliency_dataset_unipose_gt_20
+  test_dataset_dir: data/social_saliency_dataset_unipose_pred_mid
+  rgb_dataset_dir: data/videos
+  annotation_dir: data/vatic_ball_annotation/annotation_data/
 
 exp_set:
   save_folder: saved_weights
-  wandb_name: debug
-  wandb_log : False
+  wandb_name: volleyball-dual-people
+  wandb_log : True
 
-  batch_size: 8
-  # batch_size: 2
+  batch_size: 16
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 6
-  gpu_finish : 6
+  gpu_start : 3
+  gpu_finish : 3
 
-  resize_height: 320
-  resize_width: 480
-  resize_head_height: 224
-  resize_head_width: 224
+  resize_height : 320
+  resize_width : 640
+  resize_head_width: 64
+  resize_head_height: 64
 
 exp_params:
 
@@ -43,21 +45,27 @@ exp_params:
 
   use_gt_gaze: False
   # use_gt_gaze: True
-
+  
   # position augmentation
   use_position_aug: False
   # use_position_aug: True
   position_aug_std: 0.05
+
+  iar_type: gt
+  # iar_type: pred_label
+  # iar_type: none
 
   # loss function
   loss : mse
   # loss : bce
 
   # learning rate
-  lr : 0.0001
-
+  lr : 0.001
+  # lr : 0.01
+  # lr : 0.1
+  
   # gt gaussian
-  gaussian_sigma: 10
+  gaussian_sigma: 20
 
   # learning schedule
   nEpochs : 500
@@ -66,26 +74,20 @@ exp_params:
   scheduler_start : 1000
   scheduler_iter : 1100000
 
-  det_heads_model : dets_txt_nk_faster_rcnn_20220421
-  # train_det_heads : False
-  train_det_heads : True
-  train_heads_conf : 0.6
-  test_heads_conf : 0.6
-
   # pretrained models
   pretrained_models_dir: saved_weights
 
   # use_pretrained_head_pose_estimator: False
   use_pretrained_head_pose_estimator: True
-  pretrained_head_pose_estimator_name: videocoatt-head_pose_estimator
+  pretrained_head_pose_estimator_name: volleyball-head_pose_estimator
   # freeze_head_pose_estimator: False
   freeze_head_pose_estimator: True
 
-  # use_pretrained_saliency_extractor: False
-  use_pretrained_saliency_extractor: True
+  use_pretrained_saliency_extractor: False
+  # use_pretrained_saliency_extractor: True
   pretrained_saliency_extractor_name: pretrained_scene_extractor_davt
-  # freeze_saliency_extractor: False
-  freeze_saliency_extractor: True
+  freeze_saliency_extractor: False
+  # freeze_saliency_extractor: True
 
   use_pretrained_joint_attention_estimator: False
   # use_pretrained_head_pose_estimator: True
@@ -94,7 +96,7 @@ exp_params:
   # freeze_joint_attention_estimator: True
 
 model_params:
-  model_type: ja_transformer_dual
+  model_type: ja_transformer_dual_only_people
 
   # Position
   # use_position : False
@@ -105,8 +107,8 @@ model_params:
   use_gaze : True
 
   # Action
-  use_action : False
-  # use_action : True
+  # use_action : False
+  use_action : True
 
   # Person embedding
   # head_embedding_type : liner
@@ -123,3 +125,21 @@ model_params:
   people_people_trans_enc_num : 2
   mha_num_heads_people_people : 2
   people_feat_dim : 16
+
+  # rgb_cnn_extractor_type : normal
+  # rgb_cnn_extractor_type : no_use
+  rgb_cnn_extractor_type : resnet18
+  # rgb_cnn_extractor_type : resnet50
+  # rgb_cnn_extractor_stage_idx : 1
+  # rgb_cnn_extractor_stage_idx : 2
+  rgb_cnn_extractor_stage_idx : 3
+  # rgb_cnn_extractor_stage_idx : 4
+  # rgb_cnn_extractor_type : hrnet_w18_small
+  # rgb_cnn_extractor_type : hrnet_w32
+  # rgb_cnn_extractor_stage_idx : 3
+  # rgb_cnn_extractor_type : convnext
+  # rgb_cnn_extractor_stage_idx : 2
+
+  # angle_distance_fusion: max
+  # angle_distance_fusion: mean
+  angle_distance_fusion: mult

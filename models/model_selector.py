@@ -5,6 +5,7 @@ from models.joint_attention_estimator_transformer_dual_only_people import JointA
 from models.inferring_shared_attention_estimation import InferringSharedAttentionEstimator
 from models.end_to_end_human_gaze_target import EndToEndHumanGazeTargetTransformer
 from models.davt_scene_extractor import ModelSpatial, ModelSpatialDummy
+from models.transformer_scene_extractor import SceneFeatureTransformer
 
 import sys
 
@@ -16,8 +17,13 @@ def model_generator(cfg):
     elif cfg.model_params.model_type == 'ja_transformer_dual':
         model_head = HeadPoseEstimatorResnet(cfg)
         model_gaussian = JointAttentionEstimatorTransformerDual(cfg)
-        model_saliency = ModelSpatial()
-    elif cfg.model_params.model_type == 'ja_transformer_only_people':
+        if cfg.data.name == 'volleyball':
+            model_saliency = SceneFeatureTransformer(cfg)
+        elif cfg.data.name == 'videocoatt':
+            model_saliency = ModelSpatial()
+        elif cfg.data.name == 'videoattentiontarget':
+            model_saliency = ModelSpatialDummy()
+    elif cfg.model_params.model_type == 'ja_transformer_dual_only_people':
         model_head = HeadPoseEstimatorResnet(cfg)
         model_gaussian = JointAttentionEstimatorTransformerDualOnlyPeople(cfg)
         model_saliency = ModelSpatialDummy()

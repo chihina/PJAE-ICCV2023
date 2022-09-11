@@ -201,14 +201,15 @@ for iteration, batch in enumerate(test_data_loader):
         out = {**out_head, **out_attention, **batch}
 
     img_gt = out['img_gt'].to('cpu').detach()[0]
-    hm_final = out['hm_final'].to('cpu').detach()[0].numpy()
-    hm_person_to_person = out['hm_person_to_person'].to('cpu').detach()[0].numpy()
-    hm_person_to_person_regression = out['hm_person_to_person_regression'].to('cpu').detach()[0]
-    hm_person_to_scene = out['hm_person_to_scene'].to('cpu').detach()[0].numpy()
-    hm_person_to_scene_mean = out['hm_person_to_scene_mean'].to('cpu').detach()[0].numpy()
     head_feature = out['head_feature'].to('cpu').detach()[0].numpy()
     gt_box = out['gt_box'].to('cpu').detach()[0].numpy()
     att_inside_flag = out['att_inside_flag'].to('cpu').detach()[0]
+
+    person_person_attention_heatmap = out['person_person_attention_heatmap'].to('cpu').detach()[0].numpy()
+    person_person_joint_attention_heatmap = out['person_person_joint_attention_heatmap'].to('cpu').detach()[0, 0].numpy()
+    person_scene_attention_heatmap = out['person_scene_attention_heatmap'].to('cpu').detach()[0].numpy()
+    person_scene_joint_attention_heatmap = out['person_scene_joint_attention_heatmap'].to('cpu').detach()[0, 0].numpy()
+    final_joint_attention_heatmap = out['final_joint_attention_heatmap'].to('cpu').detach()[0, 0].numpy()
 
     # generate each data id
     each_data_type_id = ''
@@ -235,23 +236,21 @@ for iteration, batch in enumerate(test_data_loader):
     gt_box_ja_array = np.array(gt_box_ja_list)
 
     co_att_flag_gt = np.sum(gt_box, axis=(0, 1)) != 0
-    hm_final = cv2.resize(hm_final, (cfg.exp_set.resize_width, cfg.exp_set.resize_height))
-    peak_val = np.max(hm_final)
-    co_att_flag_pred = peak_val > 0.15
+    final_joint_attention_heatmap = cv2.resize(final_joint_attention_heatmap, (cfg.exp_set.resize_width, cfg.exp_set.resize_height))
+    final_joint_attention_heatmap_peak_val = np.max(final_joint_attention_heatmap)
+    co_att_flag_pred = final_joint_attention_heatmap_peak_val > 0.15
     pred_acc_list.append([co_att_flag_gt, co_att_flag_pred])
     if not co_att_flag_gt:
         continue
 
-    peak_y_mid_pred, peak_x_mid_pred = np.unravel_index(np.argmax(hm_final), hm_final.shape)
-    peak_x_mid_pred, peak_y_mid_pred = hm_person_to_person_regression.numpy()
-    peak_x_mid_pred, peak_y_mid_pred = int(peak_x_mid_pred*cfg.exp_set.resize_width), int(peak_y_mid_pred*cfg.exp_set.resize_height)
+    peak_y_mid_pred, peak_x_mid_pred = np.unravel_index(np.argmax(final_joint_attention_heatmap), final_joint_attention_heatmap.shape)
     for gt_box_idx in range(gt_box_ja_array.shape[0]):
         peak_x_mid_gt, peak_y_mid_gt = gt_box_ja_array[gt_box_idx, :]
         l2_dist_x = np.linalg.norm(peak_x_mid_gt-peak_x_mid_pred)
         l2_dist_y = np.linalg.norm(peak_y_mid_gt-peak_y_mid_pred)
         l2_dist_euc = np.power(np.power(l2_dist_x, 2)+np.power(l2_dist_y, 2), 0.5)
-        print(f'Dist {l2_dist_euc:.0f}, ({peak_x_mid_pred},{peak_y_mid_pred}), GT:({peak_x_mid_gt},{peak_y_mid_gt})')
         l2_dist_list.append([l2_dist_x, l2_dist_y, l2_dist_euc, each_data_type_id_idx])
+        print(f'Dist {l2_dist_euc:.0f}, ({peak_x_mid_pred},{peak_y_mid_pred}), GT:({peak_x_mid_gt},{peak_y_mid_gt})')
 
 # save metrics in a dict
 metrics_dict = {}

@@ -107,7 +107,7 @@ class VolleyBallDataset(Dataset):
         x = np.arange(0, width, 1)
         y = np.arange(0, height, 1)
         X,Y = np.meshgrid(x,y)
-        heatmap = np.exp(- ((X-peak_x) ** 2 + (Y-peak_y) ** 2) / 2 * sigma ** 2)
+        heatmap = np.exp(- ((X-peak_x) ** 2 + (Y-peak_y) ** 2) / (2 * sigma ** 2))
 
         return heatmap.reshape(1, heatmap.shape[0], heatmap.shape[1])
 

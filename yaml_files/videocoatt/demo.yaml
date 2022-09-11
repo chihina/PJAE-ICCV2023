@@ -19,9 +19,9 @@ exp_set:
   batch_size : 1
   wandb_name : demo
 
-  # mode: test
+  mode: test
   # mode : validate
-  mode : train
+  # mode : train
 
 exp_params:
   test_heads_type : det
