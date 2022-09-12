@@ -6,7 +6,6 @@ from models.inferring_shared_attention_estimation import InferringSharedAttentio
 from models.end_to_end_human_gaze_target import EndToEndHumanGazeTargetTransformer
 from models.davt_scene_extractor import ModelSpatial, ModelSpatialDummy
 from models.transformer_scene_extractor import SceneFeatureTransformer
-
 import sys
 
 def model_generator(cfg):
@@ -20,7 +19,10 @@ def model_generator(cfg):
         if cfg.data.name == 'volleyball':
             model_saliency = SceneFeatureTransformer(cfg)
         elif cfg.data.name == 'videocoatt':
-            model_saliency = ModelSpatial()
+            if cfg.model_params.rgb_cnn_extractor_type == 'davt':
+                model_saliency = ModelSpatial()
+            else:
+                model_saliency = SceneFeatureTransformer(cfg)
         elif cfg.data.name == 'videoattentiontarget':
             model_saliency = ModelSpatialDummy()
     elif cfg.model_params.model_type == 'ja_transformer_dual_only_people':

@@ -132,6 +132,8 @@ class VideoAttentionTargetDataset(Dataset):
         # normalize head position
         head_feature_tensor[:, 0] /= img_width
         head_feature_tensor[:, 1] /= img_height
+        head_bbox_tensor[:, ::2] /= img_width
+        head_bbox_tensor[:, 1::2] /= img_height
 
         # transform tensor 
         if self.transforms_rgb:
@@ -158,7 +160,7 @@ class VideoAttentionTargetDataset(Dataset):
         data['gt_box_id'] = gt_box_id
         data['rgb_img'] = rgb_tensor
         data['saliency_img'] = saliency_tensor
-        data['head_bbox_tensor'] = head_bbox_tensor
+        data['head_bbox'] = head_bbox_tensor
         data['att_inside_flag'] = att_inside_flag
         data['rgb_path'] = img_file_path
 

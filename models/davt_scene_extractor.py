@@ -240,15 +240,12 @@ class ModelSpatial(nn.Module):
         inout = (1 - inout) * 255
         x = raw_hm - inout[:, :, None, None]
         x = x / 255
-        print(x.shape)
 
         # pack output data
         out = {}
         # out['encoded_scene_davt'] = encoding
         # out['encoding_inout'] = encoding_inout
         out['person_scene_attention_heatmap'] = x.view(batch_size, people_num, 64, 64)
-        print(out['person_scene_attention_heatmap'].shape)
-        sys.exit()
 
         return out
 

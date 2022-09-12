@@ -9,11 +9,12 @@ exp_set:
 
   # model_name: videocoatt-isa
   model_name: videocoatt-dual
+  # model_name: videocoatt-dual-people
 
   seed_num : 777
   gpu_mode : True
-  gpu_start : 7
-  gpu_finish : 7
+  gpu_start : 5
+  gpu_finish : 5
   num_workers : 1
   batch_size : 1
   wandb_name : test

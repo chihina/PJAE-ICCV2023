@@ -38,12 +38,10 @@ class SetCriterion(nn.Module):
            The target boxes are expected in format (center_x, center_y, w, h), normalized by the image size.
         """
         idx = self._get_src_permutation_idx(indices)
-        src_boxes = box_cxcywh_to_xyxy(outputs['head_loc_pred'][idx])
-        target_boxes = torch.cat([targets['head_loc_gt'][b_idx] for b_idx, (_, i) in enumerate(indices)], dim=0)
-        # print(src_boxes)
-        # print(target_boxes)
+        src_boxes = outputs['head_loc_pred'][idx]
+        target_boxes = torch.cat([targets['head_loc_gt'][b_idx, i] for b_idx, (_, i) in enumerate(indices)], dim=0)
 
-        loss_bbox = F.l1_loss(src_boxes, target_boxes, reduction='none')
+        loss_bbox = F.l1_loss(src_boxes, box_xyxy_to_cxcywh(target_boxes), reduction='none')
 
         losses = {}
         losses['loss_bbox'] = loss_bbox.sum() / num_boxes
@@ -51,16 +49,17 @@ class SetCriterion(nn.Module):
         loss_giou = 1 - torch.diag(generalized_box_iou(
             box_cxcywh_to_xyxy(src_boxes),
             target_boxes))
+
         losses['loss_giou'] = loss_giou.sum() / num_boxes
         return losses
 
     def loss_is_head(self, outputs, targets, indices, num_boxes):
         idx = self._get_src_permutation_idx(indices)
         src_is_head = outputs['is_head_pred'][idx]
-        target_is_head = torch.cat([targets['is_head_gt'][b_idx] for b_idx, (_, i) in enumerate(indices)], dim=0)
+        target_is_head = torch.cat([targets['is_head_gt'][b_idx, i] for b_idx, (_, i) in enumerate(indices)], dim=0)
         target_is_head = target_is_head.flatten().long()
 
-        loss_is_head = F.cross_entropy(src_is_head, target_is_head, reduction='none')
+        loss_is_head = F.cross_entropy(src_is_head, target_is_head, self.empty_weight, reduction='none')
 
         losses = {}
         losses['loss_is_head'] = loss_is_head.sum() / num_boxes
@@ -70,7 +69,7 @@ class SetCriterion(nn.Module):
     def loss_watch_outside(self, outputs, targets, indices, num_boxes):
         idx = self._get_src_permutation_idx(indices)
         src_watch_outside = outputs['watch_outside_pred'][idx]
-        target_watch_outside = torch.cat([targets['watch_outside_gt'][b_idx] for b_idx, (_, i) in enumerate(indices)], dim=0)
+        target_watch_outside = torch.cat([targets['watch_outside_gt'][b_idx, i] for b_idx, (_, i) in enumerate(indices)], dim=0)
         target_watch_outside = target_watch_outside.flatten().long()
 
         loss_watch_outside = F.cross_entropy(src_watch_outside, target_watch_outside, reduction='none')
@@ -83,7 +82,7 @@ class SetCriterion(nn.Module):
     def loss_gaze_map(self, outputs, targets, indices, num_boxes):
         idx = self._get_src_permutation_idx(indices)
         src_gaze_heatmap = outputs['gaze_heatmap_pred'][idx]
-        target_gaze_heatmap = torch.cat([targets['gaze_heatmap_gt'][b_idx] for b_idx, (_, i) in enumerate(indices)], dim=0)
+        target_gaze_heatmap = torch.cat([targets['gaze_heatmap_gt'][b_idx, i] for b_idx, (_, i) in enumerate(indices)], dim=0)
         _, grid_num = target_gaze_heatmap.shape
 
         loss_gaze_map = F.mse_loss(src_gaze_heatmap, target_gaze_heatmap, reduction='sum')
@@ -128,8 +127,7 @@ class SetCriterion(nn.Module):
         indices = self.matcher(outputs, targets)
 
         # Compute the average number of target boxes accross all nodes, for normalization purposes
-        bs, num_gt = targets["head_loc_gt"].shape[:2]
-        num_boxes = bs*num_gt
+        num_boxes = torch.sum((torch.sum(targets["head_loc_gt"].flatten(0, 1)==0, dim=-1) == 0))
         num_boxes = torch.as_tensor([num_boxes], dtype=torch.float, device=next(iter(outputs.values())).device)
         num_boxes = torch.clamp(num_boxes / 1, min=1).item()
 
@@ -199,21 +197,31 @@ class HungarianMatcher(nn.Module):
         gaze_heatmap_gt = targets["gaze_heatmap_gt"]
         is_head_gt = targets["is_head_gt"]
         watch_outside_gt = targets["watch_outside_gt"]
+        padding_mask_all = torch.where((torch.sum(head_loc_gt.flatten(0, 1)==0, dim=-1) == 0).long())[0]
+        padding_mask_batch = (torch.sum(head_loc_gt==0, dim=-1) == 0)
+        head_loc_gt = head_loc_gt.flatten(0, 1)
+        gaze_heatmap_gt = gaze_heatmap_gt.flatten(0, 1)
+        is_head_gt = is_head_gt.flatten(0, 1)
+        watch_outside_gt = watch_outside_gt.flatten(0, 1)
+        head_loc_gt = head_loc_gt[padding_mask_all, :]
+        gaze_heatmap_gt = gaze_heatmap_gt[padding_mask_all, :]
+        is_head_gt = is_head_gt[padding_mask_all, :][:, 0]
+        watch_outside_gt = watch_outside_gt[padding_mask_all, :][:, 0]
 
         # Compute the cost between is head
         is_head_pred = is_head_pred.view(bs*num_queries, 2)
-        is_head_gt = is_head_gt.view(bs*num_gt).long()
+        is_head_gt = is_head_gt.long()
         cost_is_head = -is_head_pred[:, is_head_gt]
 
         # Compute the cost between is watch outside
         watch_outside_pred = watch_outside_pred.view(bs*num_queries, 2)
-        watch_outside_gt = watch_outside_gt.view(bs*num_gt).long()
+        watch_outside_gt = watch_outside_gt.long()
         cost_watch = -watch_outside_pred[:, watch_outside_gt]
 
         # Compute the L1 cost between boxes
         out_bbox = head_loc_pred.flatten(0, 1).float()
-        tgt_bbox = head_loc_gt.flatten(0, 1).float()
-        cost_bbox_l1 = torch.cdist(box_cxcywh_to_xyxy(out_bbox), tgt_bbox, p=1)
+        tgt_bbox = head_loc_gt.float()
+        cost_bbox_l1 = torch.cdist(out_bbox, box_xyxy_to_cxcywh(tgt_bbox), p=1)
 
         # Compute the giou cost betwen boxes
         cost_giou = -generalized_box_iou(box_cxcywh_to_xyxy(out_bbox), tgt_bbox)
@@ -222,18 +230,16 @@ class HungarianMatcher(nn.Module):
 
         # Compute the L2 cost between gaze maps
         gaze_heatmap_pred = gaze_heatmap_pred.flatten(0, 1)
-        gaze_heatmap_gt = gaze_heatmap_gt.flatten(0, 1)
         cost_gaze_map = torch.cdist(gaze_heatmap_pred, gaze_heatmap_gt, p=2)
 
         # Final cost matrix
         C = self.beta1 * cost_bbox + self.beta2 * cost_is_head + self.beta3 * cost_watch + self.beta4 * cost_gaze_map
         C = C.view(bs, num_queries, -1).cpu()
 
-        sizes = [num_gt for _ in range(bs)]
+        sizes = [torch.sum(padding_mask_batch[bs_idx]).cpu().detach().numpy().tolist() for bs_idx in range(bs)]
         indices = [linear_sum_assignment(c[i]) for i, c in enumerate(C.split(sizes, -1))]
 
         return [(torch.as_tensor(i, dtype=torch.int64), torch.as_tensor(j, dtype=torch.int64)) for i, j in indices]
-
 
 def build_matcher(set_cost_class=1, set_cost_bbox=1, set_cost_giou=1):
     return HungarianMatcher(cost_class=set_cost_class, cost_bbox=set_cost_bbox, cost_giou=set_cost_giou)
@@ -249,20 +255,27 @@ def generalized_box_iou(boxes1, boxes2):
     # so do an early check
     assert (boxes1[:, 2:] >= boxes1[:, :2]).all()
     assert (boxes2[:, 2:] >= boxes2[:, :2]).all()
-    iou, union = box_iou(boxes1, boxes2)
 
+    iou, union = box_iou(boxes1, boxes2)
     lt = torch.min(boxes1[:, None, :2], boxes2[:, :2])
     rb = torch.max(boxes1[:, None, 2:], boxes2[:, 2:])
 
     wh = (rb - lt).clamp(min=0)  # [N,M,2]
     area = wh[:, :, 0] * wh[:, :, 1]
+    g_iou = iou - (area - union) / area
 
-    return iou - (area - union) / area
+    return g_iou
 
 def box_cxcywh_to_xyxy(x):
     x_c, y_c, w, h = x.unbind(-1)
     b = [(x_c - 0.5 * w), (y_c - 0.5 * h),
          (x_c + 0.5 * w), (y_c + 0.5 * h)]
+    return torch.stack(b, dim=-1)
+
+def box_xyxy_to_cxcywh(x):
+    x0, y0, x1, y1 = x.unbind(-1)
+    b = [(x0 + x1) / 2, (y0 + y1) / 2,
+         (x1 - x0), (y1 - y0)]
     return torch.stack(b, dim=-1)
 
 def box_iou(boxes1, boxes2):

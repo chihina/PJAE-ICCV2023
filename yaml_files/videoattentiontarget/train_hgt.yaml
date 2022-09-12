@@ -14,8 +14,10 @@ exp_set:
   gpu_start : 5
   gpu_finish : 5
 
-  resize_height: 320
-  resize_width: 480
+  # resize_height: 320
+  resize_height: 224
+  # resize_width: 480
+  resize_width: 224
   resize_head_height: 64
   resize_head_width: 64
 
@@ -24,7 +26,7 @@ exp_params:
   lr : 0.00001
 
   # gt gaussian
-  gaussian_sigma: 10
+  gaussian_sigma: 20
 
   # learning schedule
   nEpochs : 500

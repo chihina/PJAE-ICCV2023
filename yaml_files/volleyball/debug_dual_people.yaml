@@ -60,6 +60,7 @@ exp_params:
   # loss : bce
 
   # learning rate
+  # lr : 0.0001
   lr : 0.001
   # lr : 0.01
   # lr : 0.1
@@ -73,7 +74,6 @@ exp_params:
   snapshots : 100
   scheduler_start : 1000
   scheduler_iter : 1100000
-
 
   # pretrained models
   pretrained_models_dir: saved_weights
@@ -119,28 +119,23 @@ model_params:
   # use_img : False
   use_img : True
 
-  # transformer
+  # person-person transformer
+  people_feat_dim : 16
   # use_people_people_trans: False
   use_people_people_trans: True
-
   people_people_trans_enc_num : 2
   mha_num_heads_people_people : 2
-  people_feat_dim : 16
 
-  # rgb_cnn_extractor_type : normal
-  # rgb_cnn_extractor_type : no_use
+  # rgb-person transformer
+  rgb_feat_dim : 64
+  rgb_people_trans_enc_num : 2
+  mha_num_heads_rgb_people : 2
+
+  # rgb_cnn_extractor_type : rgb_patch
+  # rgb_patch_size : 8
   rgb_cnn_extractor_type : resnet18
   # rgb_cnn_extractor_type : resnet50
   # rgb_cnn_extractor_stage_idx : 1
   # rgb_cnn_extractor_stage_idx : 2
   rgb_cnn_extractor_stage_idx : 3
   # rgb_cnn_extractor_stage_idx : 4
-  # rgb_cnn_extractor_type : hrnet_w18_small
-  # rgb_cnn_extractor_type : hrnet_w32
-  # rgb_cnn_extractor_stage_idx : 3
-  # rgb_cnn_extractor_type : convnext
-  # rgb_cnn_extractor_stage_idx : 2
-
-  # angle_distance_fusion: max
-  # angle_distance_fusion: mean
-  angle_distance_fusion: mult

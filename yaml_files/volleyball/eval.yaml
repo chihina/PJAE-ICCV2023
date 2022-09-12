@@ -10,50 +10,16 @@ data:
 exp_set:
   save_folder : saved_weights
   # model_name: volleyball-concat_independent
-  # model_name: volleyball-concat_independent_wo_action
-  # model_name: volleyball-concat_independent_wo_gaze
-  # model_name: volleyball-concat_independent_wo_position
-  # model_name: volleyball-concat_independent_wo_img
 
-  # model_name: volleyball-concat_independent_wo_action_wo_gaze
-  # model_name: volleyball-concat_independent_wo_action_wo_position
-  # model_name: volleyball-concat_independent_wo_gaze_wo_position
-  # model_name: volleyball-concat_independent_wo_img_wo_action
-
-  # model_name: volleyball-concat_independent_direct_pos
-  # model_name: volleyball-concat_independent_direct_pos_wo_action
-  # model_name: volleyball-concat_independent_direct_pos_wo_gaze
-  # model_name: volleyball-concat_independent_direct_pos_wo_position
-
-  # model_name: volleyball-concat_independent_direct_pos_person_liner
-  # model_name: volleyball-concat_independent_direct_pos_person_liner_wo_action
-  # model_name: volleyball-concat_independent_direct_pos_person_liner_wo_gaze
-  # model_name: volleyball-concat_independent_direct_pos_person_liner_wo_position
-  
-  # model_name: volleyball-concat_independent_direct_pos_person_each
-  # model_name: volleyball-concat_independent_direct_pos_person_each_wo_action
-  # model_name: volleyball-concat_independent_direct_pos_person_each_wo_gaze
-  # model_name: volleyball-concat_independent_direct_pos_person_each_wo_position
-  
-  # model_name: volleyball-concat_independent_direct_pos_w_pos_aug
-  # model_name: volleyball-concat_independent_direct_pos_person_ident
-  # model_name: volleyball-concat_independent_direct_pos_person_ident_wo_action
-  # model_name: volleyball-concat_independent_direct_pos_person_ident_wo_position
-
-  # model_name: volleyball-concat_independent_direct_pos_w_rgb_no_use
-  # model_name: volleyball-concat_independent_direct_pos_w_rgb_no_use_wo_action
-  # model_name: volleyball-concat_independent_direct_pos_w_rgb_no_use_wo_position
-  # model_name: volleyball-concat_independent_direct_pos_w_rgb_no_use_wo_gaze
-
-  # model_name: volleyball-dual
+  model_name: volleyball-dual
+  # model_name: volleyball-dual_wo_action
   # model_name: volleyball-dual_wo_position
   # model_name: volleyball-dual_wo_gaze
-  # model_name: volleyball-dual_wo_action
 
   seed_num : 777
   gpu_mode : True
-  gpu_start : 2
-  gpu_finish : 2
+  gpu_start : 7
+  gpu_finish : 7
   num_workers : 1
   batch_size : 1
   wandb_name : test

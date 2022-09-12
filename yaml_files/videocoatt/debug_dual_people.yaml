@@ -48,7 +48,7 @@ exp_params:
   lr : 0.0001
 
   # gt gaussian
-  gaussian_sigma: 10
+  gaussian_sigma: 20
 
   # learning schedule
   nEpochs : 500

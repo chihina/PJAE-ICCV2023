@@ -236,21 +236,41 @@ for iteration, batch in enumerate(test_data_loader):
     gt_box_ja_array = np.array(gt_box_ja_list)
 
     co_att_flag_gt = np.sum(gt_box, axis=(0, 1)) != 0
+    person_person_joint_attention_heatmap = cv2.resize(person_person_joint_attention_heatmap, (cfg.exp_set.resize_width, cfg.exp_set.resize_height))
+    person_scene_joint_attention_heatmap = cv2.resize(person_scene_joint_attention_heatmap, (cfg.exp_set.resize_width, cfg.exp_set.resize_height))
     final_joint_attention_heatmap = cv2.resize(final_joint_attention_heatmap, (cfg.exp_set.resize_width, cfg.exp_set.resize_height))
+    person_person_joint_attention_heatmap_peak_val = np.max(person_person_joint_attention_heatmap)
+    person_scene_joint_attention_heatmap_peak_val = np.max(person_scene_joint_attention_heatmap)
     final_joint_attention_heatmap_peak_val = np.max(final_joint_attention_heatmap)
+
     co_att_flag_pred = final_joint_attention_heatmap_peak_val > 0.15
     pred_acc_list.append([co_att_flag_gt, co_att_flag_pred])
     if not co_att_flag_gt:
         continue
 
-    peak_y_mid_pred, peak_x_mid_pred = np.unravel_index(np.argmax(final_joint_attention_heatmap), final_joint_attention_heatmap.shape)
+    pred_y_mid_p_p, pred_x_mid_p_p = np.unravel_index(np.argmax(person_person_joint_attention_heatmap), person_person_joint_attention_heatmap.shape)
+    pred_y_mid_p_s, pred_x_mid_p_s = np.unravel_index(np.argmax(person_scene_joint_attention_heatmap), person_scene_joint_attention_heatmap.shape)
+    pred_y_mid_final, pred_x_mid_final = np.unravel_index(np.argmax(final_joint_attention_heatmap), final_joint_attention_heatmap.shape)
+
     for gt_box_idx in range(gt_box_ja_array.shape[0]):
         peak_x_mid_gt, peak_y_mid_gt = gt_box_ja_array[gt_box_idx, :]
-        l2_dist_x = np.linalg.norm(peak_x_mid_gt-peak_x_mid_pred)
-        l2_dist_y = np.linalg.norm(peak_y_mid_gt-peak_y_mid_pred)
-        l2_dist_euc = np.power(np.power(l2_dist_x, 2)+np.power(l2_dist_y, 2), 0.5)
-        l2_dist_list.append([l2_dist_x, l2_dist_y, l2_dist_euc, each_data_type_id_idx])
-        print(f'Dist {l2_dist_euc:.0f}, ({peak_x_mid_pred},{peak_y_mid_pred}), GT:({peak_x_mid_gt},{peak_y_mid_gt})')
+
+        l2_dist_x_p_p, l2_dist_y_p_p = np.power(np.power(pred_x_mid_p_p-peak_x_mid_gt, 2), 0.5), np.power(np.power(pred_y_mid_p_p-peak_y_mid_gt, 2), 0.5)
+        l2_dist_euc_p_p = np.power(np.power(l2_dist_x_p_p, 2) + np.power(l2_dist_y_p_p, 2), 0.5)
+
+        l2_dist_x_p_s, l2_dist_y_p_s = np.power(np.power(pred_x_mid_p_s-peak_x_mid_gt, 2), 0.5), np.power(np.power(pred_y_mid_p_s-peak_y_mid_gt, 2), 0.5)
+        l2_dist_euc_p_s = np.power(np.power(l2_dist_x_p_s, 2) + np.power(l2_dist_y_p_s, 2), 0.5)
+
+        l2_dist_x_final, l2_dist_y_final = np.power(np.power(pred_x_mid_final-peak_x_mid_gt, 2), 0.5), np.power(np.power(pred_y_mid_final-peak_y_mid_gt, 2), 0.5)
+        l2_dist_euc_final = np.power(np.power(l2_dist_x_final, 2) + np.power(l2_dist_y_final, 2), 0.5)
+
+        l2_dist_list_append = [l2_dist_x_p_p, l2_dist_y_p_p, l2_dist_euc_p_p,
+                               l2_dist_x_p_s, l2_dist_y_p_s, l2_dist_euc_p_s,
+                               l2_dist_x_final, l2_dist_y_final, l2_dist_euc_final,
+                               each_data_type_id_idx,
+                               ]
+        l2_dist_list.append(l2_dist_list_append)
+        print(f'Dist {l2_dist_euc_final:.0f}, ({pred_x_mid_final},{pred_y_mid_final}), GT:({peak_x_mid_gt},{peak_y_mid_gt})')
 
 # save metrics in a dict
 metrics_dict = {}
@@ -258,13 +278,16 @@ metrics_dict = {}
 # save l2 dist
 l2_dist_array = np.array(l2_dist_list)
 l2_dist_mean = np.mean(l2_dist_array, axis=0)
-l2_dist_list = ['l2_dist_x', 'l2_dist_y', 'l2_dist_euc']
+l2_dist_list = ['l2_dist_x_p_p', 'l2_dist_y_p_p', 'l2_dist_euc_p_p',
+                'l2_dist_x_p_s', 'l2_dist_y_p_s', 'l2_dist_euc_p_s',
+                'l2_dist_x_final', 'l2_dist_y_final', 'l2_dist_euc_final',
+                ]
 for l2_dist_idx, l2_dist_type in enumerate(l2_dist_list):
     metrics_dict[l2_dist_type] = l2_dist_mean[l2_dist_idx]
 
 # save l2 dist (Detailed analysis)
 for each_data_id, each_data_id_idx in each_data_type_id_dic.items():
-    l2_dist_array_each_data_id = l2_dist_array[l2_dist_array[:, 3] == each_data_id_idx]
+    l2_dist_array_each_data_id = l2_dist_array[l2_dist_array[:, -1] == each_data_id_idx]
     sample_ratio = l2_dist_array_each_data_id.shape[0]/l2_dist_array.shape[0]*100
     l2_dist_array_each_data_id_mean = np.mean(l2_dist_array_each_data_id, axis=0)
     metrics_dict[f'l2_dist_euc ({each_data_id}) ({sample_ratio:.0f}%)'] = l2_dist_array_each_data_id_mean[2]

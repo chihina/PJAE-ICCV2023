@@ -101,13 +101,32 @@ class JointAttentionEstimatorTransformerDualOnlyPeople(nn.Module):
                                         ])
             self.trans_layer_norm_people_people = nn.LayerNorm(normalized_shape=self.people_feat_dim)
 
-        self.hm_height, self.hm_width = 64, 64
-        self.hm_height_middle, self.hm_width_middle = 16, 16
-
         if self.loss == 'mse':
             final_activation_layer = nn.Identity()
         elif self.loss == 'bce':
             final_activation_layer = nn.Sigmoid()
+
+        if self.dataset_name == 'volleyball':
+            self.rgb_cnn_extractor_type = cfg.model_params.rgb_cnn_extractor_type
+            self.rgb_cnn_extractor_stage_idx = cfg.model_params.rgb_cnn_extractor_stage_idx
+            if self.rgb_cnn_extractor_type == 'rgb_patch':
+                down_scale_ratio = 8
+            elif 'resnet' in self.rgb_cnn_extractor_type:
+                self.rgb_cnn_extractor_stage_idx = self.rgb_cnn_extractor_stage_idx
+                down_scale_list = [2, 4, 8, 16, 32]
+                down_scale_ratio = down_scale_list[self.rgb_cnn_extractor_stage_idx]
+            self.hm_height = self.resize_height//down_scale_ratio
+            self.hm_width = self.resize_width//down_scale_ratio
+            self.hm_height_middle = self.hm_height
+            self.hm_width_middle = self.hm_width
+        elif self.dataset_name == 'videocoatt':
+            self.hm_height = 64
+            self.hm_width = 64
+            self.hm_height_middle = self.hm_height//2
+            self.hm_width_middle = self.hm_width//2
+        else:
+            print('employ correct hm height and width')
+            sys.exit()
 
         self.person_person_attention_heatmap = nn.Sequential(
             nn.Linear(self.people_feat_dim, self.people_feat_dim),
@@ -189,6 +208,7 @@ class JointAttentionEstimatorTransformerDualOnlyPeople(nn.Module):
         person_person_attention_heatmap = self.person_person_attention_heatmap(attention_token)
         person_person_attention_heatmap = person_person_attention_heatmap.view(self.batch_size, people_num, self.hm_height_middle, self.hm_width_middle)
         person_person_attention_heatmap = F.interpolate(person_person_attention_heatmap, (self.hm_height, self.hm_width), mode='bilinear')
+
         # joint attention estimation of person-to-person path
         ja_embedding_relation = head_info_params_emb[:, -1, :]
         person_person_joint_attention_heatmap = self.person_person_attention_heatmap(ja_embedding_relation)
@@ -227,7 +247,6 @@ class JointAttentionEstimatorTransformerDualOnlyPeople(nn.Module):
         data = {}
         data['person_person_attention_heatmap'] = person_person_attention_heatmap
         data['person_person_joint_attention_heatmap'] = person_person_joint_attention_heatmap
-        # dummy
         data['person_scene_attention_heatmap'] = person_person_attention_heatmap
         data['person_scene_joint_attention_heatmap'] = person_person_joint_attention_heatmap
         data['final_joint_attention_heatmap'] = person_person_joint_attention_heatmap

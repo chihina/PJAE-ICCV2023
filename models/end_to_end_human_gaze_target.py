@@ -95,7 +95,7 @@ class EndToEndHumanGazeTargetTransformer(nn.Module):
         weight_dict = {'loss_ce': 1, 'loss_bbox': 1}
         weight_dict['loss_giou'] = 1
         losses = ['boxes', 'is_head', 'watch_outside', 'gaze_map']
-        eos_coef = 1
+        eos_coef = 0.1
         self.criterion = SetCriterion(num_classes, matcher=matcher, weight_dict=weight_dict,
                                 eos_coef=eos_coef, losses=losses)
         self.criterion.to(self.device)
@@ -146,7 +146,7 @@ class EndToEndHumanGazeTargetTransformer(nn.Module):
     def calc_loss(self, inp, out, cfg):
         # unpack data
         img_gt = inp['img_gt']
-        gt_box = inp['gt_box']
+        head_bbox = inp['head_bbox']
         head_feature = inp['head_feature']
         att_inside_flag = inp['att_inside_flag']
         head_loc_pred = out['head_loc_pred']
@@ -164,7 +164,7 @@ class EndToEndHumanGazeTargetTransformer(nn.Module):
         outputs['watch_outside_pred'] = watch_outside_pred
 
         # get ground-truth
-        head_loc_gt_no_pad = gt_box
+        head_loc_gt_no_pad = head_bbox
         gaze_heatmap_gt_no_pad = img_gt
         gaze_heatmap_gt_no_pad = self.gaze_map_resizer(gaze_heatmap_gt_no_pad)
         gaze_heatmap_gt_no_pad = gaze_heatmap_gt_no_pad.view(self.batch_size, people_num, self.down_height*self.down_width)
@@ -187,252 +187,6 @@ class EndToEndHumanGazeTargetTransformer(nn.Module):
         loss_set = self.criterion(outputs, targets)
 
         return loss_set
-
-# class EndToEndHumanGazeTargetTransformer(nn.Module):
-#     def __init__(self, cfg):
-#         super(EndToEndHumanGazeTargetTransformer, self).__init__()
-
-#         ## set useful variables
-#         self.epsilon = 1e-7
-#         self.pi = 3.1415
-
-#         ## set data
-#         self.dataset_name = cfg.data.name
-
-#         ## exp settings
-#         self.resize_width = cfg.exp_set.resize_width
-#         self.resize_height = cfg.exp_set.resize_height
-
-#         self.gpu_list = range(cfg.exp_set.gpu_start, cfg.exp_set.gpu_finish+1)
-#         self.device = torch.device(f"cuda:{self.gpu_list[0]}")
-#         self.wandb_name = cfg.exp_set.wandb_name
-#         self.batch_size = cfg.exp_set.batch_size
-
-#         ## network
-#         # feature extractor
-#         self.rgb_embeding_dim = 256
-#         self.rgb_feature_extractor = timm.create_model('resnet50', features_only=True, pretrained=True)
-#         self.rgb_feature_one_by_one_conv = nn.Sequential(
-#                                             nn.Conv2d(in_channels=2048, out_channels=self.rgb_embeding_dim, kernel_size=1),
-#                                             nn.ReLU(),
-#                                             )
-
-#         self.down_scale_ratio = 32
-#         self.down_height = self.resize_height//self.down_scale_ratio
-#         self.down_width = self.resize_width//self.down_scale_ratio
-#         self.pe_generator_rgb = PositionalEmbeddingGenerator(self.down_height, self.down_width, self.rgb_embeding_dim, 'sine')
-
-#         # transformer encoder
-#         self.trans_enc_self_att_heads = 8
-#         # self.trans_enc_num = 6
-#         self.trans_enc_num = 1
-#         self.trans_enc_dim = self.rgb_embeding_dim
-#         self.trans_encoder_self_attention = nn.ModuleList([nn.MultiheadAttention(embed_dim=self.trans_enc_dim, num_heads=self.trans_enc_self_att_heads, batch_first=True) for _ in range(self.trans_enc_num)])
-#         self.trans_encoder_feed_forward = nn.ModuleList(
-#                                     [nn.Sequential(
-#                                     nn.Linear(self.trans_enc_dim, self.trans_enc_dim),
-#                                     nn.ReLU(),
-#                                     nn.Linear(self.trans_enc_dim, self.trans_enc_dim),
-#                                     )
-#                                     for _ in range(self.trans_enc_num)
-#                                     ])
-#         self.trans_encoder_norm = nn.LayerNorm(normalized_shape=self.trans_enc_dim)
-
-#         # transformer decoder
-#         self.trans_dec_self_att_heads = 8
-#         # self.trans_dec_num = 6
-#         self.trans_dec_num = 1
-#         self.trans_dec_dim = self.rgb_embeding_dim
-#         self.hgt_max_num = 20
-#         self.hgt_embedding = nn.Parameter(torch.zeros(1, self.hgt_max_num, self.trans_dec_dim))
-#         self.hgt_embedding_pos = nn.Parameter(torch.zeros(1, self.hgt_max_num, self.trans_dec_dim))
-
-#         # transformer decoder
-#         self.trans_decoder_self_attention = nn.ModuleList(
-#                                                             [nn.MultiheadAttention(embed_dim=self.trans_dec_dim, num_heads=self.trans_dec_self_att_heads,
-#                                                             batch_first=True) for _ in range(self.trans_dec_num)
-#                                                             ]
-#                                                         )
-#         self.trans_decoder_cross_attention = nn.ModuleList(
-#                                                             [nn.MultiheadAttention(embed_dim=self.trans_dec_dim, num_heads=self.trans_dec_self_att_heads,
-#                                                             batch_first=True) for _ in range(self.trans_dec_num)
-#                                                             ]
-#                                                         )
-#         self.trans_decoder_feed_forward = nn.ModuleList(
-#                                     [nn.Sequential(
-#                                     nn.Linear(self.trans_dec_dim, self.trans_dec_dim),
-#                                     nn.ReLU(),
-#                                     nn.Linear(self.trans_dec_dim, self.trans_dec_dim),
-#                                     )
-#                                     for _ in range(self.trans_dec_num)
-#                                     ])
-#         self.trans_decoder_norm = nn.LayerNorm(normalized_shape=self.trans_dec_dim)
-
-#         # instance prediction
-#         self.head_location_mlp = nn.Sequential(
-#                 nn.Linear(self.trans_dec_dim, self.trans_dec_dim),
-#                 nn.ReLU(inplace=False),
-#                 nn.Linear(self.trans_dec_dim, self.trans_dec_dim),
-#                 nn.ReLU(inplace=False),
-#                 nn.Linear(self.trans_dec_dim, 4),
-#                 nn.Sigmoid(),
-#             )
-
-#         self.gaze_heatmap_mlp = nn.Sequential(
-#                 nn.Linear(self.trans_dec_dim, self.trans_dec_dim),
-#                 nn.ReLU(inplace=False),
-#                 nn.Linear(self.trans_dec_dim, self.trans_dec_dim),
-#                 nn.ReLU(inplace=False),
-#                 nn.Linear(self.trans_dec_dim, self.trans_dec_dim),
-#                 nn.ReLU(inplace=False),
-#                 nn.Linear(self.trans_dec_dim, self.down_height*self.down_width),
-#                 nn.Sigmoid(),
-#             )
-
-#         self.is_head_mlp = nn.Sequential(
-#                 nn.Linear(self.trans_dec_dim, self.trans_dec_dim),
-#                 nn.ReLU(inplace=False),
-#                 nn.Linear(self.trans_dec_dim, 2),
-#                 nn.Softmax(dim=-1),
-#             )
-
-#         self.watch_outside_mlp = nn.Sequential(
-#                 nn.Linear(self.trans_dec_dim, self.trans_dec_dim),
-#                 nn.ReLU(inplace=False),
-#                 nn.Linear(self.trans_dec_dim, 2),
-#                 nn.Softmax(dim=-1),
-#             )
-
-#         num_classes = 1
-#         matcher = build_matcher()
-#         weight_dict = {'loss_ce': 1, 'loss_bbox': 1}
-#         weight_dict['loss_giou'] = 1
-#         losses = ['boxes', 'is_head', 'watch_outside', 'gaze_map']
-#         eos_coef = 1
-#         self.criterion = SetCriterion(num_classes, matcher=matcher, weight_dict=weight_dict,
-#                                 eos_coef=eos_coef, losses=losses)
-#         self.criterion.to(self.device)
-
-#         self.gaze_map_resizer = transforms.Compose(
-#             [
-#                 transforms.Resize((self.down_height, self.down_width)),
-#             ]
-#         )
-
-#     def forward(self, inp):
-
-#         input_feature = inp['input_feature']
-#         input_gaze = inp['input_gaze']
-#         head_vector = inp['head_vector']
-#         head_feature = inp['head_feature']
-#         xy_axis_map = inp['xy_axis_map']
-#         head_xy_map = inp['head_xy_map']
-#         gaze_xy_map = inp['gaze_xy_map']
-#         saliency_img = inp['saliency_img']
-#         rgb_img = inp['rgb_img']
-#         head_img_extract = inp['head_img_extract']
-#         att_inside_flag = inp['att_inside_flag']
-
-#         torch.autograd.set_detect_anomaly(True)
-        
-#         # get usuful variable
-#         self.batch_size, people_num, _, _, _ = xy_axis_map.shape
-
-#         rgb_features = self.rgb_feature_extractor(rgb_img)
-#         rgb_feature = rgb_features[4]
-#         rgb_feature = self.rgb_feature_one_by_one_conv(rgb_feature)
-
-#         rgb_feature_flatten = rgb_feature.view(self.batch_size, self.rgb_embeding_dim, self.down_height*self.down_width)
-#         rgb_feature_flatten = torch.transpose(rgb_feature_flatten, 1, 2)
-#         rgb_pos_embedding = self.pe_generator_rgb.pos_embedding
-#         rgb_feature_flatten_pos = rgb_feature_flatten + rgb_pos_embedding
-
-#         # tranformer encoder
-#         for i in range(self.trans_enc_num):
-#             feat_self_att, _ = self.trans_encoder_self_attention[i](rgb_feature_flatten_pos, rgb_feature_flatten_pos, rgb_feature_flatten)
-#             feat_self_att_res = feat_self_att + rgb_feature_flatten
-#             feat_feed_forward = self.trans_encoder_feed_forward[i](feat_self_att_res)
-#             feat_feed_forward_res = feat_self_att_res + feat_feed_forward
-#             feat_feed_forward_res = self.trans_encoder_norm(feat_feed_forward_res)
-#             rgb_feature_flatten = feat_feed_forward_res
-#         encoded_feat = rgb_feature_flatten
-
-#         # tranformer decoder
-#         hgt_embedding = self.hgt_embedding
-#         hgt_embedding_pos = self.hgt_embedding_pos
-#         hgt_embedding = hgt_embedding + hgt_embedding_pos
-#         hgt_embedding = hgt_embedding.expand(self.batch_size, self.hgt_max_num, self.trans_dec_dim)
-#         for i in range(self.trans_dec_num):
-#             hgt_embedding_self_att, _ = self.trans_decoder_self_attention[i](hgt_embedding, hgt_embedding, hgt_embedding)
-#             hgt_embedding_self_att_res = hgt_embedding_self_att + hgt_embedding
-#             hgt_embedding_self_att_res = self.trans_decoder_norm(hgt_embedding_self_att_res)
-#             hgt_embedding_cross_att, _ = self.trans_decoder_cross_attention[i](hgt_embedding_self_att_res, encoded_feat, encoded_feat)
-#             hgt_embedding_cross_att_res = hgt_embedding_cross_att + hgt_embedding_self_att_res
-#             hgt_embedding_cross_att_res = self.trans_decoder_norm(hgt_embedding_cross_att_res)
-#             hgt_embedding_feed_forward = self.trans_decoder_feed_forward[i](hgt_embedding_cross_att_res)
-#             hgt_embedding_feed_forward_res = hgt_embedding_cross_att_res + hgt_embedding_feed_forward
-#             hgt_embedding_feed_forward_res = self.trans_encoder_norm(hgt_embedding_feed_forward_res)
-#             hgt_embedding = hgt_embedding_feed_forward_res
-#         decoded_feat = hgt_embedding
-
-#         head_loc_pred = self.head_location_mlp(decoded_feat)
-#         gaze_heatmap_pred = self.gaze_heatmap_mlp(decoded_feat)
-#         is_head_pred = self.is_head_mlp(decoded_feat)
-#         watch_outside_pred = self.watch_outside_mlp(decoded_feat)
-
-#         # pack return values
-#         data = {}
-#         data['head_loc_pred'] = head_loc_pred
-#         data['gaze_heatmap_pred'] = gaze_heatmap_pred
-#         data['is_head_pred'] = is_head_pred
-#         data['watch_outside_pred'] = watch_outside_pred
-
-#         return data
-
-#     def calc_loss(self, inp, out, cfg):
-#         # unpack data
-#         img_gt = inp['img_gt']
-#         gt_box = inp['gt_box']
-#         head_feature = inp['head_feature']
-#         att_inside_flag = inp['att_inside_flag']
-#         head_loc_pred = out['head_loc_pred']
-#         gaze_heatmap_pred = out['gaze_heatmap_pred']
-#         is_head_pred = out['is_head_pred']
-#         watch_outside_pred = out['watch_outside_pred']
-
-#         _, people_num, _, _ = img_gt.shape
-
-#         # pack outputs
-#         outputs = {}
-#         outputs['head_loc_pred'] = head_loc_pred
-#         outputs['gaze_heatmap_pred'] = gaze_heatmap_pred
-#         outputs['is_head_pred'] = is_head_pred
-#         outputs['watch_outside_pred'] = watch_outside_pred
-
-#         # get ground-truth
-#         head_loc_gt_no_pad = gt_box
-#         gaze_heatmap_gt_no_pad = img_gt
-#         gaze_heatmap_gt_no_pad = self.gaze_map_resizer(gaze_heatmap_gt_no_pad)
-#         gaze_heatmap_gt_no_pad = gaze_heatmap_gt_no_pad.view(self.batch_size, people_num, self.down_height*self.down_width)
-#         is_head_gt_no_pad = (torch.sum(head_feature, dim=-1) != 0)
-#         is_head_gt_no_pad = is_head_gt_no_pad.view(self.batch_size, people_num, 1)
-#         watch_outside_gt_no_pad = att_inside_flag != 1
-#         watch_outside_gt_no_pad = watch_outside_gt_no_pad.view(self.batch_size, people_num, 1)
-#         head_loc_gt = torch.cat([head_loc_gt_no_pad], dim=1)
-#         gaze_heatmap_gt = torch.cat([gaze_heatmap_gt_no_pad], dim=1)
-#         is_head_gt = torch.cat([is_head_gt_no_pad], dim=1)
-#         watch_outside_gt = torch.cat([watch_outside_gt_no_pad], dim=1)
-
-#         # pack targets
-#         targets = {}
-#         targets['head_loc_gt'] = head_loc_gt
-#         targets['gaze_heatmap_gt'] = gaze_heatmap_gt
-#         targets['is_head_gt'] = is_head_gt
-#         targets['watch_outside_gt'] = watch_outside_gt
-
-#         loss_set = self.criterion(outputs, targets)
-
-#         return loss_set
 
 class DETR(nn.Module):
     """
@@ -502,6 +256,7 @@ class DETR(nn.Module):
 
         # propagate through the transformer
         h_out = self.transformer(pos_expand + 0.1 * h_trans, query_pos_expand).transpose(0, 1)
+        h_out = h_out[:, :20, :]
 
         return h_out
 

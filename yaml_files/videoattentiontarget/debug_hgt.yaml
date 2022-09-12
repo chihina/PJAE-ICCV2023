@@ -23,7 +23,7 @@ exp_set:
 
 exp_params:
   # learning rate
-  lr : 0.0001
+  lr : 0.00001
 
   # gt gaussian
   gaussian_sigma: 10
