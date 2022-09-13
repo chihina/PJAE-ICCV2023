@@ -160,10 +160,27 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
             nn.ReLU(),
         )
 
+        # self.final_joint_atention_heatmap = nn.Sequential(
+        #     nn.ConvTranspose2d(in_channels=16, out_channels=8, kernel_size=5, padding=2, stride=2, output_padding=1),
+        #     nn.ReLU(),
+        #     nn.ConvTranspose2d(in_channels=8, out_channels=8, kernel_size=5, padding=2, stride=2, output_padding=1),
+        #     nn.ReLU(),
+        #     nn.Conv2d(in_channels=8, out_channels=1, kernel_size=1),
+        #     final_activation_layer,
+        # )
+
         self.final_joint_atention_heatmap = nn.Sequential(
+            nn.ConvTranspose2d(in_channels=16, out_channels=16, kernel_size=5, padding=2, stride=2, output_padding=1),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=16, out_channels=16, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=16, out_channels=16, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
             nn.ConvTranspose2d(in_channels=16, out_channels=8, kernel_size=5, padding=2, stride=2, output_padding=1),
             nn.ReLU(),
-            nn.ConvTranspose2d(in_channels=8, out_channels=8, kernel_size=5, padding=2, stride=2, output_padding=1),
+            nn.Conv2d(in_channels=8, out_channels=8, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=8, out_channels=8, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
             nn.Conv2d(in_channels=8, out_channels=1, kernel_size=1),
             final_activation_layer,

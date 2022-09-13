@@ -13,8 +13,8 @@ exp_set:
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 6
-  gpu_finish : 6
+  gpu_start : 4
+  gpu_finish : 4
 
   resize_height: 320
   resize_width: 480
@@ -48,7 +48,7 @@ exp_params:
   lr : 0.0001
 
   # gt gaussian
-  gaussian_sigma: 20
+  gaussian_sigma: 10
 
   # learning schedule
   nEpochs : 500

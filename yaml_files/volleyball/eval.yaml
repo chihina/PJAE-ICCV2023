@@ -11,15 +11,20 @@ exp_set:
   save_folder : saved_weights
   # model_name: volleyball-concat_independent
 
-  model_name: volleyball-dual
+  model_name: volleyball-dual-people
+  # model_name: volleyball-dual-people_wo_position
+  # model_name: volleyball-dual-people_wo_gaze
+  # model_name: volleyball-dual-people_wo_action
+
+  # model_name: volleyball-dual
   # model_name: volleyball-dual_wo_action
   # model_name: volleyball-dual_wo_position
   # model_name: volleyball-dual_wo_gaze
 
   seed_num : 777
   gpu_mode : True
-  gpu_start : 7
-  gpu_finish : 7
+  gpu_start : 0
+  gpu_finish : 0
   num_workers : 1
   batch_size : 1
   wandb_name : test

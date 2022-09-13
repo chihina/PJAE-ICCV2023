@@ -8,14 +8,15 @@ exp_set:
   # model_name: videocoatt-head_pose_estimator
 
   # model_name: videocoatt-isa
+  model_name: videocoatt-dual-people
   # model_name: videocoatt-dual
-  model_name: videocoatt-dual-trans
-  # model_name: videocoatt-dual-people
+  # model_name: videocoatt-dual-trans
+  # model_name: videocoatt-dual-davt
 
   seed_num : 777
   gpu_mode : True
-  gpu_start : 5
-  gpu_finish : 5
+  gpu_start : 4
+  gpu_finish : 4
   num_workers : 1
   batch_size : 1
   wandb_name : demo

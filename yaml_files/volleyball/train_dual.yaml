@@ -8,19 +8,19 @@ data:
 
 exp_set:
   save_folder: saved_weights
-  # wandb_name: volleyball-dual
+  wandb_name: volleyball-dual
   # wandb_name: volleyball-dual_wo_action
   # wandb_name: volleyball-dual_wo_position
-  wandb_name: volleyball-dual_wo_gaze
+  # wandb_name: volleyball-dual_wo_gaze
 
   wandb_log : True
 
-  batch_size: 4
-  num_workers: 4
+  batch_size: 16
+  num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 7
-  gpu_finish : 7
+  gpu_start : 1
+  gpu_finish : 1
 
   resize_height : 320
   resize_width : 640
@@ -44,8 +44,8 @@ exp_params:
   # use_final_jo_att_loss : False
   use_final_jo_att_loss : True
 
-  # use_frame_type: mid
-  use_frame_type: all
+  use_frame_type: mid
+  # use_frame_type: all
 
   use_gt_gaze: False
   # use_gt_gaze: True
@@ -64,8 +64,8 @@ exp_params:
   # loss : bce
 
   # learning rate
-  lr : 0.0001
-  # lr : 0.001
+  # lr : 0.0001
+  lr : 0.001
   # lr : 0.01
   # lr : 0.1
   
