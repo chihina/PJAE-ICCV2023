@@ -117,6 +117,8 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
                 down_scale_ratio = down_scale_list[self.rgb_cnn_extractor_stage_idx]
             self.hm_height = self.resize_height//down_scale_ratio
             self.hm_width = self.resize_width//down_scale_ratio
+            self.hm_height_middle = self.hm_height
+            self.hm_width_middle = self.hm_width
         elif self.dataset_name == 'videocoatt':
             self.rgb_cnn_extractor_type = cfg.model_params.rgb_cnn_extractor_type
             self.rgb_cnn_extractor_stage_idx = cfg.model_params.rgb_cnn_extractor_stage_idx
@@ -138,11 +140,11 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
             sys.exit()
 
         self.person_person_attention_heatmap = nn.Sequential(
-            nn.Linear(self.people_feat_dim, self.people_feat_dim),
+            nn.Linear(self.people_feat_dim+2, self.people_feat_dim),
             nn.ReLU(),
             nn.Linear(self.people_feat_dim, self.people_feat_dim),
             nn.ReLU(),
-            nn.Linear(self.people_feat_dim, self.hm_height*self.hm_width),
+            nn.Linear(self.people_feat_dim, 1),
             final_activation_layer,
         )
 
@@ -160,27 +162,10 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
             nn.ReLU(),
         )
 
-        # self.final_joint_atention_heatmap = nn.Sequential(
-        #     nn.ConvTranspose2d(in_channels=16, out_channels=8, kernel_size=5, padding=2, stride=2, output_padding=1),
-        #     nn.ReLU(),
-        #     nn.ConvTranspose2d(in_channels=8, out_channels=8, kernel_size=5, padding=2, stride=2, output_padding=1),
-        #     nn.ReLU(),
-        #     nn.Conv2d(in_channels=8, out_channels=1, kernel_size=1),
-        #     final_activation_layer,
-        # )
-
         self.final_joint_atention_heatmap = nn.Sequential(
-            nn.ConvTranspose2d(in_channels=16, out_channels=16, kernel_size=5, padding=2, stride=2, output_padding=1),
-            nn.ReLU(),
-            nn.Conv2d(in_channels=16, out_channels=16, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(in_channels=16, out_channels=16, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
             nn.ConvTranspose2d(in_channels=16, out_channels=8, kernel_size=5, padding=2, stride=2, output_padding=1),
             nn.ReLU(),
-            nn.Conv2d(in_channels=8, out_channels=8, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(in_channels=8, out_channels=8, kernel_size=3, stride=1, padding=1),
+            nn.ConvTranspose2d(in_channels=8, out_channels=8, kernel_size=5, padding=2, stride=2, output_padding=1),
             nn.ReLU(),
             nn.Conv2d(in_channels=8, out_channels=1, kernel_size=1),
             final_activation_layer,
@@ -254,12 +239,33 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
 
         # attention estimation of person-to-person path
         attention_token = head_info_params_emb[:, :-1, :]
-        person_person_attention_heatmap = self.person_person_attention_heatmap(attention_token)
-        person_person_attention_heatmap = person_person_attention_heatmap.view(self.batch_size, people_num, self.hm_height, self.hm_width)
+        attention_token_view = attention_token.view(self.batch_size, people_num, 1, self.people_feat_dim)
+        attention_token_expand = attention_token_view.expand(self.batch_size, people_num, self.hm_height*self.hm_width, self.people_feat_dim)
+        x_axis_map = xy_axis_map[:, :, 0, :, :]
+        y_axis_map = xy_axis_map[:, :, 1, :, :]
+        x_axis_map = F.interpolate(x_axis_map, (self.hm_height, self.hm_width), mode='bilinear')
+        y_axis_map = F.interpolate(y_axis_map, (self.hm_height, self.hm_width), mode='bilinear')
+        x_axis_map = x_axis_map.view(self.batch_size, people_num, self.hm_height*self.hm_width, 1)
+        y_axis_map = y_axis_map.view(self.batch_size, people_num, self.hm_height*self.hm_width,1 )
+        attention_token_coord = torch.cat([attention_token_expand, x_axis_map, y_axis_map], dim=-1)
+        person_person_attention_heatmap = self.person_person_attention_heatmap(attention_token_coord)
+        person_person_attention_heatmap = person_person_attention_heatmap.view(self.batch_size, people_num, self.hm_height_middle, self.hm_width_middle)
+        person_person_attention_heatmap = F.interpolate(person_person_attention_heatmap, (self.hm_height, self.hm_width), mode='bilinear')
+
         # joint attention estimation of person-to-person path
         ja_embedding_relation = head_info_params_emb[:, -1, :]
-        person_person_joint_attention_heatmap = self.person_person_attention_heatmap(ja_embedding_relation)
-        person_person_joint_attention_heatmap = person_person_joint_attention_heatmap.view(self.batch_size, 1, self.hm_height, self.hm_width)
+        ja_embedding_relation_view = ja_embedding_relation.view(self.batch_size, 1, 1, self.people_feat_dim)
+        ja_embedding_relation_expand = ja_embedding_relation_view.expand(self.batch_size, 1, self.hm_height*self.hm_width, self.people_feat_dim)
+        x_axis_map = xy_axis_map[:, 0, 0, :, :][:, None, :, :]
+        y_axis_map = xy_axis_map[:, 0, 1, :, :][:, None, :, :]
+        x_axis_map = F.interpolate(x_axis_map, (self.hm_height, self.hm_width), mode='bilinear')
+        y_axis_map = F.interpolate(y_axis_map, (self.hm_height, self.hm_width), mode='bilinear')
+        x_axis_map = x_axis_map.view(self.batch_size, 1, self.hm_height*self.hm_width, 1)
+        y_axis_map = y_axis_map.view(self.batch_size, 1, self.hm_height*self.hm_width,1 )
+        ja_embedding_coord = torch.cat([ja_embedding_relation_expand, x_axis_map, y_axis_map], dim=-1)
+        person_person_joint_attention_heatmap = self.person_person_attention_heatmap(ja_embedding_coord)
+        person_person_joint_attention_heatmap = person_person_joint_attention_heatmap.view(self.batch_size, 1, self.hm_height_middle, self.hm_width_middle)
+        person_person_joint_attention_heatmap = F.interpolate(person_person_joint_attention_heatmap, (self.hm_height, self.hm_width), mode='bilinear')
 
         # attention estimation of person-to-scene path
         person_scene_attention_heatmap = inp['person_scene_attention_heatmap']

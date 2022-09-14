@@ -128,15 +128,6 @@ class JointAttentionEstimatorTransformerDualOnlyPeople(nn.Module):
             print('employ correct hm height and width')
             sys.exit()
 
-        # self.person_person_attention_heatmap = nn.Sequential(
-        #     nn.Linear(self.people_feat_dim, self.people_feat_dim),
-        #     nn.ReLU(),
-        #     nn.Linear(self.people_feat_dim, self.people_feat_dim),
-        #     nn.ReLU(),
-        #     nn.Linear(self.people_feat_dim, self.hm_height_middle*self.hm_width_middle),
-        #     final_activation_layer,
-        # )
-
         self.person_person_attention_heatmap = nn.Sequential(
             nn.Linear(self.people_feat_dim+2, self.people_feat_dim),
             nn.ReLU(),
@@ -213,9 +204,6 @@ class JointAttentionEstimatorTransformerDualOnlyPeople(nn.Module):
             trans_att_people_people = torch.zeros(self.batch_size, self.people_people_trans_enc_num, people_num, people_num)
 
         # attention estimation of person-to-person path
-        # attention_token = head_info_params_emb[:, :-1, :]
-        # person_person_attention_heatmap = self.person_person_attention_heatmap(attention_token)
-        
         attention_token = head_info_params_emb[:, :-1, :]
         attention_token_view = attention_token.view(self.batch_size, people_num, 1, self.people_feat_dim)
         attention_token_expand = attention_token_view.expand(self.batch_size, people_num, self.hm_height*self.hm_width, self.people_feat_dim)
@@ -231,9 +219,6 @@ class JointAttentionEstimatorTransformerDualOnlyPeople(nn.Module):
         person_person_attention_heatmap = F.interpolate(person_person_attention_heatmap, (self.hm_height, self.hm_width), mode='bilinear')
 
         # joint attention estimation of person-to-person path
-        # ja_embedding_relation = head_info_params_emb[:, -1, :]
-        # person_person_joint_attention_heatmap = self.person_person_attention_heatmap(ja_embedding_relation)
-
         ja_embedding_relation = head_info_params_emb[:, -1, :]
         ja_embedding_relation_view = ja_embedding_relation.view(self.batch_size, 1, 1, self.people_feat_dim)
         ja_embedding_relation_expand = ja_embedding_relation_view.expand(self.batch_size, 1, self.hm_height*self.hm_width, self.people_feat_dim)

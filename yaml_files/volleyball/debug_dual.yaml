@@ -15,8 +15,8 @@ exp_set:
   num_workers: 1
   seed_num: 777
   gpu_mode : True
-  gpu_start : 3
-  gpu_finish : 3
+  gpu_start : 5
+  gpu_finish : 5
 
   resize_height : 320
   resize_width : 640
@@ -127,14 +127,15 @@ model_params:
   mha_num_heads_people_people : 2
 
   # rgb-person transformer
-  rgb_feat_dim : 256
+  rgb_feat_dim : 64
   rgb_people_trans_enc_num : 2
   mha_num_heads_rgb_people : 2
 
-  # rgb_cnn_extractor_type : no_use
+  # rgb_cnn_extractor_type : rgb_patch
+  # rgb_patch_size : 8
   rgb_cnn_extractor_type : resnet18
   # rgb_cnn_extractor_type : resnet50
   # rgb_cnn_extractor_stage_idx : 1
   # rgb_cnn_extractor_stage_idx : 2
-  # rgb_cnn_extractor_stage_idx : 3
-  rgb_cnn_extractor_stage_idx : 4
+  rgb_cnn_extractor_stage_idx : 3
+  # rgb_cnn_extractor_stage_idx : 4

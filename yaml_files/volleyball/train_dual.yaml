@@ -8,10 +8,14 @@ data:
 
 exp_set:
   save_folder: saved_weights
-  wandb_name: volleyball-dual
+  # wandb_name: volleyball-dual
   # wandb_name: volleyball-dual_wo_action
   # wandb_name: volleyball-dual_wo_position
   # wandb_name: volleyball-dual_wo_gaze
+  wandb_name: volleyball-dual-all
+  # wandb_name: volleyball-dual-all_wo_action
+  # wandb_name: volleyball-dual-all_wo_position
+  # wandb_name: volleyball-dual-all_wo_gaze
 
   wandb_log : True
 
@@ -44,8 +48,8 @@ exp_params:
   # use_final_jo_att_loss : False
   use_final_jo_att_loss : True
 
-  use_frame_type: mid
-  # use_frame_type: all
+  # use_frame_type: mid
+  use_frame_type: all
 
   use_gt_gaze: False
   # use_gt_gaze: True
@@ -108,8 +112,8 @@ model_params:
   use_position : True
 
   # Gaze
-  use_gaze : False
-  # use_gaze : True
+  # use_gaze : False
+  use_gaze : True
 
   # Action
   # use_action : False
