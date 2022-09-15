@@ -263,26 +263,31 @@ for iteration, batch in enumerate(test_data_loader,1):
             # os.makedirs(os.path.join(save_image_dir_dic[dir_name], data_type_id))
     # save_image(img_pred, os.path.join(save_image_dir_dic['joint_attention'], data_type_id, f'{mode}_{data_id}_joint_attention.png'))
 
-    for dir_name in ['attention', 'gt_map']:
+    for dir_name in ['attention', 'attention_superimposed', 'gt_map']:
         if not os.path.exists(os.path.join(save_image_dir_dic[dir_name], data_type_id, f'{data_id}')):
             os.makedirs(os.path.join(save_image_dir_dic[dir_name], data_type_id, f'{data_id}'))
 
     img = cv2.resize(img, (original_width, original_height))
     head_query_num = is_head_pred.shape[0]
-    head_conf_thresh = 0.7
+    head_conf_thresh = 0.9
+    watch_outside_conf_thresh = 0.9
+
     for head_idx in range(head_query_num):
-        head_conf = is_head_pred[head_idx][1]
-        watch_outside_conf = watch_outside_pred[head_idx][0]
+        head_conf = is_head_pred[head_idx][-1]
+        watch_outside_conf = watch_outside_pred[head_idx][-1]
         head_bbox = head_loc_pred[head_idx, :]
         gaze_map = gaze_heatmap_pred[head_idx, :]
 
         print(f'Idx:{head_idx}, Head conf:{head_conf:.2f}, Watch conf:{watch_outside_conf:.2f}')
-        if head_conf > head_conf_thresh:
-            print(head_bbox)
+        
+        head_conf_flag = head_conf > head_conf_thresh
+        watch_outside_flag = watch_outside_conf < watch_outside_conf_thresh
+
+        if head_conf_flag and watch_outside_flag:
             # gaze map
             gaze_map_view = gaze_map.view(cfg.exp_set.resize_height//16, cfg.exp_set.resize_width//16)
-            save_image(gaze_map_view, os.path.join(save_image_dir_dic['attention'], data_type_id, f'{mode}_{data_id}_attention_{head_idx}.png'))
-            gaze_map = cv2.imread(os.path.join(save_image_dir_dic['attention'], data_type_id, f'{mode}_{data_id}_attention_{head_idx}.png'), cv2.IMREAD_GRAYSCALE)
+            save_image(gaze_map_view, os.path.join(save_image_dir_dic['attention'], data_type_id, f'{data_id}', f'{mode}_{data_id}_attention_{head_idx}.png'))
+            gaze_map = cv2.imread(os.path.join(save_image_dir_dic['attention'], data_type_id, f'{data_id}', f'{mode}_{data_id}_attention_{head_idx}.png'), cv2.IMREAD_GRAYSCALE)
             gaze_map = cv2.resize(gaze_map, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_NEAREST)
             gaze_map_norm = norm_heatmap(gaze_map)
             gaze_map_norm = gaze_map_norm.astype(np.uint8)
@@ -295,10 +300,10 @@ for iteration, batch in enumerate(test_data_loader,1):
             head_x_min, head_x_max = map(lambda x: int(x*img.shape[1]), [head_x_min, head_x_max])
             head_y_min, head_y_max = map(lambda x: int(x*img.shape[0]), [head_y_min, head_y_max])
             cv2.rectangle(gaze_map_norm_superimposed, (head_x_min, head_y_min), (head_x_max, head_y_max), (128, 0, 128), thickness=5)
-            cv2.imwrite(os.path.join(save_image_dir_dic['attention_superimposed'], data_type_id, f'{mode}_{data_id}_superimposed_{head_idx}.png'), gaze_map_norm_superimposed)
+            cv2.imwrite(os.path.join(save_image_dir_dic['attention_superimposed'], data_type_id, f'{data_id}', f'{mode}_{data_id}_superimposed_{head_idx}.png'), gaze_map_norm_superimposed)
 
     # save joint attention estimation as a superimposed image
     for person_idx in range(img_gt.shape[0]):
         save_image(img_gt[person_idx], os.path.join(save_image_dir_dic['gt_map'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_gt.png'))
 
-    sys.exit()
+    # sys.exit()

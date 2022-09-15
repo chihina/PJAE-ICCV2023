@@ -31,6 +31,9 @@ class SetCriterion(nn.Module):
         empty_weight = torch.ones(self.num_classes + 1)
         empty_weight[0] = self.eos_coef
         self.register_buffer('empty_weight', empty_weight)
+        watch_outside_weight = torch.ones(1 + 1)
+        watch_outside_weight[0] = self.eos_coef*2
+        self.register_buffer('watch_outside_weight', watch_outside_weight)
 
     def loss_boxes(self, outputs, targets, indices, num_boxes):
         """Compute the losses related to the bounding boxes, the L1 regression loss and the GIoU loss
@@ -68,7 +71,9 @@ class SetCriterion(nn.Module):
         loss_is_head = F.cross_entropy(src_is_head, target_is_head, self.empty_weight, reduction='none')
 
         losses = {}
-        losses['loss_is_head'] = loss_is_head.sum() / num_boxes
+        # losses['loss_is_head'] = loss_is_head.sum() / num_boxes
+        num_boxes_head =  src_is_head.shape[0]
+        losses['loss_is_head'] = loss_is_head.sum() / num_boxes_head
 
         return losses
 
@@ -79,9 +84,9 @@ class SetCriterion(nn.Module):
         target_watch_outside = torch.cat([targets['watch_outside_gt'][b_idx, i] for b_idx, (_, i) in enumerate(indices)], dim=0)
         target_watch_outside = target_watch_outside.flatten().long()
 
-        loss_watch_outside = F.cross_entropy(src_watch_outside, target_watch_outside, reduction='none')
-
         losses = {}
+        # loss_watch_outside = F.cross_entropy(src_watch_outside, target_watch_outside, reduction='none')
+        loss_watch_outside = F.cross_entropy(src_watch_outside, target_watch_outside, self.watch_outside_weight, reduction='none')
         losses['loss_watch_outside'] = loss_watch_outside.sum() / num_boxes
 
         return losses

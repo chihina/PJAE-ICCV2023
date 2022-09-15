@@ -10,13 +10,13 @@ data:
 exp_set:
   save_folder : saved_weights
   # model_name: volleyball-head_pose_estimator
-  model_name: volleyball-dual-people
-  # model_name: volleyball-dual
+  # model_name: volleyball-dual-people
+  model_name: volleyball-dual-all
 
   seed_num : 777
   gpu_mode : True
-  gpu_start : 0
-  gpu_finish : 0
+  gpu_start : 7
+  gpu_finish : 7
   num_workers : 1
   batch_size : 1
   wandb_name : demo
