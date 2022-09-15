@@ -165,17 +165,17 @@ class EndToEndHumanGazeTargetTransformer(nn.Module):
 
         # get ground-truth
         head_loc_gt_no_pad = head_bbox
-        gaze_heatmap_gt_no_pad = img_gt
-        gaze_heatmap_gt_no_pad = self.gaze_map_resizer(gaze_heatmap_gt_no_pad)
-        gaze_heatmap_gt_no_pad = gaze_heatmap_gt_no_pad.view(self.batch_size, people_num, self.down_height*self.down_width)
-        is_head_gt_no_pad = (torch.sum(head_feature, dim=-1) != 0)
-        is_head_gt_no_pad = is_head_gt_no_pad.view(self.batch_size, people_num, 1)
-        watch_outside_gt_no_pad = att_inside_flag != 1
-        watch_outside_gt_no_pad = watch_outside_gt_no_pad.view(self.batch_size, people_num, 1)
+        gaze_heatmap_gt = img_gt
+        gaze_heatmap_gt = self.gaze_map_resizer(gaze_heatmap_gt)
+        gaze_heatmap_gt = gaze_heatmap_gt.view(self.batch_size, people_num, self.down_height*self.down_width)
+        is_head_gt= (torch.sum(head_feature, dim=-1) != 0)
+        is_head_gt = is_head_gt.view(self.batch_size, people_num, 1)
+        watch_outside = att_inside_flag != 1
+        watch_outside = watch_outside.view(self.batch_size, people_num, 1)
         head_loc_gt = torch.cat([head_loc_gt_no_pad], dim=1)
-        gaze_heatmap_gt = torch.cat([gaze_heatmap_gt_no_pad], dim=1)
-        is_head_gt = torch.cat([is_head_gt_no_pad], dim=1)
-        watch_outside_gt = torch.cat([watch_outside_gt_no_pad], dim=1)
+        gaze_heatmap_gt = torch.cat([gaze_heatmap_gt], dim=1)
+        is_head_gt = torch.cat([is_head_gt], dim=1)
+        watch_outside_gt = torch.cat([watch_outside], dim=1)
 
         # pack targets
         targets = {}

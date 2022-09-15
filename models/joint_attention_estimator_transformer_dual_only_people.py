@@ -120,8 +120,24 @@ class JointAttentionEstimatorTransformerDualOnlyPeople(nn.Module):
             self.hm_height_middle = self.hm_height
             self.hm_width_middle = self.hm_width
         elif self.dataset_name == 'videocoatt':
-            self.hm_height = 64
-            self.hm_width = 64
+            self.rgb_cnn_extractor_type = cfg.model_params.rgb_cnn_extractor_type
+            self.rgb_cnn_extractor_stage_idx = cfg.model_params.rgb_cnn_extractor_stage_idx
+            if self.rgb_cnn_extractor_type == 'rgb_patch':
+                down_scale_ratio = 8
+                self.hm_height = self.resize_height//down_scale_ratio
+                self.hm_width = self.resize_width//down_scale_ratio
+            elif 'resnet' in self.rgb_cnn_extractor_type:
+                self.rgb_cnn_extractor_stage_idx = self.rgb_cnn_extractor_stage_idx
+                down_scale_list = [2, 4, 8, 16, 32]
+                down_scale_ratio = down_scale_list[self.rgb_cnn_extractor_stage_idx]
+                self.hm_height = self.resize_height//down_scale_ratio
+                self.hm_width = self.resize_width//down_scale_ratio
+            elif self.rgb_cnn_extractor_type == 'davt':
+                self.hm_height = 64
+                self.hm_width = 64
+            else:
+                self.hm_height = 64
+                self.hm_width = 64
             self.hm_height_middle = self.hm_height
             self.hm_width_middle = self.hm_width
         else:

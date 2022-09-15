@@ -29,7 +29,7 @@ class SetCriterion(nn.Module):
         self.eos_coef = eos_coef
         self.losses = losses
         empty_weight = torch.ones(self.num_classes + 1)
-        empty_weight[-1] = self.eos_coef
+        empty_weight[0] = self.eos_coef
         self.register_buffer('empty_weight', empty_weight)
 
     def loss_boxes(self, outputs, targets, indices, num_boxes):
@@ -54,11 +54,17 @@ class SetCriterion(nn.Module):
         return losses
 
     def loss_is_head(self, outputs, targets, indices, num_boxes):
+        src_is_head = outputs['is_head_pred']
         idx = self._get_src_permutation_idx(indices)
-        src_is_head = outputs['is_head_pred'][idx]
-        target_is_head = torch.cat([targets['is_head_gt'][b_idx, i] for b_idx, (_, i) in enumerate(indices)], dim=0)
-        target_is_head = target_is_head.flatten().long()
 
+        target_is_head_o = torch.cat([targets['is_head_gt'][b_idx, i] for b_idx, (_, i) in enumerate(indices)], dim=0)
+        target_is_head_o = target_is_head_o.flatten().long()
+        target_is_head = torch.full(src_is_head.shape[:2], 0,
+                                    dtype=torch.int64, device=src_is_head.device)
+        target_is_head[idx] = target_is_head_o
+
+        src_is_head = src_is_head.flatten(0, 1)
+        target_is_head = target_is_head.flatten(0, 1)
         loss_is_head = F.cross_entropy(src_is_head, target_is_head, self.empty_weight, reduction='none')
 
         losses = {}
@@ -69,6 +75,7 @@ class SetCriterion(nn.Module):
     def loss_watch_outside(self, outputs, targets, indices, num_boxes):
         idx = self._get_src_permutation_idx(indices)
         src_watch_outside = outputs['watch_outside_pred'][idx]
+
         target_watch_outside = torch.cat([targets['watch_outside_gt'][b_idx, i] for b_idx, (_, i) in enumerate(indices)], dim=0)
         target_watch_outside = target_watch_outside.flatten().long()
 

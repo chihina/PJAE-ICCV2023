@@ -135,6 +135,8 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
             elif self.rgb_cnn_extractor_type == 'davt':
                 self.hm_height = 64
                 self.hm_width = 64
+            self.hm_height_middle = self.hm_height
+            self.hm_width_middle = self.hm_width
         else:
             print('employ correct hm height and width')
             sys.exit()
