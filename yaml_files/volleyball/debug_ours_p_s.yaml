@@ -139,3 +139,4 @@ model_params:
   # rgb_cnn_extractor_stage_idx : 2
   rgb_cnn_extractor_stage_idx : 3
   # rgb_cnn_extractor_stage_idx : 4
+  # rgb_cnn_extractor_type : davt

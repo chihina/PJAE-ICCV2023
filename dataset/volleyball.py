@@ -280,6 +280,7 @@ class VolleyBallDataset(Dataset):
         head_img = torch.zeros(self.max_num_people, 3, self.resize_head_height, self.resize_head_width)
         head_vector_gt_tensor = torch.zeros(self.max_num_people, 2)
         head_feature_tensor = torch.zeros(self.max_num_people, 2+9)
+        head_bbox_tensor = torch.zeros(self.max_num_people, 4)
         att_inside_flag = torch.zeros(self.max_num_people, dtype=torch.bool)
 
         for head_idx in range(len(self.feature_list[idx])):
@@ -306,10 +307,15 @@ class VolleyBallDataset(Dataset):
             head_feature_tensor[head_idx, :2] = torch.tensor(self.feature_list[idx][head_idx][:2])
             head_feature_tensor[head_idx, 2:11] = torch.tensor(self.feature_list[idx][head_idx][2:11])
             head_vector_gt_tensor[head_idx, :] = torch.tensor([head_ball_vec_x, head_ball_vec_y])
+            head_bbox_tensor[head_idx, :4] = torch.tensor(list(map(int, [head_x_min, head_y_min, head_x_max, head_y_max])))
             att_inside_flag[head_idx] = 1
 
         head_feature_tensor[:, 0] /= img_width
         head_feature_tensor[:, 1] /= img_height
+        head_bbox_tensor[:, 0] /= img_width
+        head_bbox_tensor[:, 1] /= img_height
+        head_bbox_tensor[:, 2] /= img_width
+        head_bbox_tensor[:, 3] /= img_height
 
         # add position noise
         if self.use_position_aug and self.mode == 'train':
@@ -340,6 +346,7 @@ class VolleyBallDataset(Dataset):
         data = {}
         data['head_img'] = head_img
         data['head_feature'] = head_feature_tensor
+        data['head_bbox'] = head_bbox_tensor
         data['head_vector_gt'] = head_vector_gt_tensor
         data['img_gt'] = img_gt
         data['gt_box'] = gt_box_expand

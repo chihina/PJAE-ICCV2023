@@ -8,15 +8,16 @@ data:
 
 exp_set:
   save_folder: saved_weights
-  wandb_name: debug
-  wandb_log : False
+  wandb_name: volleyball-dual-all_wo_image
 
-  batch_size: 1
-  num_workers: 1
+  wandb_log : True
+
+  batch_size: 16
+  num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 7
-  gpu_finish : 7
+  gpu_start : 3
+  gpu_finish : 3
 
   resize_height : 320
   resize_width : 640
@@ -31,17 +32,17 @@ exp_params:
   # use_person_person_jo_att_loss : False
   use_person_person_jo_att_loss : True
 
-  # use_person_scene_att_loss : False
-  use_person_scene_att_loss : True
+  use_person_scene_att_loss : False
+  # use_person_scene_att_loss : True
 
-  # use_person_scene_jo_att_loss : False
-  use_person_scene_jo_att_loss : True
+  use_person_scene_jo_att_loss : False
+  # use_person_scene_jo_att_loss : True
 
   # use_final_jo_att_loss : False
   use_final_jo_att_loss : True
 
-  use_frame_type: mid
-  # use_frame_type: all
+  # use_frame_type: mid
+  use_frame_type: all
 
   use_gt_gaze: False
   # use_gt_gaze: True
@@ -97,7 +98,7 @@ exp_params:
   # freeze_joint_attention_estimator: True
 
 model_params:
-  model_type: ja_transformer_dual
+  model_type: ja_transformer_dual_only_people
 
   # Position
   # use_position : False
@@ -108,8 +109,8 @@ model_params:
   use_gaze : True
 
   # Action
-  # use_action : False
-  use_action : True
+  use_action : False
+  # use_action : True
 
   # Person embedding
   # head_embedding_type : liner
@@ -128,15 +129,15 @@ model_params:
 
   # rgb-person transformer
   rgb_feat_dim : 64
-  rgb_people_trans_enc_num : 2
-  mha_num_heads_rgb_people : 2
+  rgb_people_trans_enc_num : 1
+  mha_num_heads_rgb_people : 1
 
   # rgb_cnn_extractor_type : rgb_patch
   # rgb_patch_size : 8
-  # rgb_cnn_extractor_type : resnet18
+  rgb_cnn_extractor_type : resnet18
   # rgb_cnn_extractor_type : resnet50
   # rgb_cnn_extractor_stage_idx : 1
   # rgb_cnn_extractor_stage_idx : 2
-  # rgb_cnn_extractor_stage_idx : 3
+  rgb_cnn_extractor_stage_idx : 3
   # rgb_cnn_extractor_stage_idx : 4
-  rgb_cnn_extractor_type : davt
+  # rgb_cnn_extractor_type : davt

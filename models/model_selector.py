@@ -17,7 +17,10 @@ def model_generator(cfg):
         model_head = HeadPoseEstimatorResnet(cfg)
         model_gaussian = JointAttentionEstimatorTransformerDual(cfg)
         if cfg.data.name == 'volleyball':
-            model_saliency = SceneFeatureTransformer(cfg)
+            if cfg.model_params.rgb_cnn_extractor_type == 'davt':
+                model_saliency = ModelSpatial()
+            else:
+                model_saliency = SceneFeatureTransformer(cfg)
         elif cfg.data.name == 'videocoatt':
             if cfg.model_params.rgb_cnn_extractor_type == 'davt':
                 model_saliency = ModelSpatial()

@@ -26,7 +26,9 @@ exp_set:
   # wandb_name: volleyball-dual-all_ver3
   # wandb_name: volleyball-dual-all_wo_action_ver3
   # wandb_name: volleyball-dual-all_wo_position_ver3
-  wandb_name: volleyball-dual-all_wo_gaze_ver3
+  # wandb_name: volleyball-dual-all_wo_gaze_ver3
+
+  wandb_name: volleyball-dual-all_ver4
 
   wandb_log : True
 
@@ -34,8 +36,8 @@ exp_set:
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 7
-  gpu_finish : 7
+  gpu_start : 3
+  gpu_finish : 3
 
   resize_height : 320
   resize_width : 640
@@ -59,8 +61,8 @@ exp_params:
   # use_final_jo_att_loss : False
   use_final_jo_att_loss : True
 
-  # use_frame_type: mid
-  use_frame_type: all
+  use_frame_type: mid
+  # use_frame_type: all
 
   use_gt_gaze: False
   # use_gt_gaze: True
@@ -152,9 +154,10 @@ model_params:
 
   # rgb_cnn_extractor_type : rgb_patch
   # rgb_patch_size : 8
-  rgb_cnn_extractor_type : resnet18
+  # rgb_cnn_extractor_type : resnet18
   # rgb_cnn_extractor_type : resnet50
   # rgb_cnn_extractor_stage_idx : 1
   # rgb_cnn_extractor_stage_idx : 2
-  rgb_cnn_extractor_stage_idx : 3
+  # rgb_cnn_extractor_stage_idx : 3
   # rgb_cnn_extractor_stage_idx : 4
+  rgb_cnn_extractor_type : davt
