@@ -100,13 +100,12 @@ save_results_dir = os.path.join('results', cfg.data.name, model_name)
 if not os.path.exists(save_results_dir):
     os.makedirs(save_results_dir)
 
-# get threshold for prediction accuracy
-heatmap_peak_val_list = []
-co_att_flag_gt_list = []
-
 # stop_iteration = 30
 stop_iteration = 10000000
 print("===> Starting validation processing")
+# get threshold for prediction accuracy
+heatmap_peak_val_list = []
+co_att_flag_gt_list = []
 for iteration, batch in enumerate(valid_data_loader,1):
     print(f'{iteration}/{len(valid_data_loader)}')
     with torch.no_grad():
@@ -178,9 +177,9 @@ for thresh_cand in range(0, 255, 1):
 thresh_best_row = np.argmax(valid_metrics_array[:, 3])
 thresh_best = np.argmax(valid_metrics_array[:, 3])/255
 
+print("===> Starting test processing")
 l2_dist_list = []
 pred_acc_list = []
-print("===> Starting test processing")
 for iteration, batch in enumerate(test_data_loader,1):
     print(f'{iteration}/{len(test_data_loader)}')
     with torch.no_grad():            
@@ -299,7 +298,7 @@ metrics_dict['precision'] = precision_score(co_att_gt_array, co_att_pred_array)
 metrics_dict['recall'] = recall_score(co_att_gt_array, co_att_pred_array)
 metrics_dict['f1'] = f1_score(co_att_gt_array, co_att_pred_array)
 metrics_dict['auc'] = roc_auc_score(co_att_gt_array, co_att_pred_array)
-metrics_dict['hresh'] = thresh_best_row
+metrics_dict['hresh'] = thresh_best
 
 # save detection rate
 det_rate_list = [f'Det (Thr={det_thr})' for det_thr in range(0, 110, 10)]
