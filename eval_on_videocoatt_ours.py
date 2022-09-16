@@ -1,4 +1,5 @@
 # deep learning
+from builtins import iter
 from select import select
 import torch
 import torch.nn.functional as F
@@ -117,8 +118,15 @@ if cuda:
 print("===> Loading dataset")
 mode = cfg.exp_set.mode
 cfg.data.name = 'videocoatt_no_att'
+valid_set = dataset_generator(cfg, 'validate')
 test_set = dataset_generator(cfg, mode)
 cfg.data.name = 'videocoatt'
+valid_data_loader = DataLoader(dataset=valid_set,
+                                batch_size=cfg.exp_set.batch_size,
+                                shuffle=False,
+                                num_workers=cfg.exp_set.num_workers,
+                                pin_memory=True)
+print('{} demo samples found'.format(len(valid_set)))
 test_data_loader = DataLoader(dataset=test_set,
                                 batch_size=cfg.exp_set.batch_size,
                                 shuffle=False,
@@ -135,7 +143,145 @@ save_results_dir = os.path.join('results', cfg.data.name, model_name, 'eval_resu
 if not os.path.exists(save_results_dir):
     os.makedirs(save_results_dir)
 
-print("===> Starting eval processing")
+# stop_iteration = 30
+stop_iteration = 10000000
+print("===> Starting validation processing")
+heatmap_peak_val_list = []
+co_att_flag_gt_list = []
+each_data_type_id_dic = {}
+for iteration, batch in enumerate(test_data_loader):
+    print(f'{iteration}/{len(test_data_loader)}')
+
+    # init heatmaps
+    num_people = batch['head_img'].shape[1]
+    x_axis_map = torch.arange(0, cfg.exp_set.resize_width, device=f'cuda:{gpus_list[0]}').reshape(1, -1)/(cfg.exp_set.resize_width)
+    x_axis_map = torch.tile(x_axis_map, (cfg.exp_set.resize_height, 1))
+    y_axis_map = torch.arange(0, cfg.exp_set.resize_height, device=f'cuda:{gpus_list[0]}').reshape(-1, 1)/(cfg.exp_set.resize_height)
+    y_axis_map = torch.tile(y_axis_map, (1, cfg.exp_set.resize_width))
+    xy_axis_map = torch.cat((x_axis_map[None, :, :], y_axis_map[None, :, :]))[None, None, :, :, :]
+    xy_axis_map = torch.tile(xy_axis_map, (cfg.exp_set.batch_size, num_people, 1, 1, 1))
+    head_x_map = torch.ones((cfg.exp_set.batch_size, num_people, 1, cfg.exp_set.resize_height, cfg.exp_set.resize_width), device=f'cuda:{gpus_list[0]}')
+    head_y_map = torch.ones((cfg.exp_set.batch_size, num_people, 1, cfg.exp_set.resize_height, cfg.exp_set.resize_width), device=f'cuda:{gpus_list[0]}')
+    head_xy_map = torch.cat((head_x_map, head_y_map), 2)
+    gaze_x_map = torch.ones((cfg.exp_set.batch_size, num_people, 1, cfg.exp_set.resize_height, cfg.exp_set.resize_width), device=f'cuda:{gpus_list[0]}')
+    gaze_y_map = torch.ones((cfg.exp_set.batch_size, num_people, 1, cfg.exp_set.resize_height, cfg.exp_set.resize_width), device=f'cuda:{gpus_list[0]}')
+    gaze_xy_map = torch.cat((gaze_x_map, gaze_y_map), 2)
+    xy_axis_map = xy_axis_map.float()
+    head_xy_map = head_xy_map.float()
+    gaze_xy_map = gaze_xy_map.float()
+    batch['xy_axis_map'] = xy_axis_map
+    batch['head_xy_map'] = head_xy_map
+    batch['gaze_xy_map'] = gaze_xy_map
+
+    with torch.no_grad():            
+        # move data into gpu
+        if cuda:
+            for key, val in batch.items():
+                if key != 'rgb_path':
+                    batch[key] = Variable(val).cuda(gpus_list[0])
+
+        if cfg.model_params.use_position:
+            input_feature = batch['head_feature'].clone() 
+        else:
+            input_feature = batch['head_feature'].clone()
+            input_feature[:, :, :2] = input_feature[:, :, :2] * 0
+        batch['input_feature'] = input_feature
+
+        # head pose estimation
+        out_head = model_head(batch)
+        head_vector = out_head['head_vector']
+        batch['head_img_extract'] = out_head['head_img_extract']
+
+        if cfg.exp_params.use_gt_gaze:
+            batch['head_vector'] = batch['head_vector_gt']
+        else:
+            batch['head_vector'] = out_head['head_vector']
+
+        # change position inputs
+        if cfg.model_params.use_gaze:
+            batch['input_gaze'] = head_vector.clone() 
+        else:
+            batch['input_gaze'] = head_vector.clone() * 0
+
+        # scene feature extraction
+        out_scene_feat = model_saliency(batch)
+        batch = {**batch, **out_scene_feat}
+
+        out_attention = model_attention(batch)
+        out = {**out_head, **out_attention, **batch}
+
+    img_gt = out['img_gt'].to('cpu').detach()[0]
+    head_feature = out['head_feature'].to('cpu').detach()[0].numpy()
+    gt_box = out['gt_box'].to('cpu').detach()[0].numpy()
+    att_inside_flag = out['att_inside_flag'].to('cpu').detach()[0]
+
+    person_person_attention_heatmap = out['person_person_attention_heatmap'].to('cpu').detach()[0].numpy()
+    person_person_joint_attention_heatmap = out['person_person_joint_attention_heatmap'].to('cpu').detach()[0, 0].numpy()
+    person_scene_attention_heatmap = out['person_scene_attention_heatmap'].to('cpu').detach()[0].numpy()
+    person_scene_joint_attention_heatmap = out['person_scene_joint_attention_heatmap'].to('cpu').detach()[0, 0].numpy()
+    final_joint_attention_heatmap = out['final_joint_attention_heatmap'].to('cpu').detach()[0, 0].numpy()
+
+    # generate each data id
+    each_data_type_id = ''
+    if not each_data_type_id in each_data_type_id_dic.keys():
+        each_data_type_id_dic[each_data_type_id] = len(each_data_type_id_dic.keys())
+    each_data_type_id_idx = each_data_type_id_dic[each_data_type_id]
+
+    # get a padding number
+    people_padding_mask = (np.sum(head_feature, axis=-1) != 0)
+    people_padding_num = np.sum(people_padding_mask)
+    if people_padding_num == 0:
+        continue
+
+    # calc centers of gt bbox
+    gt_box_ja_list = []
+    for person_idx in range(people_padding_num):
+        peak_x_min_gt, peak_y_min_gt, peak_x_max_gt, peak_y_max_gt = gt_box[person_idx, :]
+        peak_x_mid_gt, peak_y_mid_gt = (peak_x_min_gt+peak_x_max_gt)/2, (peak_y_min_gt+peak_y_max_gt)/2
+        peak_x_mid_gt, peak_y_mid_gt = peak_x_mid_gt*cfg.exp_set.resize_width, peak_y_mid_gt*cfg.exp_set.resize_height
+        peak_x_mid_gt, peak_y_mid_gt = map(int, [peak_x_mid_gt, peak_y_mid_gt])
+        save_gt_peak = [peak_x_mid_gt, peak_y_mid_gt]
+        if save_gt_peak not in gt_box_ja_list and (save_gt_peak != [0, 0]):
+            gt_box_ja_list.append(save_gt_peak)
+    gt_box_ja_array = np.array(gt_box_ja_list)
+
+    co_att_flag_gt = np.sum(gt_box, axis=(0, 1)) != 0
+    person_person_joint_attention_heatmap = cv2.resize(person_person_joint_attention_heatmap, (cfg.exp_set.resize_width, cfg.exp_set.resize_height))
+    person_scene_joint_attention_heatmap = cv2.resize(person_scene_joint_attention_heatmap, (cfg.exp_set.resize_width, cfg.exp_set.resize_height))
+    final_joint_attention_heatmap = cv2.resize(final_joint_attention_heatmap, (cfg.exp_set.resize_width, cfg.exp_set.resize_height))
+    person_person_joint_attention_heatmap_peak_val = np.max(person_person_joint_attention_heatmap)
+    person_scene_joint_attention_heatmap_peak_val = np.max(person_scene_joint_attention_heatmap)
+    final_joint_attention_heatmap_peak_val = np.max(final_joint_attention_heatmap)
+
+    # save peak values
+    heatmap_peak_val_list.append(final_joint_attention_heatmap_peak_val)
+    
+    # save co att flag
+    co_att_flag_gt = np.sum(gt_box, axis=(0, 1)) != 0
+    co_att_flag_gt_list.append(co_att_flag_gt)
+
+    if iteration > stop_iteration:
+        break
+
+heatmap_peak_val_array = np.array(heatmap_peak_val_list)
+co_att_flag_gt = np.array(co_att_flag_gt_list)
+valid_metrics_list = ['accuracy', 'precision', 'recall', 'f1']
+valid_metrics_array = np.zeros((255, len(valid_metrics_list)), dtype=np.float32)
+for thresh_cand in range(0, 255, 1):
+    heatmap_thresh = thresh_cand / 255
+    co_att_flag_pred = heatmap_peak_val_array > heatmap_thresh
+    accuracy = accuracy_score(co_att_flag_gt, co_att_flag_pred)
+    precision = precision_score(co_att_flag_gt, co_att_flag_pred)
+    recall = recall_score(co_att_flag_gt, co_att_flag_pred)
+    f1 = f1_score(co_att_flag_gt, co_att_flag_pred)
+    valid_metrics_array[thresh_cand, 0] = accuracy
+    valid_metrics_array[thresh_cand, 1] = precision
+    valid_metrics_array[thresh_cand, 2] = recall
+    valid_metrics_array[thresh_cand, 3] = f1
+thresh_best_row = np.argmax(valid_metrics_array[:, 3])
+thresh_best = np.argmax(valid_metrics_array[:, 3])/255
+
+print("===> Starting test processing")
 l2_dist_list = []
 pred_acc_list = []
 each_data_type_id_dic = {}
@@ -200,14 +346,19 @@ for iteration, batch in enumerate(test_data_loader):
         out_attention = model_attention(batch)
         out = {**out_head, **out_attention, **batch}
 
-    img_pred = out['img_pred'].to('cpu').detach()[0].numpy()
-    gt_box = out['gt_box'].to('cpu').detach()[0].numpy()
-    head_tensor = out['head_tensor'].to('cpu').detach()[0].numpy()
+    img_gt = out['img_gt'].to('cpu').detach()[0]
     head_feature = out['head_feature'].to('cpu').detach()[0].numpy()
-    head_vector_gt = out['head_vector_gt'].to('cpu').detach()[0].numpy()
+    gt_box = out['gt_box'].to('cpu').detach()[0].numpy()
+    att_inside_flag = out['att_inside_flag'].to('cpu').detach()[0]
+
+    person_person_attention_heatmap = out['person_person_attention_heatmap'].to('cpu').detach()[0].numpy()
+    person_person_joint_attention_heatmap = out['person_person_joint_attention_heatmap'].to('cpu').detach()[0, 0].numpy()
+    person_scene_attention_heatmap = out['person_scene_attention_heatmap'].to('cpu').detach()[0].numpy()
+    person_scene_joint_attention_heatmap = out['person_scene_joint_attention_heatmap'].to('cpu').detach()[0, 0].numpy()
+    final_joint_attention_heatmap = out['final_joint_attention_heatmap'].to('cpu').detach()[0, 0].numpy()
 
     # generate each data id
-    each_data_type_id = each_data_type_id_generator(head_vector_gt, head_tensor, gt_box, cfg)
+    each_data_type_id = ''
     if not each_data_type_id in each_data_type_id_dic.keys():
         each_data_type_id_dic[each_data_type_id] = len(each_data_type_id_dic.keys())
     each_data_type_id_idx = each_data_type_id_dic[each_data_type_id]
@@ -230,77 +381,45 @@ for iteration, batch in enumerate(test_data_loader):
             gt_box_ja_list.append(save_gt_peak)
     gt_box_ja_array = np.array(gt_box_ja_list)
 
-    if cfg.model_params.dynamic_distance_type == 'gaussian':
-        # clsutering by mean shift
-        no_pad_peak_xy_pred = head_tensor[:people_padding_num, 3:5]
-        mean_sift = MeanShift(bandwidth=0.1).fit(no_pad_peak_xy_pred)
-        pred_cluster = mean_sift.labels_
-        cluster_num = np.max(pred_cluster)+1
-        cluster_array = np.zeros((cluster_num, 3))
-        for cluster_idx in range(cluster_num):
-            xy_pred_clsuter = no_pad_peak_xy_pred[(pred_cluster==cluster_idx), :]
-            cluster_array[cluster_idx, 0] = np.mean(xy_pred_clsuter[:, 0])
-            cluster_array[cluster_idx, 1] = np.mean(xy_pred_clsuter[:, 1])
-            cluster_array[cluster_idx, 2] = np.sum(pred_cluster==cluster_idx)
-        cluster_array[:, 0] *= cfg.exp_set.resize_width
-        cluster_array[:, 1] *= cfg.exp_set.resize_height
-        cluster_array_multi_people = cluster_array[cluster_array[:, 2] >= 2, :]
-        co_att_flag_gt = np.sum(gt_box, axis=(0, 1)) != 0
-        co_att_flag_pred = cluster_array_multi_people.shape[0] != 0
-        pred_acc_list.append([co_att_flag_gt, co_att_flag_pred])
-        if not co_att_flag_gt:
-            continue
+    co_att_flag_gt = np.sum(gt_box, axis=(0, 1)) != 0
+    person_person_joint_attention_heatmap = cv2.resize(person_person_joint_attention_heatmap, (cfg.exp_set.resize_width, cfg.exp_set.resize_height))
+    person_scene_joint_attention_heatmap = cv2.resize(person_scene_joint_attention_heatmap, (cfg.exp_set.resize_width, cfg.exp_set.resize_height))
+    final_joint_attention_heatmap = cv2.resize(final_joint_attention_heatmap, (cfg.exp_set.resize_width, cfg.exp_set.resize_height))
+    person_person_joint_attention_heatmap_peak_val = np.max(person_person_joint_attention_heatmap)
+    person_scene_joint_attention_heatmap_peak_val = np.max(person_scene_joint_attention_heatmap)
+    final_joint_attention_heatmap_peak_val = np.max(final_joint_attention_heatmap)
 
-        # calc dist for each ground-truth box
-        for gt_box_idx in range(gt_box_ja_array.shape[0]):
-            # print(f'GT:{gt_box_idx}')
-            peak_x_mid_gt, peak_y_mid_gt = gt_box_ja_array[gt_box_idx, :]
-            peak_xy_gt = gt_box_ja_array[gt_box_idx, :].reshape(-1, 2)
+    co_att_flag_pred = final_joint_attention_heatmap_peak_val > thresh_best
+    pred_acc_list.append([co_att_flag_gt, co_att_flag_pred])
+    if not co_att_flag_gt:
+        continue
 
-            if cluster_array_multi_people.shape[0] >= 1:
-                peak_xy_pred = cluster_array_multi_people[:, :2]
-                peak_sub_gt_pred = np.abs(peak_xy_gt - peak_xy_pred)
-                peak_sub_gt_pred_euc = np.linalg.norm(peak_sub_gt_pred, axis=1)
-                select_peak_idx = np.argmin(peak_sub_gt_pred_euc)
-                l2_dist_x = peak_sub_gt_pred[select_peak_idx, 0]
-                l2_dist_y = peak_sub_gt_pred[select_peak_idx, 1]
-                l2_dist_euc = peak_sub_gt_pred_euc[select_peak_idx]
-                peak_x_mid_pred, peak_y_mid_pred = peak_xy_pred[select_peak_idx, :]
-                peak_x_mid_pred, peak_y_mid_pred = map(int, [peak_x_mid_pred, peak_y_mid_pred])
-            else:
-                peak_xy_pred = np.mean(cluster_array[:, :2], axis=0).reshape(-1, 2)
-                # peak_xy_pred = cluster_array[:, :2]
-                peak_sub_gt_pred = np.abs(peak_xy_gt - peak_xy_pred)
-                peak_sub_gt_pred_euc = np.linalg.norm(peak_sub_gt_pred, axis=1)
-                # select_peak_idx = np.argmin(peak_sub_gt_pred_euc)
-                l2_dist_x = peak_sub_gt_pred[0, 0]
-                l2_dist_y = peak_sub_gt_pred[0, 1]
-                l2_dist_euc = peak_sub_gt_pred_euc[0]
-                # l2_dist_x = peak_sub_gt_pred[select_peak_idx, 0]
-                # l2_dist_y = peak_sub_gt_pred[select_peak_idx, 1]
-                # l2_dist_euc = peak_sub_gt_pred_euc[select_peak_idx]
-                peak_x_mid_pred, peak_y_mid_pred = peak_xy_pred[0, :]
-                # peak_x_mid_pred, peak_y_mid_pred = peak_xy_pred[select_peak_idx, :]
-                peak_x_mid_pred, peak_y_mid_pred = map(int, [peak_x_mid_pred, peak_y_mid_pred])
+    pred_y_mid_p_p, pred_x_mid_p_p = np.unravel_index(np.argmax(person_person_joint_attention_heatmap), person_person_joint_attention_heatmap.shape)
+    pred_y_mid_p_s, pred_x_mid_p_s = np.unravel_index(np.argmax(person_scene_joint_attention_heatmap), person_scene_joint_attention_heatmap.shape)
+    pred_y_mid_final, pred_x_mid_final = np.unravel_index(np.argmax(final_joint_attention_heatmap), final_joint_attention_heatmap.shape)
 
-            print(f'Dist {l2_dist_euc:.0f}, ({peak_x_mid_pred},{peak_y_mid_pred}), GT:({peak_x_mid_gt},{peak_y_mid_gt})')
-            l2_dist_list.append([l2_dist_x, l2_dist_y, l2_dist_euc, each_data_type_id_idx])
-    else:
-        co_att_flag_gt = np.sum(gt_box, axis=(0, 1)) != 0
-        peak_val = np.max(img_pred)
-        co_att_flag_pred = peak_val > 0.15
-        pred_acc_list.append([co_att_flag_gt, co_att_flag_pred])
-        if not co_att_flag_gt:
-            continue
+    for gt_box_idx in range(gt_box_ja_array.shape[0]):
+        peak_x_mid_gt, peak_y_mid_gt = gt_box_ja_array[gt_box_idx, :]
 
-        peak_y_mid_pred, peak_x_mid_pred = np.unravel_index(np.argmax(img_pred), img_pred.shape)
-        for gt_box_idx in range(gt_box_ja_array.shape[0]):
-            peak_x_mid_gt, peak_y_mid_gt = gt_box_ja_array[gt_box_idx, :]
-            l2_dist_x = np.linalg.norm(peak_x_mid_gt-peak_x_mid_pred)
-            l2_dist_y = np.linalg.norm(peak_y_mid_gt-peak_y_mid_pred)
-            l2_dist_euc = np.power(np.power(l2_dist_x, 2)+np.power(l2_dist_y, 2), 0.5)
-            print(f'Dist {l2_dist_euc:.0f}, ({peak_x_mid_pred},{peak_y_mid_pred}), GT:({peak_x_mid_gt},{peak_y_mid_gt})')
-            l2_dist_list.append([l2_dist_x, l2_dist_y, l2_dist_euc, each_data_type_id_idx])
+        l2_dist_x_p_p, l2_dist_y_p_p = np.power(np.power(pred_x_mid_p_p-peak_x_mid_gt, 2), 0.5), np.power(np.power(pred_y_mid_p_p-peak_y_mid_gt, 2), 0.5)
+        l2_dist_euc_p_p = np.power(np.power(l2_dist_x_p_p, 2) + np.power(l2_dist_y_p_p, 2), 0.5)
+
+        l2_dist_x_p_s, l2_dist_y_p_s = np.power(np.power(pred_x_mid_p_s-peak_x_mid_gt, 2), 0.5), np.power(np.power(pred_y_mid_p_s-peak_y_mid_gt, 2), 0.5)
+        l2_dist_euc_p_s = np.power(np.power(l2_dist_x_p_s, 2) + np.power(l2_dist_y_p_s, 2), 0.5)
+
+        l2_dist_x_final, l2_dist_y_final = np.power(np.power(pred_x_mid_final-peak_x_mid_gt, 2), 0.5), np.power(np.power(pred_y_mid_final-peak_y_mid_gt, 2), 0.5)
+        l2_dist_euc_final = np.power(np.power(l2_dist_x_final, 2) + np.power(l2_dist_y_final, 2), 0.5)
+
+        l2_dist_list_append = [l2_dist_x_p_p, l2_dist_y_p_p, l2_dist_euc_p_p,
+                               l2_dist_x_p_s, l2_dist_y_p_s, l2_dist_euc_p_s,
+                               l2_dist_x_final, l2_dist_y_final, l2_dist_euc_final,
+                               each_data_type_id_idx,
+                               ]
+        l2_dist_list.append(l2_dist_list_append)
+        print(f'Dist {l2_dist_euc_final:.0f}, ({pred_x_mid_final},{pred_y_mid_final}), GT:({peak_x_mid_gt},{peak_y_mid_gt})')
+
+    if iteration > stop_iteration:
+        break
 
 # save metrics in a dict
 metrics_dict = {}
@@ -308,13 +427,16 @@ metrics_dict = {}
 # save l2 dist
 l2_dist_array = np.array(l2_dist_list)
 l2_dist_mean = np.mean(l2_dist_array, axis=0)
-l2_dist_list = ['l2_dist_x', 'l2_dist_y', 'l2_dist_euc']
+l2_dist_list = ['l2_dist_x_p_p', 'l2_dist_y_p_p', 'l2_dist_euc_p_p',
+                'l2_dist_x_p_s', 'l2_dist_y_p_s', 'l2_dist_euc_p_s',
+                'l2_dist_x_final', 'l2_dist_y_final', 'l2_dist_euc_final',
+                ]
 for l2_dist_idx, l2_dist_type in enumerate(l2_dist_list):
     metrics_dict[l2_dist_type] = l2_dist_mean[l2_dist_idx]
 
 # save l2 dist (Detailed analysis)
 for each_data_id, each_data_id_idx in each_data_type_id_dic.items():
-    l2_dist_array_each_data_id = l2_dist_array[l2_dist_array[:, 3] == each_data_id_idx]
+    l2_dist_array_each_data_id = l2_dist_array[l2_dist_array[:, -1] == each_data_id_idx]
     sample_ratio = l2_dist_array_each_data_id.shape[0]/l2_dist_array.shape[0]*100
     l2_dist_array_each_data_id_mean = np.mean(l2_dist_array_each_data_id, axis=0)
     metrics_dict[f'l2_dist_euc ({each_data_id}) ({sample_ratio:.0f}%)'] = l2_dist_array_each_data_id_mean[2]
@@ -341,6 +463,7 @@ metrics_dict['precision'] = precision_score(co_att_gt_array, co_att_pred_array)
 metrics_dict['recall'] = recall_score(co_att_gt_array, co_att_pred_array)
 metrics_dict['f1'] = f1_score(co_att_gt_array, co_att_pred_array)
 metrics_dict['auc'] = roc_auc_score(co_att_gt_array, co_att_pred_array)
+metrics_dict['thresh'] = thresh_best
 
 # save detection rate
 det_rate_list = [f'Det (Thr={det_thr})' for det_thr in range(0, 110, 10)]
