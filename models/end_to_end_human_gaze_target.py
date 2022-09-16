@@ -107,23 +107,9 @@ class EndToEndHumanGazeTargetTransformer(nn.Module):
         )
 
     def forward(self, inp):
-
-        input_feature = inp['input_feature']
-        input_gaze = inp['input_gaze']
-        head_vector = inp['head_vector']
-        head_feature = inp['head_feature']
-        xy_axis_map = inp['xy_axis_map']
-        head_xy_map = inp['head_xy_map']
-        gaze_xy_map = inp['gaze_xy_map']
-        saliency_img = inp['saliency_img']
-        rgb_img = inp['rgb_img']
-        head_img_extract = inp['head_img_extract']
-        att_inside_flag = inp['att_inside_flag']
-
-        torch.autograd.set_detect_anomaly(True)
-        
         # get usuful variable
-        self.batch_size, people_num, _, _, _ = xy_axis_map.shape
+        rgb_img = inp['rgb_img']
+        self.batch_size, _, _, _ = rgb_img.shape
 
         # detr module
         decoded_feat = self.detr(rgb_img)

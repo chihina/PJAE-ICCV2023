@@ -25,12 +25,17 @@ exp_set:
   # model_name: volleyball-dual-all_ver2
   # model_name: volleyball-dual-all_wo_action_ver2
   # model_name: volleyball-dual-all_wo_position_ver2
-  model_name: volleyball-dual-all_wo_gaze_ver2
+  # model_name: volleyball-dual-all_wo_gaze_ver2
+
+  # model_name: volleyball-dual-all_ver3
+  # model_name: volleyball-dual-all_wo_action_ver3
+  # model_name: volleyball-dual-all_wo_position_ver3
+  model_name: volleyball-dual-all_wo_gaze_ver3
 
   seed_num : 777
   gpu_mode : True
-  gpu_start : 6
-  gpu_finish : 6
+  gpu_start : 1
+  gpu_finish : 1
   num_workers : 1
   batch_size : 1
   wandb_name : test

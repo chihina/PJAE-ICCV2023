@@ -5,17 +5,18 @@ data:
 
 exp_set:
   save_folder: saved_weights
-  wandb_name: videocoatt-dual-davt
-  # wandb_name: videocoatt-dual-trans
+  # wandb_name: videocoatt-dual-davt
+  wandb_name: videocoatt-dual-trans
   wandb_log : True
 
-  batch_size: 8
+  batch_size: 16
+  # batch_size: 8
   # batch_size: 2
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 6
-  gpu_finish : 6
+  gpu_start : 4
+  gpu_finish : 4
 
   resize_height: 320
   resize_width: 480
@@ -82,11 +83,11 @@ exp_params:
   # freeze_head_pose_estimator: False
   freeze_head_pose_estimator: True
 
-  # use_pretrained_saliency_extractor: False
-  use_pretrained_saliency_extractor: True
+  use_pretrained_saliency_extractor: False
+  # use_pretrained_saliency_extractor: True
   pretrained_saliency_extractor_name: pretrained_scene_extractor_davt
-  # freeze_saliency_extractor: False
-  freeze_saliency_extractor: True
+  freeze_saliency_extractor: False
+  # freeze_saliency_extractor: True
 
   use_pretrained_joint_attention_estimator: False
   # use_pretrained_head_pose_estimator: True
@@ -131,10 +132,10 @@ model_params:
 
   # rgb_cnn_extractor_type : rgb_patch
   # rgb_patch_size : 8
-  # rgb_cnn_extractor_type : resnet18
+  rgb_cnn_extractor_type : resnet18
   # rgb_cnn_extractor_type : resnet50
   # rgb_cnn_extractor_stage_idx : 1
   # rgb_cnn_extractor_stage_idx : 2
-  # rgb_cnn_extractor_stage_idx : 3
+  rgb_cnn_extractor_stage_idx : 3
   # rgb_cnn_extractor_stage_idx : 4
-  rgb_cnn_extractor_type : davt
+  # rgb_cnn_extractor_type : davt

@@ -269,7 +269,7 @@ for iteration, batch in enumerate(test_data_loader,1):
 
     img = cv2.resize(img, (original_width, original_height))
     head_query_num = is_head_pred.shape[0]
-    head_conf_thresh = 0.9
+    head_conf_thresh = 0.7
     watch_outside_conf_thresh = 0.9
 
     for head_idx in range(head_query_num):

@@ -8,11 +8,11 @@ exp_set:
   # model_name: videocoatt-head_pose_estimator
 
   # model_name: videocoatt-isa
-  # model_name: videoattentiontarget-hgt
+  model_name: videoattentiontarget-hgt
 
   # model_name: videocoatt-dual-people
   # model_name: videocoatt-dual-trans
-  model_name: videocoatt-dual-davt
+  # model_name: videocoatt-dual-davt
 
   seed_num : 777
   gpu_mode : True
