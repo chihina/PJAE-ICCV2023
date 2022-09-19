@@ -96,7 +96,7 @@ test_data_loader = DataLoader(dataset=test_set,
 print('{} demo samples found'.format(len(test_set)))
 
 print("===> Making directories to save results")
-save_results_dir = os.path.join('results', cfg.data.name, model_name)
+save_results_dir = os.path.join('results', cfg.data.name, model_name, 'eval_results')
 if not os.path.exists(save_results_dir):
     os.makedirs(save_results_dir)
 
@@ -142,7 +142,8 @@ for iteration, batch in enumerate(valid_data_loader,1):
         head_conf_flag = head_conf > head_conf_thresh
         watch_outside_flag = watch_outside_conf < watch_outside_conf_thresh
         if head_conf_flag and watch_outside_flag:
-            gaze_map_view = gaze_map.reshape(cfg.exp_set.resize_height//16, cfg.exp_set.resize_width//16)
+            view_size = int(gaze_map.shape[0]**0.5)
+            gaze_map_view = gaze_map.reshape(view_size, view_size)
             gaze_map_resize = cv2.resize(gaze_map_view, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_NEAREST)
             img_final += gaze_map_resize
             aggregate_head_cnt += 1
@@ -217,7 +218,8 @@ for iteration, batch in enumerate(test_data_loader,1):
         head_conf_flag = head_conf > head_conf_thresh
         watch_outside_flag = watch_outside_conf < watch_outside_conf_thresh
         if head_conf_flag and watch_outside_flag:
-            gaze_map_view = gaze_map.reshape(cfg.exp_set.resize_height//16, cfg.exp_set.resize_width//16)
+            view_size = int(gaze_map.shape[0]**0.5)
+            gaze_map_view = gaze_map.reshape(view_size, view_size)
             gaze_map_resize = cv2.resize(gaze_map_view, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_NEAREST)
             img_final += gaze_map_resize
             aggregate_head_cnt += 1

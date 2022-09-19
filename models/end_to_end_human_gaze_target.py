@@ -42,7 +42,7 @@ class EndToEndHumanGazeTargetTransformer(nn.Module):
                                             nn.ReLU(),
                                             )
 
-        self.down_scale_ratio = 16
+        self.down_scale_ratio = 4
         self.down_height = self.resize_height//self.down_scale_ratio
         self.down_width = self.resize_width//self.down_scale_ratio
         self.pe_generator_rgb = PositionalEmbeddingGenerator(self.down_height, self.down_width, self.rgb_embeding_dim, 'sine')

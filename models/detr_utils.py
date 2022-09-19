@@ -98,6 +98,7 @@ class SetCriterion(nn.Module):
         _, grid_num = target_gaze_heatmap.shape
 
         loss_gaze_map = F.mse_loss(src_gaze_heatmap, target_gaze_heatmap, reduction='sum')
+        loss_gaze_map = loss_gaze_map * 10 ** 2
 
         losses = {}
         losses['loss_gaze_map'] = loss_gaze_map.sum() / (num_boxes * grid_num)

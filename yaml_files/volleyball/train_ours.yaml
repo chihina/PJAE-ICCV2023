@@ -8,6 +8,8 @@ data:
 
 exp_set:
   save_folder: saved_weights
+  wandb_log : True
+
   # wandb_name: volleyball-dual
   # wandb_name: volleyball-dual_wo_action
   # wandb_name: volleyball-dual_wo_position
@@ -28,16 +30,33 @@ exp_set:
   # wandb_name: volleyball-dual-all_wo_position_ver3
   # wandb_name: volleyball-dual-all_wo_gaze_ver3
 
-  wandb_name: volleyball-dual-all_ver4
+  # wandb_name: volleyball-dual-all_ver4
+  # wandb_name: volleyball-dual-all_wo_action_ver4
+  # wandb_name: volleyball-dual-all_wo_position_ver4
+  # wandb_name: volleyball-dual-all_wo_gaze_ver4
 
-  wandb_log : True
+  # wandb_name: volleyball-dual-all_ver5
+  # wandb_name: volleyball-dual-all_wo_action_ver5
+  # wandb_name: volleyball-dual-all_wo_position_ver5
+  # wandb_name: volleyball-dual-all_wo_gaze_ver5
 
-  batch_size: 16
+  # wandb_name: volleyball-dual-mid_ver6
+  # wandb_name: volleyball-dual-mid_wo_action_ver6
+  # wandb_name: volleyball-dual-mid_wo_position_ver6
+  # wandb_name: volleyball-dual-mid_wo_gaze_ver6
+
+  # wandb_name: volleyball-dual-all_ver6
+  # wandb_name: volleyball-dual-all_wo_action_ver6
+  # wandb_name: volleyball-dual-all_wo_position_ver6
+  # wandb_name: volleyball-dual-all_wo_gaze_ver6
+  wandb_name: volleyball-dual-all_wo_whole_ver6
+
+  batch_size: 4
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 3
-  gpu_finish : 3
+  gpu_start : 2
+  gpu_finish : 2
 
   resize_height : 320
   resize_width : 640
@@ -46,23 +65,23 @@ exp_set:
 
 exp_params:
 
-  # use_person_person_att_loss : False
-  use_person_person_att_loss : True
+  use_person_person_att_loss : False
+  # use_person_person_att_loss : True
 
-  # use_person_person_jo_att_loss : False
-  use_person_person_jo_att_loss : True
+  use_person_person_jo_att_loss : False
+  # use_person_person_jo_att_loss : True
 
-  # use_person_scene_att_loss : False
-  use_person_scene_att_loss : True
+  use_person_scene_att_loss : False
+  # use_person_scene_att_loss : True
 
   # use_person_scene_jo_att_loss : False
   use_person_scene_jo_att_loss : True
 
-  # use_final_jo_att_loss : False
-  use_final_jo_att_loss : True
+  use_final_jo_att_loss : False
+  # use_final_jo_att_loss : True
 
-  use_frame_type: mid
-  # use_frame_type: all
+  # use_frame_type: mid
+  use_frame_type: all
 
   use_gt_gaze: False
   # use_gt_gaze: True
@@ -81,8 +100,8 @@ exp_params:
   # loss : bce
 
   # learning rate
-  lr : 0.0001
-  # lr : 0.001
+  # lr : 0.0001
+  lr : 0.001
   # lr : 0.01
   # lr : 0.1
   
@@ -125,8 +144,8 @@ model_params:
   use_position : True
 
   # Gaze
-  use_gaze : False
-  # use_gaze : True
+  # use_gaze : False
+  use_gaze : True
 
   # Action
   # use_action : False
@@ -154,10 +173,10 @@ model_params:
 
   # rgb_cnn_extractor_type : rgb_patch
   # rgb_patch_size : 8
-  # rgb_cnn_extractor_type : resnet18
+  rgb_cnn_extractor_type : resnet18
   # rgb_cnn_extractor_type : resnet50
   # rgb_cnn_extractor_stage_idx : 1
   # rgb_cnn_extractor_stage_idx : 2
-  # rgb_cnn_extractor_stage_idx : 3
+  rgb_cnn_extractor_stage_idx : 3
   # rgb_cnn_extractor_stage_idx : 4
-  rgb_cnn_extractor_type : davt
+  # rgb_cnn_extractor_type : davt

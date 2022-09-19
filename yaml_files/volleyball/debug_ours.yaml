@@ -8,11 +8,13 @@ data:
 
 exp_set:
   save_folder: saved_weights
-  wandb_name: debug
   wandb_log : False
 
-  batch_size: 1
-  num_workers: 1
+
+  wandb_name: debug
+
+  batch_size: 2
+  num_workers: 2
   seed_num: 777
   gpu_mode : True
   gpu_start : 7
@@ -128,8 +130,8 @@ model_params:
 
   # rgb-person transformer
   rgb_feat_dim : 64
-  rgb_people_trans_enc_num : 2
-  mha_num_heads_rgb_people : 2
+  rgb_people_trans_enc_num : 1
+  mha_num_heads_rgb_people : 1
 
   # rgb_cnn_extractor_type : rgb_patch
   # rgb_patch_size : 8

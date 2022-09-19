@@ -9,16 +9,15 @@ exp_set:
 
   # model_name: videocoatt-isa
   # model_name: videoattentiontarget-hgt
+  model_name: videoattentiontarget-hgt-high
 
-  # model_name: videocoatt-dual-people
-  # model_name: videocoatt-dual
-  # model_name: videocoatt-dual-davt
-  model_name: videocoatt-dual-trans
+  # model_name: videocoatt-dual-davt-finetune
+  # model_name: videocoatt-dual-davt-freeze
 
   seed_num : 777
   gpu_mode : True
-  gpu_start : 7
-  gpu_finish : 7
+  gpu_start : 3
+  gpu_finish : 3
   num_workers : 1
   batch_size : 1
   wandb_name : test

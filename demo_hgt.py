@@ -285,7 +285,8 @@ for iteration, batch in enumerate(test_data_loader,1):
 
         if head_conf_flag and watch_outside_flag:
             # gaze map
-            gaze_map_view = gaze_map.view(cfg.exp_set.resize_height//16, cfg.exp_set.resize_width//16)
+            view_size = int(gaze_map.shape[0]**0.5)
+            gaze_map_view = gaze_map.view(view_size, view_size)
             save_image(gaze_map_view, os.path.join(save_image_dir_dic['attention'], data_type_id, f'{data_id}', f'{mode}_{data_id}_attention_{head_idx}.png'))
             gaze_map = cv2.imread(os.path.join(save_image_dir_dic['attention'], data_type_id, f'{data_id}', f'{mode}_{data_id}_attention_{head_idx}.png'), cv2.IMREAD_GRAYSCALE)
             gaze_map = cv2.resize(gaze_map, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_NEAREST)

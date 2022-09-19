@@ -6,7 +6,8 @@ exp_set:
   save_folder : saved_weights
   # model_name: videoattentiontarget-head_pose_estimator
   # model_name: videoattentiontarget-concat_independent
-  model_name: videoattentiontarget-hgt
+  # model_name: videoattentiontarget-hgt
+  model_name: videoattentiontarget-hgt-high
 
   seed_num : 777
   gpu_mode : True

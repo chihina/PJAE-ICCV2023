@@ -11,26 +11,25 @@ exp_set:
   save_folder : saved_weights
   # model_name: volleyball-concat_independent
 
-  # model_name: volleyball-dual-people
-  # model_name: volleyball-dual-people_wo_position
-  # model_name: volleyball-dual-people_wo_gaze
-  # model_name: volleyball-dual-people_wo_action
+  # model_name: volleyball-dual-all_ver4
+  # model_name: volleyball-dual-all_wo_action_ver4
+  # model_name: volleyball-dual-all_wo_position_ver4
+  # model_name: volleyball-dual-all_wo_gaze_ver4
 
-  # model_name: volleyball-dual-all
-  # model_name: volleyball-dual-all_wo_action
-  # model_name: volleyball-dual-all_wo_position
-  # model_name: volleyball-dual-all_wo_gaze
-  # model_name: volleyball-dual-all_wo_image
+  # model_name: volleyball-dual-all_ver5
+  # model_name: volleyball-dual-all_wo_action_ver5
+  # model_name: volleyball-dual-all_wo_position_ver5
+  # model_name: volleyball-dual-all_wo_gaze_ver5
 
-  # model_name: volleyball-dual-all_ver2
-  # model_name: volleyball-dual-all_wo_action_ver2
-  # model_name: volleyball-dual-all_wo_position_ver2
-  # model_name: volleyball-dual-all_wo_gaze_ver2
+  # model_name: volleyball-dual-mid_ver6
+  # model_name: volleyball-dual-mid_wo_action_ver6
+  # model_name: volleyball-dual-mid_wo_position_ver6
+  # model_name: volleyball-dual-mid_wo_gaze_ver6
 
-  # model_name: volleyball-dual-all_ver3
-  # model_name: volleyball-dual-all_wo_action_ver3
-  # model_name: volleyball-dual-all_wo_position_ver3
-  model_name: volleyball-dual-all_wo_gaze_ver3
+  # model_name: volleyball-dual-all_ver6
+  # model_name: volleyball-dual-all_wo_action_ver6
+  # model_name: volleyball-dual-all_wo_position_ver6
+  model_name: volleyball-dual-all_wo_gaze_ver6
 
   seed_num : 777
   gpu_mode : True
@@ -46,12 +45,12 @@ exp_params:
   use_frame_type: mid
   # use_frame_type: all
 
-  bbox_types: GT
-  # bbox_types: PRED
-  action_types: GT
-  # action_types: PRED
-  gaze_types: GT
-  # gaze_types: PRED
+  # bbox_types: GT
+  bbox_types: PRED
+  # action_types: GT
+  action_types: PRED
+  # gaze_types: GT
+  gaze_types: PRED
   # gaze_types: NONE
 
   # use_action: True

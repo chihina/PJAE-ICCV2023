@@ -5,8 +5,11 @@ data:
 
 exp_set:
   save_folder: saved_weights
-  # wandb_name: videocoatt-dual-davt
+
+  # wandb_name: videocoatt-dual-davt-finetune
+  # wandb_name: videocoatt-dual-davt-freeze
   wandb_name: videocoatt-dual-trans
+
   wandb_log : True
 
   batch_size: 16
@@ -25,8 +28,8 @@ exp_set:
 
 exp_params:
 
-  # use_person_person_att_loss : False
-  use_person_person_att_loss : True
+  use_person_person_att_loss : False
+  # use_person_person_att_loss : True
 
   # use_person_person_jo_att_loss : False
   use_person_person_jo_att_loss : True
@@ -34,8 +37,8 @@ exp_params:
   use_person_scene_att_loss : False
   # use_person_scene_att_loss : True
 
-  use_person_scene_jo_att_loss : False
-  # use_person_scene_jo_att_loss : True
+  # use_person_scene_jo_att_loss : False
+  use_person_scene_jo_att_loss : True
 
   # use_final_jo_att_loss : False
   use_final_jo_att_loss : True
@@ -127,8 +130,8 @@ model_params:
 
   # rgb-person transformer
   rgb_feat_dim : 64
-  rgb_people_trans_enc_num : 2
-  mha_num_heads_rgb_people : 2
+  rgb_people_trans_enc_num : 1
+  mha_num_heads_rgb_people : 1
 
   # rgb_cnn_extractor_type : rgb_patch
   # rgb_patch_size : 8

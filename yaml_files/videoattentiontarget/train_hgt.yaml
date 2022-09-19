@@ -4,7 +4,9 @@ data:
 
 exp_set:
   save_folder: saved_weights
-  wandb_name: videoattentiontarget-hgt
+  # wandb_name: videoattentiontarget-hgt
+  wandb_name: videoattentiontarget-hgt-high
+
   wandb_log : True
 
   batch_size: 16
