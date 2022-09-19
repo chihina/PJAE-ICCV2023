@@ -165,6 +165,7 @@ save_image_dir_list = ['person_person_att', 'person_person_jo_att',
                        'person_person_att_superimposed', 'person_person_jo_att_superimposed',
                        'person_scene_att', 'person_scene_jo_att',
                        'person_scene_att_superimposed', 'person_scene_jo_att_superimposed',
+                    #    'person_scene_angle_att', 'person_scene_angle_att_superimposed',
                        'final_jo_att', 'final_jo_att_superimposed',
                        'gt_map', 'person_person_self_att_weight']
 for dir_name in save_image_dir_list:

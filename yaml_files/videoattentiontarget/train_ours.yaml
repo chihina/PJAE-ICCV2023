@@ -1,38 +1,26 @@
 data: 
-  name: volleyball
-  sendo_dataset_dir: data/volleyball_tracking_annotation
-  train_dataset_dir: data/social_saliency_dataset_unipose_gt_20
-  test_dataset_dir: data/social_saliency_dataset_unipose_pred_mid
-  rgb_dataset_dir: data/videos
-  annotation_dir: data/vatic_ball_annotation/annotation_data/
+  name: videoattentiontarget
+  dataset_dir : data/videoattentiontarget
 
 exp_set:
   save_folder: saved_weights
   wandb_log : True
 
-  # wandb_name: volleyball-dual
-  # wandb_name: volleyball-dual_wo_action
-  # wandb_name: volleyball-dual_wo_position
-  # wandb_name: volleyball-dual_wo_gaze
+  wandb_name: videoattentiontarget-dual-trans-pretrain
 
-  # wandb_name: volleyball-dual-all_ver6
-  # wandb_name: volleyball-dual-all_wo_action_ver6
-  # wandb_name: volleyball-dual-all_wo_position_ver6
-  # wandb_name: volleyball-dual-all_wo_gaze_ver6
-  # wandb_name: volleyball-dual-all_wo_p_s_ver6
-  wandb_name: volleyball-dual-all_wo_p_p_ver6
-
-  batch_size: 4
+  batch_size: 16
+  # batch_size: 8
+  # batch_size: 2
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 6
-  gpu_finish : 6
+  gpu_start : 4
+  gpu_finish : 4
 
-  resize_height : 320
-  resize_width : 640
-  resize_head_width: 64
-  resize_head_height: 64
+  resize_height: 320
+  resize_width: 480
+  resize_head_height: 224
+  resize_head_width: 224
 
 exp_params:
 
@@ -42,29 +30,25 @@ exp_params:
   use_person_person_jo_att_loss : False
   # use_person_person_jo_att_loss : True
 
-  use_person_scene_att_loss : False
-  # use_person_scene_att_loss : True
+  # use_person_scene_att_loss : False
+  use_person_scene_att_loss : True
 
-  # use_person_scene_jo_att_loss : False
-  use_person_scene_jo_att_loss : True
+  use_person_scene_jo_att_loss : False
+  # use_person_scene_jo_att_loss : True
 
   use_final_jo_att_loss : False
   # use_final_jo_att_loss : True
 
-  # use_frame_type: mid
-  use_frame_type: all
+  use_frame_type: mid
+  # use_frame_type: all
 
   use_gt_gaze: False
   # use_gt_gaze: True
-  
+
   # position augmentation
   use_position_aug: False
   # use_position_aug: True
   position_aug_std: 0.05
-
-  iar_type: gt
-  # iar_type: pred_label
-  # iar_type: none
 
   # loss function
   loss : mse
@@ -72,10 +56,8 @@ exp_params:
 
   # learning rate
   # lr : 0.0001
-  lr : 0.001
-  # lr : 0.01
-  # lr : 0.1
-  
+  lr : 0.00001
+
   # gt gaussian
   gaussian_sigma: 20
 
@@ -91,7 +73,7 @@ exp_params:
 
   # use_pretrained_head_pose_estimator: False
   use_pretrained_head_pose_estimator: True
-  pretrained_head_pose_estimator_name: volleyball-head_pose_estimator
+  pretrained_head_pose_estimator_name: videocoatt-head_pose_estimator
   # freeze_head_pose_estimator: False
   freeze_head_pose_estimator: True
 
@@ -119,8 +101,8 @@ model_params:
   use_gaze : True
 
   # Action
-  # use_action : False
-  use_action : True
+  use_action : False
+  # use_action : True
 
   # Person embedding
   # head_embedding_type : liner
@@ -151,3 +133,7 @@ model_params:
   rgb_cnn_extractor_stage_idx : 3
   # rgb_cnn_extractor_stage_idx : 4
   # rgb_cnn_extractor_type : davt
+
+  # angle att map
+  # use_ang_att_map : False
+  use_ang_att_map : True

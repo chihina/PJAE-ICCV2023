@@ -27,7 +27,10 @@ def model_generator(cfg):
             else:
                 model_saliency = SceneFeatureTransformer(cfg)
         elif cfg.data.name == 'videoattentiontarget':
-            model_saliency = ModelSpatialDummy()
+            if cfg.model_params.rgb_cnn_extractor_type == 'davt':
+                model_saliency = ModelSpatial()
+            else:
+                model_saliency = SceneFeatureTransformer(cfg)
     elif cfg.model_params.model_type == 'ja_transformer_dual_only_people':
         model_head = HeadPoseEstimatorResnet(cfg)
         model_gaussian = JointAttentionEstimatorTransformerDualOnlyPeople(cfg)

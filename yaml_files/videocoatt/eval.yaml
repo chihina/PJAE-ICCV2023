@@ -9,10 +9,11 @@ exp_set:
 
   # model_name: videocoatt-isa
   # model_name: videoattentiontarget-hgt
-  model_name: videoattentiontarget-hgt-high
+  # model_name: videoattentiontarget-hgt-high
 
   # model_name: videocoatt-dual-davt-finetune
   # model_name: videocoatt-dual-davt-freeze
+  model_name: videocoatt-dual-trans
 
   seed_num : 777
   gpu_mode : True
