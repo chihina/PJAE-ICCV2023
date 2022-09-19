@@ -23,6 +23,8 @@ exp_set:
   resize_head_width: 224
 
 exp_params:
+  use_gaze_loss : False
+  # use_gaze_loss : True
 
   use_person_person_att_loss : False
   # use_person_person_att_loss : True
@@ -132,7 +134,3 @@ model_params:
   rgb_cnn_extractor_stage_idx : 3
   # rgb_cnn_extractor_stage_idx : 4
   # rgb_cnn_extractor_type : davt
-
-  # angle att map
-  # use_ang_att_map : False
-  use_ang_att_map : True

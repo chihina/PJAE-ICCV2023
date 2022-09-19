@@ -231,9 +231,19 @@ for l2_dist_idx, l2_dist_type in enumerate(l2_dist_list):
     metrics_dict[l2_dist_type] = l2_dist_mean[l2_dist_idx]
 
 # save detection rate
-det_rate_list = [f'Det (Thr={det_thr})' for det_thr in range(0, 110, 10)]
+det_rate_list = [f'Det p-p (Thr={det_thr})' for det_thr in range(0, 110, 10)]
 for det_rate_idx, det_rate_type in enumerate(det_rate_list, 1):
-    det_rate = l2_dist_array[:, -1]<(det_rate_idx*10)
+    det_rate = l2_dist_array[:, 2]<(det_rate_idx*10)
+    det_rate_mean = np.mean(det_rate) * 100
+    metrics_dict[det_rate_type] = det_rate_mean
+det_rate_list = [f'Det p-s (Thr={det_thr})' for det_thr in range(0, 110, 10)]
+for det_rate_idx, det_rate_type in enumerate(det_rate_list, 1):
+    det_rate = l2_dist_array[:, 5]<(det_rate_idx*10)
+    det_rate_mean = np.mean(det_rate) * 100
+    metrics_dict[det_rate_type] = det_rate_mean
+det_rate_list = [f'Det final (Thr={det_thr})' for det_thr in range(0, 110, 10)]
+for det_rate_idx, det_rate_type in enumerate(det_rate_list, 1):
+    det_rate = l2_dist_array[:, 8]<(det_rate_idx*10)
     det_rate_mean = np.mean(det_rate) * 100
     metrics_dict[det_rate_type] = det_rate_mean
 

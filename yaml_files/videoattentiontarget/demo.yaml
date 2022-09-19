@@ -9,8 +9,8 @@ exp_set:
   # model_name: videoattentiontarget-hgt
   # model_name: videoattentiontarget-hgt-high
 
-  # model_name: videoattentiontarget-dual-trans-pretrain
-  model_name: videoattentiontarget-dual-trans-pretrain_lr_e5
+  # model_name: videoattentiontarget-dual-trans-pretrain_w_gaze_loss
+  model_name: videoattentiontarget-dual-trans-pretrain_wo_gaze_loss
 
   seed_num : 777
   gpu_mode : True

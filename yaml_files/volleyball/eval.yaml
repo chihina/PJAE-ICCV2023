@@ -29,7 +29,9 @@ exp_set:
   # model_name: volleyball-dual-all_ver6
   # model_name: volleyball-dual-all_wo_action_ver6
   # model_name: volleyball-dual-all_wo_position_ver6
-  model_name: volleyball-dual-all_wo_gaze_ver6
+  # model_name: volleyball-dual-all_wo_gaze_ver6
+  model_name: volleyball-dual-all_wo_p_s_ver6
+  # model_name: volleyball-dual-all_wo_p_p_ver6
 
   seed_num : 777
   gpu_mode : True

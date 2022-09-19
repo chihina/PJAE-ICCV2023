@@ -57,7 +57,6 @@ class SceneFeatureTransformer(nn.Module):
         self.rgb_people_trans_dim = self.rgb_feat_dim
         self.rgb_people_trans_enc_num = cfg.model_params.rgb_people_trans_enc_num
         self.mha_num_heads_rgb_people = cfg.model_params.mha_num_heads_rgb_people
-        self.use_ang_att_map = cfg.model_params.use_ang_att_map
 
         # define loss function
         self.loss = cfg.exp_params.loss
@@ -112,15 +111,6 @@ class SceneFeatureTransformer(nn.Module):
         self.hm_height = self.resize_height//down_scale_ratio
         self.hm_width = self.resize_width//down_scale_ratio
 
-        # rgb person transformer
-        if self.use_ang_att_map:
-            self.ang_att_map_generator = nn.Sequential(
-                nn.Linear(self.people_feat_dim, self.people_feat_dim),
-                nn.ReLU(),
-                nn.Linear(self.people_feat_dim, self.hm_height*self.hm_width),
-                nn.Softmax(dim=-1),
-            )
-        
         self.pe_generator_rgb = PositionalEmbeddingGenerator(self.hm_height, self.hm_width, self.rgb_feat_dim)
         self.rgb_people_self_attention = nn.ModuleList([nn.MultiheadAttention(embed_dim=self.rgb_people_trans_dim, kdim=self.rgb_people_trans_dim, vdim=self.rgb_people_trans_dim, num_heads=self.mha_num_heads_rgb_people, batch_first=True) for _ in range(self.rgb_people_trans_enc_num)])
         self.rgb_people_fc = nn.ModuleList(
@@ -138,10 +128,11 @@ class SceneFeatureTransformer(nn.Module):
             final_activation_layer = nn.Identity()
         elif self.loss == 'bce':
             final_activation_layer = nn.Sigmoid()
+
         self.person_scene_heatmap_estimator = nn.Sequential(
-                nn.Linear(self.people_feat_dim, self.people_feat_dim),
+                nn.Linear(self.rgb_people_trans_dim, self.rgb_people_trans_dim),
                 nn.ReLU(),
-                nn.Linear(self.people_feat_dim, 1),
+                nn.Linear(self.rgb_people_trans_dim, 1),
                 final_activation_layer,
             )
 
@@ -199,32 +190,18 @@ class SceneFeatureTransformer(nn.Module):
         else:
             sys.exit()
         
-        if self.use_ang_att_map:
-            ang_att_map = self.ang_att_map_generator(head_info_params)
-            ang_att_map_view = ang_att_map.view(self.batch_size, people_num, self.hm_height*self.hm_width, 1)
-            rgb_feat_patch_view = rgb_feat_patch.view(self.batch_size, 1, -1, self.rgb_feat_dim)
-            rgb_feat_patch_expand = rgb_feat_patch_view.expand(self.batch_size, people_num, rgb_feat_patch.shape[1], self.rgb_feat_dim)
-            rgb_pos_embedding = self.pe_generator_rgb.pos_embedding
-            rgb_pos_embedding_view = rgb_pos_embedding.view(1, 1, -1, rgb_feat_channel)
-            rgb_feat_patch_pos_expand = rgb_feat_patch_expand + rgb_pos_embedding_view
-            rgb_people_feat_all = torch.cat([rgb_feat_patch_expand], dim=-2)
-            rgb_people_feat_all_pos = torch.cat([rgb_feat_patch_pos_expand], dim=-2)
-            rgb_people_feat_all = rgb_people_feat_all * ang_att_map_view
-            rgb_people_feat_all_pos = rgb_people_feat_all_pos * ang_att_map_view
-            rgb_people_feat_all = rgb_people_feat_all.view(self.batch_size*people_num, -1, self.rgb_feat_dim)
-            rgb_people_feat_all_pos = rgb_people_feat_all_pos.view(self.batch_size*people_num, -1, self.rgb_feat_dim)
-        else:
-            rgb_feat_patch_view = rgb_feat_patch.view(self.batch_size, 1, -1, self.rgb_feat_dim)
-            rgb_feat_patch_expand = rgb_feat_patch_view.expand(self.batch_size, people_num, rgb_feat_patch.shape[1], self.rgb_feat_dim)
-            head_info_params_view = head_info_params.view(self.batch_size, people_num, 1, self.people_feat_dim)
-            head_info_params_expand = head_info_params_view.expand(self.batch_size, people_num, rgb_feat_patch.shape[1], self.people_feat_dim)
-            rgb_pos_embedding = self.pe_generator_rgb.pos_embedding
-            rgb_pos_embedding_view = rgb_pos_embedding.view(1, 1, -1, rgb_feat_channel)
-            rgb_feat_patch_pos_expand = rgb_feat_patch_expand + rgb_pos_embedding_view
-            rgb_people_feat_all = torch.cat([rgb_feat_patch_expand, head_info_params_view], dim=-2)
-            rgb_people_feat_all_pos = torch.cat([rgb_feat_patch_pos_expand, head_info_params_view], dim=-2)
-            rgb_people_feat_all = rgb_people_feat_all.view(self.batch_size*people_num, -1, self.rgb_feat_dim)
-            rgb_people_feat_all_pos = rgb_people_feat_all_pos.view(self.batch_size*people_num, -1, self.rgb_feat_dim)
+        # angle attention map for rgb feature extraction
+        rgb_feat_patch_view = rgb_feat_patch.view(self.batch_size, 1, -1, self.rgb_feat_dim)
+        rgb_feat_patch_expand = rgb_feat_patch_view.expand(self.batch_size, people_num, rgb_feat_patch.shape[1], self.rgb_feat_dim)
+        head_info_params_view = head_info_params.view(self.batch_size, people_num, 1, self.people_feat_dim)
+        head_info_params_expand = head_info_params_view.expand(self.batch_size, people_num, rgb_feat_patch.shape[1], self.people_feat_dim)
+        rgb_pos_embedding = self.pe_generator_rgb.pos_embedding
+        rgb_pos_embedding_view = rgb_pos_embedding.view(1, 1, -1, rgb_feat_channel)
+        rgb_feat_patch_pos_expand = rgb_feat_patch_expand + rgb_pos_embedding_view
+        rgb_people_feat_all = torch.cat([rgb_feat_patch_expand, head_info_params_view], dim=-2)
+        rgb_people_feat_all_pos = torch.cat([rgb_feat_patch_pos_expand, head_info_params_view], dim=-2)
+        rgb_people_feat_all = rgb_people_feat_all.view(self.batch_size*people_num, -1, self.rgb_feat_dim)
+        rgb_people_feat_all_pos = rgb_people_feat_all_pos.view(self.batch_size*people_num, -1, self.rgb_feat_dim)
 
         # rgb person transformer
         for i in range(self.rgb_people_trans_enc_num):
@@ -234,13 +211,9 @@ class SceneFeatureTransformer(nn.Module):
             rgb_people_feat_feed_res = rgb_people_feat_res + rgb_people_feat_feed
             rgb_people_feat_feed_res = self.trans_layer_norm_people_rgb(rgb_people_feat_feed_res)
             rgb_people_feat_all = rgb_people_feat_feed_res
-            rgb_people_trans_weights_people_rgb = rgb_people_trans_weights[:, (rgb_feat_height*rgb_feat_width):, :(rgb_feat_height*rgb_feat_width)]
-            
-            if self.use_ang_att_map:
-                trans_att_people_rgb_i = torch.zeros(self.batch_size, people_num, 1, rgb_feat_height, rgb_feat_width)
-            else:
-                trans_att_people_rgb_i = rgb_people_trans_weights_people_rgb.view(self.batch_size, people_num, 1, rgb_feat_height, rgb_feat_width)
-            
+            rgb_people_trans_weights_people_rgb = rgb_people_trans_weights[:, (rgb_feat_height*rgb_feat_width):, :(rgb_feat_height*rgb_feat_width)]            
+            trans_att_people_rgb_i = rgb_people_trans_weights_people_rgb.view(self.batch_size, people_num, 1, rgb_feat_height, rgb_feat_width)
+
             if i == 0:
                 trans_att_people_rgb = trans_att_people_rgb_i
             else:
@@ -259,24 +232,8 @@ class SceneFeatureTransformer(nn.Module):
     def calc_loss(self, inp, out, cfg):
         # unpack data
         img_gt = inp['img_gt']
-        gt_box = inp['gt_box']
-        gt_box_id = inp['gt_box_id']
-        att_inside_flag = inp['att_inside_flag']
-        img_pred = out['img_pred']
-        img_mid_pred = out['img_mid_pred']
-        img_mid_mean_pred = out['img_mid_mean_pred']
-        head_tensor = out['head_tensor']
-        rgb_people_feat_all = out['rgb_people_feat_all']
-        head_feature = inp['head_feature']
-
-        # switch loss coeficient
-        if self.use_e_map_loss:
-            loss_map_gaze_coef = 1
-        else:
-            loss_map_gaze_coef = 0
 
         loss_set = {}
-        loss_set['loss_map_gaze_each'] = loss_map_gaze_each
 
         return loss_set
 

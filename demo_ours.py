@@ -165,7 +165,7 @@ save_image_dir_list = ['person_person_att', 'person_person_jo_att',
                        'person_person_att_superimposed', 'person_person_jo_att_superimposed',
                        'person_scene_att', 'person_scene_jo_att',
                        'person_scene_att_superimposed', 'person_scene_jo_att_superimposed',
-                    #    'person_scene_angle_att', 'person_scene_angle_att_superimposed',
+                       'person_scene_ang_att', 'person_scene_ang_att_superimposed',
                        'final_jo_att', 'final_jo_att_superimposed',
                        'gt_map', 'person_person_self_att_weight']
 for dir_name in save_image_dir_list:
@@ -261,6 +261,9 @@ for iteration, batch in enumerate(test_data_loader,1):
     person_scene_joint_attention_heatmap = out['person_scene_joint_attention_heatmap'].to('cpu').detach()[0]
     final_joint_attention_heatmap = out['final_joint_attention_heatmap'].to('cpu').detach()[0]
 
+    if cfg.model_params.use_ang_att_map:
+        ang_att_map = out['ang_att_map'].to('cpu').detach()[0]
+
     # redefine image size
     img = cv2.imread(img_path)
     original_height, original_width, _ = img.shape
@@ -283,6 +286,7 @@ for iteration, batch in enumerate(test_data_loader,1):
     multi_image_dir_list = ['gt_map', 'person_person_self_att_weight', 
                             'person_person_att', 'person_person_att_superimposed',
                             'person_scene_att', 'person_scene_att_superimposed',
+                            'person_scene_ang_att', 'person_scene_ang_att_superimposed',
                             ]
     for dir_name in multi_image_dir_list:
         if not os.path.exists(os.path.join(save_image_dir_dic[dir_name], data_type_id, f'{data_id}')):
@@ -299,6 +303,8 @@ for iteration, batch in enumerate(test_data_loader,1):
         save_image(img_gt[person_idx], os.path.join(save_image_dir_dic['gt_map'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_gt.png'))
         save_image(person_person_attention_heatmap[person_idx], os.path.join(save_image_dir_dic['person_person_att'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_person_person_att.png'))
         save_image(person_scene_attention_heatmap[person_idx], os.path.join(save_image_dir_dic['person_scene_att'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_person_scene_att.png'))
+        if cfg.model_params.use_ang_att_map:
+            save_image(ang_att_map[person_idx], os.path.join(save_image_dir_dic['person_scene_ang_att'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_person_scene_ang_att.png'))
 
     # save attention of transformers (people and people attention)
     key_no_padding_num = torch.sum((torch.sum(head_feature, dim=-1) != 0)).numpy()
@@ -339,14 +345,24 @@ for iteration, batch in enumerate(test_data_loader,1):
         # load heatmaps
         person_person_att = cv2.imread(os.path.join(save_image_dir_dic['person_person_att'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_person_person_att.png'), cv2.IMREAD_GRAYSCALE)
         person_scene_att = cv2.imread(os.path.join(save_image_dir_dic['person_scene_att'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_person_scene_att.png'), cv2.IMREAD_GRAYSCALE)
+        if cfg.model_params.use_ang_att_map:
+            person_scene_ang_att = cv2.imread(os.path.join(save_image_dir_dic['person_scene_ang_att'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_person_scene_ang_att.png'), cv2.IMREAD_GRAYSCALE)
         person_person_att = cv2.resize(person_person_att, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_NEAREST)
         person_scene_att = cv2.resize(person_scene_att, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_NEAREST)
+        if cfg.model_params.use_ang_att_map:
+            person_scene_ang_att = cv2.resize(person_scene_ang_att, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_NEAREST)
         person_person_att = norm_heatmap(person_person_att).astype(np.uint8)
         person_scene_att = norm_heatmap(person_scene_att).astype(np.uint8)
+        if cfg.model_params.use_ang_att_map:
+            person_scene_ang_att = norm_heatmap(person_scene_ang_att).astype(np.uint8)
         person_person_att = cv2.applyColorMap(person_person_att, cv2.COLORMAP_JET)
         person_scene_att = cv2.applyColorMap(person_scene_att, cv2.COLORMAP_JET)
+        if cfg.model_params.use_ang_att_map:
+            person_scene_ang_att = cv2.applyColorMap(person_scene_ang_att, cv2.COLORMAP_JET)
         person_person_att = cv2.addWeighted(img, 0.5, person_person_att, 0.5, 0)
         person_scene_att = cv2.addWeighted(img, 0.5, person_scene_att, 0.5, 0)
+        if cfg.model_params.use_ang_att_map:
+            person_scene_ang_att = cv2.addWeighted(img, 0.5, person_scene_ang_att, 0.5, 0)
 
         # get person location and gt location
         head_feature_person = head_feature[person_idx]
@@ -356,9 +372,15 @@ for iteration, batch in enumerate(test_data_loader,1):
         gt_mid_x, gt_mid_y = int(gt_mid_x*cfg.exp_set.resize_width), int(gt_mid_y*cfg.exp_set.resize_height)
         cv2.circle(person_person_att, (gt_mid_x, gt_mid_y), 10, (0, 255, 0), thickness=-1)
         cv2.circle(person_scene_att, (gt_mid_x, gt_mid_y), 10, (0, 255, 0), thickness=-1)
+        if cfg.model_params.use_ang_att_map:
+            cv2.circle(person_scene_ang_att, (gt_mid_x, gt_mid_y), 10, (0, 255, 0), thickness=-1)
         cv2.line(person_person_att, (head_x, head_y), (gt_mid_x, gt_mid_y), (0, 255, 0), 1)
         cv2.line(person_scene_att, (head_x, head_y), (gt_mid_x, gt_mid_y), (0, 255, 0), 1)
+        if cfg.model_params.use_ang_att_map:
+            cv2.line(person_scene_ang_att, (head_x, head_y), (gt_mid_x, gt_mid_y), (0, 255, 0), 1)
 
         # save image
         cv2.imwrite(os.path.join(save_image_dir_dic['person_person_att_superimposed'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_person_person_att_superimposed.png'), person_person_att)
         cv2.imwrite(os.path.join(save_image_dir_dic['person_scene_att_superimposed'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_person_scene_att_superimposed.png'), person_scene_att)
+        if cfg.model_params.use_ang_att_map:
+            cv2.imwrite(os.path.join(save_image_dir_dic['person_scene_ang_att_superimposed'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_person_scene_ang_att_superimposed.png'), person_scene_ang_att)

@@ -6,7 +6,8 @@ exp_set:
   save_folder: saved_weights
   wandb_log : True
 
-  wandb_name: videoattentiontarget-dual-trans-pretrain
+  wandb_name: videoattentiontarget-dual-trans-pretrain_wo_gaze_loss
+  # wandb_name: videoattentiontarget-dual-trans-pretrain_w_gaze_loss
 
   batch_size: 16
   # batch_size: 8
@@ -14,8 +15,8 @@ exp_set:
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 4
-  gpu_finish : 4
+  gpu_start : 3
+  gpu_finish : 3
 
   resize_height: 320
   resize_width: 480
@@ -23,6 +24,8 @@ exp_set:
   resize_head_width: 224
 
 exp_params:
+  use_gaze_loss : False
+  # use_gaze_loss : True
 
   use_person_person_att_loss : False
   # use_person_person_att_loss : True
@@ -113,7 +116,8 @@ model_params:
   use_img : True
 
   # person-person transformer
-  people_feat_dim : 16
+  # people_feat_dim : 16
+  people_feat_dim : 256
   # use_people_people_trans: False
   use_people_people_trans: True
   people_people_trans_enc_num : 2
@@ -133,7 +137,3 @@ model_params:
   rgb_cnn_extractor_stage_idx : 3
   # rgb_cnn_extractor_stage_idx : 4
   # rgb_cnn_extractor_type : davt
-
-  # angle att map
-  # use_ang_att_map : False
-  use_ang_att_map : True
