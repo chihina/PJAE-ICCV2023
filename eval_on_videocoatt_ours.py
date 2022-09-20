@@ -40,7 +40,6 @@ def data_type_id_generator(cfg):
 
 def each_data_type_id_generator(head_vector_gt, head_tensor, gt_box, cfg):
 
-    dets_people_num = np.sum(np.sum(head_vector_gt, axis=-1) != 0)
     # define data id of dets people
     dets_people_num = np.sum(np.sum(head_vector_gt, axis=-1) != 0)
     if dets_people_num <= 3:
@@ -143,10 +142,12 @@ save_results_dir = os.path.join('results', cfg.data.name, model_name, 'eval_resu
 if not os.path.exists(save_results_dir):
     os.makedirs(save_results_dir)
 
-# stop_iteration = 30
+# stop_iteration = 100
 stop_iteration = 10000000
 print("===> Starting validation processing")
-heatmap_peak_val_list = []
+heatmap_p_p_peak_val_list = []
+heatmap_p_s_peak_val_list = []
+heatmap_final_peak_val_list = []
 co_att_flag_gt_list = []
 each_data_type_id_dic = {}
 for iteration, batch in enumerate(test_data_loader):
@@ -214,6 +215,8 @@ for iteration, batch in enumerate(test_data_loader):
     head_feature = out['head_feature'].to('cpu').detach()[0].numpy()
     gt_box = out['gt_box'].to('cpu').detach()[0].numpy()
     att_inside_flag = out['att_inside_flag'].to('cpu').detach()[0]
+    head_vector_gt = out['head_vector_gt'].to('cpu').detach()[0].numpy()
+    head_vector = out['head_vector'].to('cpu').detach()[0].numpy()
 
     person_person_attention_heatmap = out['person_person_attention_heatmap'].to('cpu').detach()[0].numpy()
     person_person_joint_attention_heatmap = out['person_person_joint_attention_heatmap'].to('cpu').detach()[0, 0].numpy()
@@ -222,7 +225,9 @@ for iteration, batch in enumerate(test_data_loader):
     final_joint_attention_heatmap = out['final_joint_attention_heatmap'].to('cpu').detach()[0, 0].numpy()
 
     # generate each data id
-    each_data_type_id = ''
+    # each_data_type_id = ''
+    each_data_type_id = each_data_type_id_generator(head_vector_gt, head_vector, gt_box, cfg)
+
     if not each_data_type_id in each_data_type_id_dic.keys():
         each_data_type_id_dic[each_data_type_id] = len(each_data_type_id_dic.keys())
     each_data_type_id_idx = each_data_type_id_dic[each_data_type_id]
@@ -254,7 +259,9 @@ for iteration, batch in enumerate(test_data_loader):
     final_joint_attention_heatmap_peak_val = np.max(final_joint_attention_heatmap)
 
     # save peak values
-    heatmap_peak_val_list.append(final_joint_attention_heatmap_peak_val)
+    heatmap_p_p_peak_val_list.append(person_person_joint_attention_heatmap_peak_val)
+    heatmap_p_s_peak_val_list.append(person_scene_joint_attention_heatmap_peak_val)
+    heatmap_final_peak_val_list.append(final_joint_attention_heatmap_peak_val)
     
     # save co att flag
     co_att_flag_gt = np.sum(gt_box, axis=(0, 1)) != 0
@@ -263,23 +270,60 @@ for iteration, batch in enumerate(test_data_loader):
     if iteration > stop_iteration:
         break
 
-heatmap_peak_val_array = np.array(heatmap_peak_val_list)
+heatmap_p_p_peak_val_array = np.array(heatmap_p_p_peak_val_list)
+heatmap_p_s_peak_val_array = np.array(heatmap_p_s_peak_val_list)
+heatmap_final_peak_val_array = np.array(heatmap_final_peak_val_list)
+
 co_att_flag_gt = np.array(co_att_flag_gt_list)
 valid_metrics_list = ['accuracy', 'precision', 'recall', 'f1']
-valid_metrics_array = np.zeros((255, len(valid_metrics_list)), dtype=np.float32)
+valid_metrics_p_p_array = np.zeros((255, len(valid_metrics_list)), dtype=np.float32)
+valid_metrics_p_s_array = np.zeros((255, len(valid_metrics_list)), dtype=np.float32)
+valid_metrics_final_array = np.zeros((255, len(valid_metrics_list)), dtype=np.float32)
 for thresh_cand in range(0, 255, 1):
     heatmap_thresh = thresh_cand / 255
-    co_att_flag_pred = heatmap_peak_val_array > heatmap_thresh
-    accuracy = accuracy_score(co_att_flag_gt, co_att_flag_pred)
-    precision = precision_score(co_att_flag_gt, co_att_flag_pred)
-    recall = recall_score(co_att_flag_gt, co_att_flag_pred)
-    f1 = f1_score(co_att_flag_gt, co_att_flag_pred)
-    valid_metrics_array[thresh_cand, 0] = accuracy
-    valid_metrics_array[thresh_cand, 1] = precision
-    valid_metrics_array[thresh_cand, 2] = recall
-    valid_metrics_array[thresh_cand, 3] = f1
-thresh_best_row = np.argmax(valid_metrics_array[:, 3])
-thresh_best = np.argmax(valid_metrics_array[:, 3])/255
+    co_att_flag_p_p_pred = heatmap_p_p_peak_val_array > heatmap_thresh
+    co_att_flag_p_s_pred = heatmap_p_s_peak_val_array > heatmap_thresh
+    co_att_flag_final_pred = heatmap_final_peak_val_array > heatmap_thresh
+
+    acc_p_p = accuracy_score(co_att_flag_gt, co_att_flag_p_p_pred)
+    acc_p_s = accuracy_score(co_att_flag_gt, co_att_flag_p_s_pred)
+    acc_final = accuracy_score(co_att_flag_gt, co_att_flag_final_pred)
+
+    prec_p_p = precision_score(co_att_flag_gt, co_att_flag_p_p_pred)
+    prec_p_s = precision_score(co_att_flag_gt, co_att_flag_p_s_pred)
+    prec_final = precision_score(co_att_flag_gt, co_att_flag_final_pred)
+
+    rec_p_p = recall_score(co_att_flag_gt, co_att_flag_p_p_pred)
+    rec_p_s = recall_score(co_att_flag_gt, co_att_flag_p_s_pred)
+    rec_final = recall_score(co_att_flag_gt, co_att_flag_final_pred)
+
+    f1_p_p = f1_score(co_att_flag_gt, co_att_flag_p_p_pred)
+    f1_p_s = f1_score(co_att_flag_gt, co_att_flag_p_s_pred)
+    f1_final = f1_score(co_att_flag_gt, co_att_flag_final_pred)
+    
+    valid_metrics_p_p_array[thresh_cand, 0] = acc_p_p
+    valid_metrics_p_s_array[thresh_cand, 0] = acc_p_s
+    valid_metrics_final_array[thresh_cand, 0] = acc_final
+
+    valid_metrics_p_p_array[thresh_cand, 1] = prec_p_p
+    valid_metrics_p_s_array[thresh_cand, 1] = prec_p_s
+    valid_metrics_final_array[thresh_cand, 1] = prec_final
+
+    valid_metrics_p_p_array[thresh_cand, 2] = rec_p_p
+    valid_metrics_p_s_array[thresh_cand, 2] = rec_p_s
+    valid_metrics_final_array[thresh_cand, 2] = rec_final
+
+    valid_metrics_p_p_array[thresh_cand, 3] = f1_p_p
+    valid_metrics_p_s_array[thresh_cand, 3] = f1_p_s
+    valid_metrics_final_array[thresh_cand, 3] = f1_final
+
+thresh_best_row_p_p = np.argmax(valid_metrics_p_p_array[:, 3])
+thresh_best_row_p_s = np.argmax(valid_metrics_p_s_array[:, 3])
+thresh_best_row_final = np.argmax(valid_metrics_final_array[:, 3])
+
+thresh_best_p_p = np.argmax(valid_metrics_p_p_array[:, 3])/255
+thresh_best_p_s = np.argmax(valid_metrics_p_s_array[:, 3])/255
+thresh_best_final = np.argmax(valid_metrics_final_array[:, 3])/255
 
 print("===> Starting test processing")
 l2_dist_list = []
@@ -350,6 +394,8 @@ for iteration, batch in enumerate(test_data_loader):
     head_feature = out['head_feature'].to('cpu').detach()[0].numpy()
     gt_box = out['gt_box'].to('cpu').detach()[0].numpy()
     att_inside_flag = out['att_inside_flag'].to('cpu').detach()[0]
+    head_vector_gt = out['head_vector_gt'].to('cpu').detach()[0].numpy()
+    head_vector = out['head_vector'].to('cpu').detach()[0].numpy()
 
     person_person_attention_heatmap = out['person_person_attention_heatmap'].to('cpu').detach()[0].numpy()
     person_person_joint_attention_heatmap = out['person_person_joint_attention_heatmap'].to('cpu').detach()[0, 0].numpy()
@@ -358,7 +404,8 @@ for iteration, batch in enumerate(test_data_loader):
     final_joint_attention_heatmap = out['final_joint_attention_heatmap'].to('cpu').detach()[0, 0].numpy()
 
     # generate each data id
-    each_data_type_id = ''
+    # each_data_type_id = ''
+    each_data_type_id = each_data_type_id_generator(head_vector_gt, head_vector, gt_box, cfg)
     if not each_data_type_id in each_data_type_id_dic.keys():
         each_data_type_id_dic[each_data_type_id] = len(each_data_type_id_dic.keys())
     each_data_type_id_idx = each_data_type_id_dic[each_data_type_id]
@@ -389,8 +436,11 @@ for iteration, batch in enumerate(test_data_loader):
     person_scene_joint_attention_heatmap_peak_val = np.max(person_scene_joint_attention_heatmap)
     final_joint_attention_heatmap_peak_val = np.max(final_joint_attention_heatmap)
 
-    co_att_flag_pred = final_joint_attention_heatmap_peak_val > thresh_best
-    pred_acc_list.append([co_att_flag_gt, co_att_flag_pred])
+    co_att_flag_pred_p_p = person_person_joint_attention_heatmap_peak_val > thresh_best_p_p
+    co_att_flag_pred_p_s = person_scene_joint_attention_heatmap_peak_val > thresh_best_p_s
+    co_att_flag_pred_final = final_joint_attention_heatmap_peak_val > thresh_best_final
+    pred_acc_list.append([co_att_flag_gt, co_att_flag_pred_p_p, co_att_flag_pred_p_s, co_att_flag_pred_final])
+
     if not co_att_flag_gt:
         continue
 
@@ -439,7 +489,9 @@ for each_data_id, each_data_id_idx in each_data_type_id_dic.items():
     l2_dist_array_each_data_id = l2_dist_array[l2_dist_array[:, -1] == each_data_id_idx]
     sample_ratio = l2_dist_array_each_data_id.shape[0]/l2_dist_array.shape[0]*100
     l2_dist_array_each_data_id_mean = np.mean(l2_dist_array_each_data_id, axis=0)
-    metrics_dict[f'l2_dist_euc ({each_data_id}) ({sample_ratio:.0f}%)'] = l2_dist_array_each_data_id_mean[2]
+    metrics_dict[f'l2_dist_euc p-p ({each_data_id}) ({sample_ratio:.0f}%)'] = l2_dist_array_each_data_id_mean[2]
+    metrics_dict[f'l2_dist_euc p-s ({each_data_id}) ({sample_ratio:.0f}%)'] = l2_dist_array_each_data_id_mean[5]
+    metrics_dict[f'l2_dist_euc final ({each_data_id}) ({sample_ratio:.0f}%)'] = l2_dist_array_each_data_id_mean[8]
 
 # save l2 dist (Histgrad analysis)
 for l2_dist_idx, l2_dist_type in enumerate(l2_dist_list):
@@ -449,28 +501,51 @@ for l2_dist_idx, l2_dist_type in enumerate(l2_dist_list):
     plt.xlim(0, 200)
     plt.savefig(save_figure_path)
 
-# save prediction accuracy
+# save prediction metrics
 pred_acc_array = np.array(pred_acc_list)
 co_att_gt_array = pred_acc_array[:, 0]
-co_att_pred_array = pred_acc_array[:, 1]
-cm = confusion_matrix(co_att_gt_array, co_att_pred_array)
-plt.figure()
-sns.heatmap(cm, annot=True, cmap='Blues')
-save_cm_path = os.path.join(save_results_dir, 'confusion_matrix.png')
-plt.savefig(save_cm_path)
-metrics_dict['accuracy'] = accuracy_score(co_att_gt_array, co_att_pred_array)
-metrics_dict['precision'] = precision_score(co_att_gt_array, co_att_pred_array)
-metrics_dict['recall'] = recall_score(co_att_gt_array, co_att_pred_array)
-metrics_dict['f1'] = f1_score(co_att_gt_array, co_att_pred_array)
-metrics_dict['auc'] = roc_auc_score(co_att_gt_array, co_att_pred_array)
-metrics_dict['thresh'] = thresh_best
+co_att_pred_array_p_s = pred_acc_array[:, 1]
+co_att_pred_array_p_p = pred_acc_array[:, 2]
+co_att_pred_array_final = pred_acc_array[:, 3]
+cm_p_p = confusion_matrix(co_att_gt_array, co_att_pred_array_p_p)
+cm_p_s = confusion_matrix(co_att_gt_array, co_att_pred_array_p_s)
+cm_final = confusion_matrix(co_att_gt_array, co_att_pred_array_final)
 
-# save detection rate
-det_rate_list = [f'Det (Thr={det_thr})' for det_thr in range(0, 110, 10)]
-for det_rate_idx, det_rate_type in enumerate(det_rate_list, 1):
-    det_rate = l2_dist_array[:, 2]<(det_rate_idx*10)
-    det_rate_mean = np.mean(det_rate) * 100
-    metrics_dict[det_rate_type] = det_rate_mean
+plt.figure()
+sns.heatmap(cm_p_p, annot=True, cmap='Blues')
+save_cm_path = os.path.join(save_results_dir, 'confusion_matrix_p_p.png')
+plt.savefig(save_cm_path)
+
+plt.figure()
+sns.heatmap(cm_p_s, annot=True, cmap='Blues')
+save_cm_path = os.path.join(save_results_dir, 'confusion_matrix_p_s.png')
+plt.savefig(save_cm_path)
+
+plt.figure()
+sns.heatmap(cm_final, annot=True, cmap='Blues')
+save_cm_path = os.path.join(save_results_dir, 'confusion_matrix_final.png')
+plt.savefig(save_cm_path)
+
+metrics_dict['accuracy p-p'] = accuracy_score(co_att_gt_array, co_att_pred_array_p_p)
+metrics_dict['precision p-p'] = precision_score(co_att_gt_array, co_att_pred_array_p_p)
+metrics_dict['recall p-p'] = recall_score(co_att_gt_array, co_att_pred_array_p_p)
+metrics_dict['f1 p-p'] = f1_score(co_att_gt_array, co_att_pred_array_p_p)
+metrics_dict['auc p-p'] = roc_auc_score(co_att_gt_array, co_att_pred_array_p_p)
+metrics_dict['thresh p-p'] = thresh_best_p_p
+
+metrics_dict['accuracy p-s'] = accuracy_score(co_att_gt_array, co_att_pred_array_p_s)
+metrics_dict['precision p-s'] = precision_score(co_att_gt_array, co_att_pred_array_p_s)
+metrics_dict['recall p-s'] = recall_score(co_att_gt_array, co_att_pred_array_p_s)
+metrics_dict['f1 p-s'] = f1_score(co_att_gt_array, co_att_pred_array_p_s)
+metrics_dict['auc p-s'] = roc_auc_score(co_att_gt_array, co_att_pred_array_p_s)
+metrics_dict['thresh p-s'] = thresh_best_p_s
+
+metrics_dict['accuracy final'] = accuracy_score(co_att_gt_array, co_att_pred_array_final)
+metrics_dict['precision final'] = precision_score(co_att_gt_array, co_att_pred_array_final)
+metrics_dict['recall final'] = recall_score(co_att_gt_array, co_att_pred_array_final)
+metrics_dict['f1 final'] = f1_score(co_att_gt_array, co_att_pred_array_final)
+metrics_dict['auc final'] = roc_auc_score(co_att_gt_array, co_att_pred_array_final)
+metrics_dict['thresh final'] = thresh_best_final
 
 # save metrics into json files
 save_results_path = os.path.join(save_results_dir, 'eval_results.json')

@@ -12,12 +12,15 @@ exp_set:
   # model_name: videoattentiontarget-hgt-high
   # model_name: videoattentiontarget-dual-trans-pretrain_w_gaze_loss
 
-  model_name: videocoatt-dual-people_sigma_10
+  # model_name: videocoatt-dual-people_sigma_10_wo_dets
+  # model_name: videocoatt-dual-people_sigma_10
+  model_name: videocoatt-dual-people_sigma_10_wo_gaze
+  # model_name: videocoatt-dual-people_sigma_10_wo_position
 
   seed_num : 777
   gpu_mode : True
-  gpu_start : 7
-  gpu_finish : 7
+  gpu_start : 6
+  gpu_finish : 6
   num_workers : 1
   batch_size : 1
   wandb_name : demo
