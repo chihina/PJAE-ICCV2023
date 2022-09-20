@@ -232,13 +232,13 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
         # attention estimation of person-to-person path
         attention_token = head_info_params_emb[:, :-1, :]
         attention_token_view = attention_token.view(self.batch_size, people_num, 1, self.people_feat_dim)
-        attention_token_expand = attention_token_view.expand(self.batch_size, people_num, self.hm_height*self.hm_width, self.people_feat_dim)
+        attention_token_expand = attention_token_view.expand(self.batch_size, people_num, self.hm_height_middle*self.hm_width_middle, self.people_feat_dim)
         x_axis_map = xy_axis_map[:, :, 0, :, :]
         y_axis_map = xy_axis_map[:, :, 1, :, :]
-        x_axis_map = F.interpolate(x_axis_map, (self.hm_height, self.hm_width), mode='bilinear')
-        y_axis_map = F.interpolate(y_axis_map, (self.hm_height, self.hm_width), mode='bilinear')
-        x_axis_map = x_axis_map.view(self.batch_size, people_num, self.hm_height*self.hm_width, 1)
-        y_axis_map = y_axis_map.view(self.batch_size, people_num, self.hm_height*self.hm_width,1 )
+        x_axis_map = F.interpolate(x_axis_map, (self.hm_height_middle, self.hm_width_middle), mode='bilinear')
+        y_axis_map = F.interpolate(y_axis_map, (self.hm_height_middle, self.hm_width_middle), mode='bilinear')
+        x_axis_map = x_axis_map.view(self.batch_size, people_num, self.hm_height_middle*self.hm_width_middle, 1)
+        y_axis_map = y_axis_map.view(self.batch_size, people_num, self.hm_height_middle*self.hm_width_middle,1 )
         attention_token_coord = torch.cat([attention_token_expand, x_axis_map, y_axis_map], dim=-1)
         person_person_attention_heatmap = self.person_person_attention_heatmap(attention_token_coord)
         person_person_attention_heatmap = person_person_attention_heatmap.view(self.batch_size, people_num, self.hm_height_middle, self.hm_width_middle)

@@ -5,8 +5,7 @@ data:
 
 exp_set:
   save_folder: saved_weights
-  # wandb_name: videocoatt-dual-people
-  wandb_name: videocoatt-dual-people_wo_det_heads
+  wandb_name: videocoatt-dual-people_sigma_10
 
   wandb_log : True
 
@@ -24,9 +23,8 @@ exp_set:
   resize_head_width: 224
 
 exp_params:
-
-  # use_person_person_att_loss : False
-  use_person_person_att_loss : True
+  use_person_person_att_loss : False
+  # use_person_person_att_loss : True
 
   # use_person_person_jo_att_loss : False
   use_person_person_jo_att_loss : True
@@ -60,8 +58,8 @@ exp_params:
   scheduler_iter : 1100000
 
   det_heads_model : dets_txt_nk_faster_rcnn_20220421
-  train_det_heads : False
-  # train_det_heads : True
+  # train_det_heads : False
+  train_det_heads : True
   train_heads_conf : 0.6
   test_heads_conf : 0.6
 

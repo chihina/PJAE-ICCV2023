@@ -12,8 +12,7 @@ exp_set:
   # model_name: videoattentiontarget-hgt-high
   # model_name: videoattentiontarget-dual-trans-pretrain_w_gaze_loss
 
-  # model_name: videocoatt-dual-davt-freeze
-  model_name: videocoatt-dual-davt-freeze_sigma_10
+  model_name: videocoatt-dual-people_sigma_10
 
   seed_num : 777
   gpu_mode : True

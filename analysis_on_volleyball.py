@@ -9,19 +9,16 @@ saved_result_dir = os.path.join('results', 'volleyball')
 
 # define analyze model type
 analyze_name_list = []
-# analyze_name_list.append('volleyball-dual-all_ver1')
-# analyze_name_list.append('volleyball-dual-all_ver2')
-# analyze_name_list.append('volleyball-dual-all_ver3')
-# analyze_name_list.append('volleyball-dual-all_ver4')
-# analyze_name_list.append('volleyball-dual-all_ver5')
 analyze_name_list.append('volleyball-dual-all_ver6')
 
 # define ablate type
 analyze_name_ablation_list = []
 analyze_name_ablation_list.append('')
-analyze_name_ablation_list.append('_wo_position')
 analyze_name_ablation_list.append('_wo_action')
 analyze_name_ablation_list.append('_wo_gaze')
+analyze_name_ablation_list.append('_wo_position')
+analyze_name_ablation_list.append('_wo_p_p')
+analyze_name_ablation_list.append('_wo_p_s')
 
 # define test data type
 test_data_type_list = []
