@@ -127,7 +127,7 @@ cfg.update(cfg_arg)
 print(cfg)
 
 print("===> Building model")
-model_head, model_attention, cfg = model_generator(cfg)
+model_head, model_attention, model_saliency, cfg = model_generator(cfg)
 
 print("===> Building gpu configuration")
 cuda = cfg.exp_set.gpu_mode

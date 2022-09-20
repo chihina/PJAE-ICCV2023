@@ -194,7 +194,7 @@ torch.use_deterministic_algorithms=True
 # save setting files
 saved_weights_dir = os.path.join(cfg.exp_set.save_folder, cfg.data.name, cfg.exp_set.wandb_name)
 if not os.path.exists(saved_weights_dir):
-    os.mkdir(saved_weights_dir)
+    os.makedirs(saved_weights_dir)
 shutil.copy(args.config, os.path.join(saved_weights_dir, args.config.split('/')[-1]))
 
 print("===> Setting gpu numbers")

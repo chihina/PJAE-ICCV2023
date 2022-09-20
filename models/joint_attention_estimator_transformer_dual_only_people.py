@@ -129,6 +129,7 @@ class JointAttentionEstimatorTransformerDualOnlyPeople(nn.Module):
             down_scale_ratio = 8
             self.hm_height_middle = self.resize_height//down_scale_ratio
             self.hm_width_middle = self.resize_width//down_scale_ratio
+        
         self.person_person_attention_heatmap = nn.Sequential(
             nn.Linear(self.people_feat_dim+2, self.people_feat_dim),
             nn.ReLU(),

@@ -5,20 +5,25 @@ data:
 
 exp_set:
   save_folder: saved_weights
-
-  # wandb_name: videocoatt-dual-davt-finetune
-  wandb_name: videocoatt-dual-davt-freeze_sigma_10
-
   wandb_log : True
+
+  # wandb_name: videocoatt-dual-davt-freeze_sigma_10_middle
+  # wandb_name: videocoatt-dual-davt-freeze_sigma_10_middle_wo_gaze
+  # wandb_name: videocoatt-dual-davt-freeze_sigma_10_middle_wo_position
+
+  # wandb_name: videocoatt-dual-davt-freeze_sigma_10_middle_wo_dets
+  wandb_name: videocoatt-dual-davt-freeze_sigma_10_middle_wo_dets_wo_gaze
+  # wandb_name: videocoatt-dual-davt-freeze_sigma_10_middle_wo_dets_wo_position
 
   # batch_size: 16
   batch_size: 8
+  # batch_size: 4
   # batch_size: 2
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 6
-  gpu_finish : 6
+  gpu_start : 0
+  gpu_finish : 0
 
   resize_height: 320
   resize_width: 480
@@ -71,8 +76,8 @@ exp_params:
   scheduler_iter : 1100000
 
   det_heads_model : dets_txt_nk_faster_rcnn_20220421
-  # train_det_heads : False
-  train_det_heads : True
+  train_det_heads : False
+  # train_det_heads : True
   train_heads_conf : 0.6
   test_heads_conf : 0.6
 
@@ -105,8 +110,8 @@ model_params:
   use_position : True
 
   # Gaze
-  # use_gaze : False
-  use_gaze : True
+  use_gaze : False
+  # use_gaze : True
 
   # Action
   use_action : False

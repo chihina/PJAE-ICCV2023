@@ -98,7 +98,7 @@ cfg.update(cfg_arg)
 print(cfg)
 
 print("===> Building model")
-model_head, model_attention, cfg = model_generator(cfg)
+model_head, model_attention, model_saliency, cfg = model_generator(cfg)
 
 print("===> Building gpu configuration")
 cuda = cfg.exp_set.gpu_mode
@@ -152,6 +152,8 @@ save_results_dir = os.path.join('results', cfg.data.name, model_name, 'eval_resu
 if not os.path.exists(save_results_dir):
     os.makedirs(save_results_dir)
 
+# stop_iteration = 100
+stop_iteration = 10000000
 # get threshold for prediction accuracy
 heatmap_peak_val_list = []
 co_att_flag_gt_list = []
@@ -237,7 +239,7 @@ for iteration, batch in enumerate(valid_data_loader):
     co_att_flag_gt = np.sum(gt_box, axis=(0, 1)) != 0
     co_att_flag_gt_list.append(co_att_flag_gt)
 
-    if iteration > 100:
+    if iteration > stop_iteration:
         break
 
 heatmap_peak_val_array = np.array(heatmap_peak_val_list)
@@ -373,8 +375,8 @@ for iteration, batch in enumerate(test_data_loader):
         print(f'Dist {l2_dist_euc:.0f}, ({peak_x_mid_pred},{peak_y_mid_pred}), GT:({peak_x_mid_gt},{peak_y_mid_gt})')
         l2_dist_list.append([l2_dist_x, l2_dist_y, l2_dist_euc, each_data_type_id_idx])
 
-    # if iteration > 500:
-        # break
+    if iteration > stop_iteration:
+        break
 
 # save metrics in a dict
 metrics_dict = {}
