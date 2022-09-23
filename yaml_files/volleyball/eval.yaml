@@ -11,17 +11,23 @@ exp_set:
   save_folder : saved_weights
   # model_name: volleyball-concat_independent
 
-  # model_name: volleyball-dual-all_ver6
-  # model_name: volleyball-dual-all_wo_action_ver6
-  # model_name: volleyball-dual-all_wo_position_ver6
-  # model_name: volleyball-dual-all_wo_gaze_ver6
-  # model_name: volleyball-dual-all_wo_p_s_ver6
-  model_name: volleyball-dual-all_wo_p_p_ver6
+  # model_name: volleyball-dual-people_fc_shallow
+  # model_name: volleyball-dual-people_fc_middle
+  # model_name: volleyball-dual-people_fc_deep
+  # model_name: volleyball-dual-people_field_middle
+  # model_name: volleyball-dual-people_field_deep
+  # model_name: volleyball-dual-people_deconv_shallow
+  # model_name: volleyball-dual-people_deconv_middle
+
+  model_name: volleyball-dual-mid_p_p_field_deep_p_s_davt
+  # model_name: volleyball-dual-mid_p_p_field_deep_p_s_davt_wo_action
+  # model_name: volleyball-dual-mid_p_p_field_deep_p_s_davt_wo_gaze
+  # model_name: volleyball-dual-mid_p_p_field_deep_p_s_davt_wo_position
 
   seed_num : 777
   gpu_mode : True
-  gpu_start : 6
-  gpu_finish : 6
+  gpu_start : 0
+  gpu_finish : 0
   num_workers : 1
   batch_size : 1
   wandb_name : test

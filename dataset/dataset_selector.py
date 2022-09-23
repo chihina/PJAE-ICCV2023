@@ -2,6 +2,7 @@ from dataset.volleyball import VolleyBallDataset
 from dataset.videocoatt import VideoCoAttDataset, VideoCoAttDatasetNoAtt
 from dataset.videoattentiontarget import VideoAttentionTargetDataset
 from dataset.toy import ToyDataset
+from dataset.gazefollow import GazeFollowDataset
 
 def dataset_generator(cfg, mode):
     print(f'{cfg.data.name} dataset')
@@ -21,6 +22,10 @@ def dataset_generator(cfg, mode):
         data_set = VideoAttentionTargetDataset(cfg, mode)
     elif cfg.data.name == 'toy':
         data_set = ToyDataset(cfg, mode)
+    elif cfg.data.name == 'gazefollow':
+        if mode == 'valid':
+            mode = 'test'
+        data_set = GazeFollowDataset(cfg, mode)
     else:
         assert True, 'cfg.data.name is incorrect'
 

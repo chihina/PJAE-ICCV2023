@@ -5,16 +5,17 @@ data:
 
 exp_set:
   save_folder: saved_weights
-  wandb_name: debug
   wandb_log : False
+
+  wandb_name: debug
 
   batch_size: 16
   # batch_size: 2
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 6
-  gpu_finish : 6
+  gpu_start : 4
+  gpu_finish : 4
 
   resize_height: 320
   resize_width: 480
@@ -112,6 +113,13 @@ model_params:
   use_people_people_trans: True
   people_people_trans_enc_num : 2
   mha_num_heads_people_people : 2
+  # p_p_estimator_type : fc_shallow
+  # p_p_estimator_type : fc_middle
+  # p_p_estimator_type : fc_deep
+  # p_p_estimator_type : deconv_shallow
+  p_p_estimator_type : deconv_middle
+  # p_p_estimator_type : deconv_deep
+  # p_p_estimator_type : field
 
   # rgb-person transformer
   rgb_feat_dim : 64

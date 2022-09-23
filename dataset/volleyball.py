@@ -20,6 +20,7 @@ class VolleyBallDataset(Dataset):
         self.test_dataset_dir_pred = cfg.data.test_dataset_dir_pred
         self.rgb_dataset_dir = cfg.data.rgb_dataset_dir
         self.annotation_dir = cfg.data.annotation_dir
+        self.att_inside_dir = cfg.data.att_inside_dir
 
         # exp settings
         self.wandb_name = cfg.exp_set.wandb_name
@@ -127,8 +128,7 @@ class VolleyBallDataset(Dataset):
         for data_idx in range(len(self.feature_list)):
             data_people_num = len(self.feature_list[data_idx])
             self.max_num_people = max(self.max_num_people, data_people_num)
-        
-    # read graph information
+
     def generate_dataset_list(self):
         for video_num in tqdm(sorted(self.use_video_list)):
             gar_iar_ann_path = os.path.join(self.rgb_dataset_dir, str(video_num), 'annotations.txt')

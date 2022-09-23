@@ -76,7 +76,7 @@ def data_id_generator(img_path, cfg):
         video_num, seq_num, img_name = img_path.split('/')[-3:]
         img_num = img_name.split('.')[0]
         data_id = f'{video_num}_{seq_num}_{img_num}'
-    elif cfg.data.name == 'videocoatt':
+    elif 'videocoatt' in cfg.data.name:
         mode, seq_num, img_name = img_path.split('/')[-3:]
         img_num = img_name.split('.')[0]
         data_id = f'{mode}_{seq_num}_{img_num}'
@@ -88,6 +88,10 @@ def data_id_generator(img_path, cfg):
         vid_name, seq_num, img_name = img_path.split('/')[-3:]
         img_num = img_name.split('.')[0]
         data_id = f'{vid_name}_{seq_num}_{img_num}'
+    elif cfg.data.name == 'gazefollow':
+        mode, seq_num, img_name = img_path.split('/')[-3:]
+        img_num = img_name.split('.')[0]
+        data_id = f'{mode}_{seq_num}_{img_num}'
 
     return data_id
 
@@ -106,6 +110,7 @@ parser = argparse.ArgumentParser(description="parameters for training")
 parser.add_argument("config", type=str, help="configuration yaml file path")
 args = parser.parse_args()
 cfg_arg = Dict(yaml.safe_load(open(args.config)))
+print(os.path.join(cfg_arg.exp_set.save_folder, cfg_arg.data.name, cfg_arg.exp_set.model_name, 'train*.yaml'))
 saved_yaml_file_path = glob.glob(os.path.join(cfg_arg.exp_set.save_folder, cfg_arg.data.name, cfg_arg.exp_set.model_name, 'train*.yaml'))[0]
 cfg = Dict(yaml.safe_load(open(saved_yaml_file_path)))
 cfg.update(cfg_arg)
@@ -249,6 +254,7 @@ for iteration, batch in enumerate(test_data_loader,1):
     saliency_img = out['saliency_img'].to('cpu').detach()[0]
     head_vector_gt = out['head_vector_gt'].to('cpu').detach()[0].numpy()
     head_feature = out['head_feature'].to('cpu').detach()[0]
+    head_bbox = out['head_bbox'].to('cpu').detach()[0].numpy()
     trans_att_people_rgb = out['trans_att_people_rgb'].to('cpu').detach()[0]
     trans_att_people_people = out['trans_att_people_people'].to('cpu').detach()[0].numpy()
     gt_box = out['gt_box'].to('cpu').detach()[0]
@@ -261,7 +267,7 @@ for iteration, batch in enumerate(test_data_loader,1):
     person_scene_joint_attention_heatmap = out['person_scene_joint_attention_heatmap'].to('cpu').detach()[0]
     final_joint_attention_heatmap = out['final_joint_attention_heatmap'].to('cpu').detach()[0]
 
-    if cfg.model_params.use_ang_att_map:
+    if cfg.model_params.p_s_estimator_type == 'cnn':
         ang_att_map = out['ang_att_map'].to('cpu').detach()[0]
 
     # redefine image size
@@ -303,7 +309,7 @@ for iteration, batch in enumerate(test_data_loader,1):
         save_image(img_gt[person_idx], os.path.join(save_image_dir_dic['gt_map'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_gt.png'))
         save_image(person_person_attention_heatmap[person_idx], os.path.join(save_image_dir_dic['person_person_att'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_person_person_att.png'))
         save_image(person_scene_attention_heatmap[person_idx], os.path.join(save_image_dir_dic['person_scene_att'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_person_scene_att.png'))
-        if cfg.model_params.use_ang_att_map:
+        if cfg.model_params.p_s_estimator_type == 'cnn':
             save_image(ang_att_map[person_idx], os.path.join(save_image_dir_dic['person_scene_ang_att'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_person_scene_ang_att.png'))
 
     # save attention of transformers (people and people attention)
@@ -345,23 +351,23 @@ for iteration, batch in enumerate(test_data_loader,1):
         # load heatmaps
         person_person_att = cv2.imread(os.path.join(save_image_dir_dic['person_person_att'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_person_person_att.png'), cv2.IMREAD_GRAYSCALE)
         person_scene_att = cv2.imread(os.path.join(save_image_dir_dic['person_scene_att'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_person_scene_att.png'), cv2.IMREAD_GRAYSCALE)
-        if cfg.model_params.use_ang_att_map:
+        if cfg.model_params.p_s_estimator_type == 'cnn':
             person_scene_ang_att = cv2.imread(os.path.join(save_image_dir_dic['person_scene_ang_att'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_person_scene_ang_att.png'), cv2.IMREAD_GRAYSCALE)
         person_person_att = cv2.resize(person_person_att, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_NEAREST)
         person_scene_att = cv2.resize(person_scene_att, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_NEAREST)
-        if cfg.model_params.use_ang_att_map:
+        if cfg.model_params.p_s_estimator_type == 'cnn':
             person_scene_ang_att = cv2.resize(person_scene_ang_att, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_NEAREST)
         person_person_att = norm_heatmap(person_person_att).astype(np.uint8)
         person_scene_att = norm_heatmap(person_scene_att).astype(np.uint8)
-        if cfg.model_params.use_ang_att_map:
+        if cfg.model_params.p_s_estimator_type == 'cnn':
             person_scene_ang_att = norm_heatmap(person_scene_ang_att).astype(np.uint8)
         person_person_att = cv2.applyColorMap(person_person_att, cv2.COLORMAP_JET)
         person_scene_att = cv2.applyColorMap(person_scene_att, cv2.COLORMAP_JET)
-        if cfg.model_params.use_ang_att_map:
+        if cfg.model_params.p_s_estimator_type == 'cnn':
             person_scene_ang_att = cv2.applyColorMap(person_scene_ang_att, cv2.COLORMAP_JET)
         person_person_att = cv2.addWeighted(img, 0.5, person_person_att, 0.5, 0)
         person_scene_att = cv2.addWeighted(img, 0.5, person_scene_att, 0.5, 0)
-        if cfg.model_params.use_ang_att_map:
+        if cfg.model_params.p_s_estimator_type == 'cnn':
             person_scene_ang_att = cv2.addWeighted(img, 0.5, person_scene_ang_att, 0.5, 0)
 
         # get person location and gt location
@@ -372,15 +378,20 @@ for iteration, batch in enumerate(test_data_loader,1):
         gt_mid_x, gt_mid_y = int(gt_mid_x*cfg.exp_set.resize_width), int(gt_mid_y*cfg.exp_set.resize_height)
         cv2.circle(person_person_att, (gt_mid_x, gt_mid_y), 10, (0, 255, 0), thickness=-1)
         cv2.circle(person_scene_att, (gt_mid_x, gt_mid_y), 10, (0, 255, 0), thickness=-1)
-        if cfg.model_params.use_ang_att_map:
+        if cfg.model_params.p_s_estimator_type == 'cnn':
             cv2.circle(person_scene_ang_att, (gt_mid_x, gt_mid_y), 10, (0, 255, 0), thickness=-1)
         cv2.line(person_person_att, (head_x, head_y), (gt_mid_x, gt_mid_y), (0, 255, 0), 1)
         cv2.line(person_scene_att, (head_x, head_y), (gt_mid_x, gt_mid_y), (0, 255, 0), 1)
-        if cfg.model_params.use_ang_att_map:
+        if cfg.model_params.p_s_estimator_type == 'cnn':
             cv2.line(person_scene_ang_att, (head_x, head_y), (gt_mid_x, gt_mid_y), (0, 255, 0), 1)
+
+        head_x_min, head_y_min, head_x_max, head_y_max = map(float, head_bbox[person_idx])
+        head_x_min, head_x_max = map(lambda x: int(x*img.shape[1]), [head_x_min, head_x_max])
+        head_y_min, head_y_max = map(lambda x: int(x*img.shape[0]), [head_y_min, head_y_max])
+        cv2.rectangle(person_scene_att, (head_x_min, head_y_min), (head_x_max, head_y_max), (128, 0, 128), thickness=5)
 
         # save image
         cv2.imwrite(os.path.join(save_image_dir_dic['person_person_att_superimposed'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_person_person_att_superimposed.png'), person_person_att)
         cv2.imwrite(os.path.join(save_image_dir_dic['person_scene_att_superimposed'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_person_scene_att_superimposed.png'), person_scene_att)
-        if cfg.model_params.use_ang_att_map:
+        if cfg.model_params.p_s_estimator_type == 'cnn':
             cv2.imwrite(os.path.join(save_image_dir_dic['person_scene_ang_att_superimposed'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_person_scene_ang_att_superimposed.png'), person_scene_ang_att)

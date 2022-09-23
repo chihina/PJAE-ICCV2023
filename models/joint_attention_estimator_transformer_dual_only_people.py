@@ -45,6 +45,7 @@ class JointAttentionEstimatorTransformerDualOnlyPeople(nn.Module):
         self.use_people_people_trans = cfg.model_params.use_people_people_trans
         self.people_people_trans_enc_num = cfg.model_params.people_people_trans_enc_num
         self.mha_num_heads_people_people = cfg.model_params.mha_num_heads_people_people
+        self.p_p_estimator_type = cfg.model_params.p_p_estimator_type
 
         # define loss function
         self.loss = cfg.exp_params.loss
@@ -129,15 +130,100 @@ class JointAttentionEstimatorTransformerDualOnlyPeople(nn.Module):
             down_scale_ratio = 8
             self.hm_height_middle = self.resize_height//down_scale_ratio
             self.hm_width_middle = self.resize_width//down_scale_ratio
-        
-        self.person_person_attention_heatmap = nn.Sequential(
-            nn.Linear(self.people_feat_dim+2, self.people_feat_dim),
-            nn.ReLU(),
-            nn.Linear(self.people_feat_dim, self.people_feat_dim),
-            nn.ReLU(),
-            nn.Linear(self.people_feat_dim, 1),
-            final_activation_layer,
-        )
+
+        if 'fc' in self.p_p_estimator_type:
+            if self.p_p_estimator_type == 'fc_shallow':
+                down_scale_ratio = 64
+            elif self.p_p_estimator_type == 'fc_middle':
+                down_scale_ratio = 32
+            elif self.p_p_estimator_type == 'fc_deep':
+                down_scale_ratio = 8
+            else:
+                print('please use correct p_p estimator type')
+                sys.exit()
+            self.hm_height = self.resize_height
+            self.hm_width = self.resize_width
+            self.hm_height_middle = self.resize_height//down_scale_ratio
+            self.hm_width_middle = self.resize_height//down_scale_ratio
+            self.person_person_attention_heatmap = nn.Sequential(
+                nn.Linear(self.people_feat_dim, self.people_feat_dim),
+                nn.ReLU(),
+                nn.Linear(self.people_feat_dim, self.hm_height_middle*self.hm_width_middle),
+                final_activation_layer,
+            )
+        elif 'deconv' in self.p_p_estimator_type:
+            if self.p_p_estimator_type == 'deconv_shallow':
+                self.latent_ch = 8
+            elif self.p_p_estimator_type == 'deconv_middle':
+                self.latent_ch = 64
+            elif self.p_p_estimator_type == 'deconv_deep':
+                self.latent_ch = 256
+            else:
+                print('please use correct p_p estimator type')
+                sys.exit()
+            self.hm_height = self.resize_height
+            self.hm_width = self.resize_width
+            self.hm_height_middle = self.resize_height
+            self.hm_width_middle = self.resize_width
+            self.latent_height = self.hm_height_middle // 64
+            self.latent_width = self.hm_width_middle // 64
+            self.person_person_attention_heatmap_pre_fc = nn.Sequential(
+                nn.Linear(self.people_feat_dim, self.latent_height*self.latent_width*self.latent_ch),
+                nn.ReLU(),
+            )
+            self.person_person_attention_heatmap = nn.Sequential(
+                nn.ConvTranspose2d(self.latent_ch, self.latent_ch, 4, 2, 1, bias=False),
+                nn.ReLU(),
+                nn.ConvTranspose2d(self.latent_ch, self.latent_ch//2, 4, 2, 1, bias=False),
+                nn.ReLU(),
+                nn.ConvTranspose2d(self.latent_ch//2, self.latent_ch//2, 4, 2, 1, bias=False),
+                nn.ReLU(),
+                nn.ConvTranspose2d(self.latent_ch//2, self.latent_ch//4, 4, 2, 1, bias=False),
+                nn.ReLU(),
+                nn.ConvTranspose2d(self.latent_ch//4, self.latent_ch//8, 4, 2, 1, bias=False),
+                nn.ReLU(),
+                nn.ConvTranspose2d(self.latent_ch//8, 1, 4, 2, 1, bias=False),
+                final_activation_layer,
+            )
+        elif 'field' in self.p_p_estimator_type:
+            self.hm_height = self.resize_height
+            self.hm_width = self.resize_width
+            self.hm_height_middle = self.resize_height
+            self.hm_width_middle = self.resize_width
+
+            if self.p_p_estimator_type == 'field_shallow':
+                self.person_person_attention_heatmap_middle = nn.Sequential(
+                    nn.Identity(),
+                )
+            elif self.p_p_estimator_type == 'field_middle':
+                self.person_person_attention_heatmap_middle = nn.Sequential(
+                    nn.Linear(self.people_feat_dim, self.people_feat_dim),
+                    nn.ReLU(),
+                    nn.Linear(self.people_feat_dim, self.people_feat_dim),
+                    nn.ReLU(),
+                )
+            elif self.p_p_estimator_type == 'field_deep':
+                self.person_person_attention_heatmap_middle = nn.Sequential(
+                    nn.Linear(self.people_feat_dim, self.people_feat_dim),
+                    nn.ReLU(),
+                    nn.Linear(self.people_feat_dim, self.people_feat_dim),
+                    nn.ReLU(),
+                    nn.Linear(self.people_feat_dim, self.people_feat_dim),
+                    nn.ReLU(),
+                    nn.Linear(self.people_feat_dim, self.people_feat_dim),
+                    nn.ReLU(),
+                )
+
+            self.person_person_attention_heatmap = nn.Sequential(
+                nn.Linear(self.people_feat_dim+2, self.people_feat_dim),
+                nn.ReLU(),
+                self.person_person_attention_heatmap_middle,
+                nn.Linear(self.people_feat_dim, 1),
+                final_activation_layer,
+            )
+        else:
+            print('please use correct p_p estimator type')
+            sys.exit()
 
     def forward(self, inp):
 
@@ -207,31 +293,45 @@ class JointAttentionEstimatorTransformerDualOnlyPeople(nn.Module):
 
         # attention estimation of person-to-person path
         attention_token = head_info_params_emb[:, :-1, :]
-        attention_token_view = attention_token.view(self.batch_size, people_num, 1, self.people_feat_dim)
-        attention_token_expand = attention_token_view.expand(self.batch_size, people_num, self.hm_height_middle*self.hm_width_middle, self.people_feat_dim)
-        x_axis_map = xy_axis_map[:, :, 0, :, :]
-        y_axis_map = xy_axis_map[:, :, 1, :, :]
-        x_axis_map = F.interpolate(x_axis_map, (self.hm_height_middle, self.hm_width_middle), mode='bilinear')
-        y_axis_map = F.interpolate(y_axis_map, (self.hm_height_middle, self.hm_width_middle), mode='bilinear')
-        x_axis_map = x_axis_map.view(self.batch_size, people_num, self.hm_height_middle*self.hm_width_middle, 1)
-        y_axis_map = y_axis_map.view(self.batch_size, people_num, self.hm_height_middle*self.hm_width_middle,1 )
-        attention_token_coord = torch.cat([attention_token_expand, x_axis_map, y_axis_map], dim=-1)
-        person_person_attention_heatmap = self.person_person_attention_heatmap(attention_token_coord)
+        if 'fc' in self.p_p_estimator_type:
+            attention_token_input = attention_token.view(self.batch_size, people_num, self.people_feat_dim)
+        elif 'deconv' in self.p_p_estimator_type:
+            attention_token_input = attention_token.view(self.batch_size, people_num, self.people_feat_dim)
+            attention_token_input = self.person_person_attention_heatmap_pre_fc(attention_token_input)
+            attention_token_input = attention_token_input.view(self.batch_size*people_num, self.latent_ch, self.latent_height, self.latent_width)
+        elif 'field' in self.p_p_estimator_type:
+            attention_token_view = attention_token.view(self.batch_size, people_num, 1, self.people_feat_dim)
+            attention_token_expand = attention_token_view.expand(self.batch_size, people_num, self.hm_height_middle*self.hm_width_middle, self.people_feat_dim)
+            x_axis_map = xy_axis_map[:, :, 0, :, :]
+            y_axis_map = xy_axis_map[:, :, 1, :, :]
+            x_axis_map = F.interpolate(x_axis_map, (self.hm_height_middle, self.hm_width_middle), mode='bilinear')
+            y_axis_map = F.interpolate(y_axis_map, (self.hm_height_middle, self.hm_width_middle), mode='bilinear')
+            x_axis_map = x_axis_map.view(self.batch_size, people_num, self.hm_height_middle*self.hm_width_middle, 1)
+            y_axis_map = y_axis_map.view(self.batch_size, people_num, self.hm_height_middle*self.hm_width_middle, 1)
+            attention_token_input = torch.cat([attention_token_expand, x_axis_map, y_axis_map], dim=-1)
+        person_person_attention_heatmap = self.person_person_attention_heatmap(attention_token_input)
         person_person_attention_heatmap = person_person_attention_heatmap.view(self.batch_size, people_num, self.hm_height_middle, self.hm_width_middle)
         person_person_attention_heatmap = F.interpolate(person_person_attention_heatmap, (self.hm_height, self.hm_width), mode='bilinear')
 
         # joint attention estimation of person-to-person path
         ja_embedding_relation = head_info_params_emb[:, -1, :]
-        ja_embedding_relation_view = ja_embedding_relation.view(self.batch_size, 1, 1, self.people_feat_dim)
-        ja_embedding_relation_expand = ja_embedding_relation_view.expand(self.batch_size, 1, self.hm_height_middle*self.hm_width_middle, self.people_feat_dim)
-        x_axis_map = xy_axis_map[:, 0, 0, :, :][:, None, :, :]
-        y_axis_map = xy_axis_map[:, 0, 1, :, :][:, None, :, :]
-        x_axis_map = F.interpolate(x_axis_map, (self.hm_height_middle, self.hm_width_middle), mode='bilinear')
-        y_axis_map = F.interpolate(y_axis_map, (self.hm_height_middle, self.hm_width_middle), mode='bilinear')
-        x_axis_map = x_axis_map.view(self.batch_size, 1, self.hm_height_middle*self.hm_width_middle, 1)
-        y_axis_map = y_axis_map.view(self.batch_size, 1, self.hm_height_middle*self.hm_width_middle,1 )
-        ja_embedding_coord = torch.cat([ja_embedding_relation_expand, x_axis_map, y_axis_map], dim=-1)
-        person_person_joint_attention_heatmap = self.person_person_attention_heatmap(ja_embedding_coord)
+        if 'fc' in self.p_p_estimator_type:
+            ja_embedding_relation_input = ja_embedding_relation.view(self.batch_size, 1, self.people_feat_dim)
+        elif 'deconv' in self.p_p_estimator_type:
+            ja_embedding_relation_input = ja_embedding_relation.view(self.batch_size, 1, self.people_feat_dim)
+            ja_embedding_relation_input = self.person_person_attention_heatmap_pre_fc(ja_embedding_relation_input)
+            ja_embedding_relation_input = ja_embedding_relation_input.view(self.batch_size, self.latent_ch, self.latent_height, self.latent_width)
+        elif 'field' in self.p_p_estimator_type:
+            ja_embedding_relation_view = ja_embedding_relation.view(self.batch_size, 1, 1, self.people_feat_dim)
+            ja_embedding_relation_expand = ja_embedding_relation_view.expand(self.batch_size, 1, self.hm_height_middle*self.hm_width_middle, self.people_feat_dim)
+            x_axis_map = xy_axis_map[:, 0, 0, :, :][:, None, :, :]
+            y_axis_map = xy_axis_map[:, 0, 1, :, :][:, None, :, :]
+            x_axis_map = F.interpolate(x_axis_map, (self.hm_height_middle, self.hm_width_middle), mode='bilinear')
+            y_axis_map = F.interpolate(y_axis_map, (self.hm_height_middle, self.hm_width_middle), mode='bilinear')
+            x_axis_map = x_axis_map.view(self.batch_size, 1, self.hm_height_middle*self.hm_width_middle, 1)
+            y_axis_map = y_axis_map.view(self.batch_size, 1, self.hm_height_middle*self.hm_width_middle,1 )
+            ja_embedding_relation_input = torch.cat([ja_embedding_relation_expand, x_axis_map, y_axis_map], dim=-1)
+        person_person_joint_attention_heatmap = self.person_person_attention_heatmap(ja_embedding_relation_input)
         person_person_joint_attention_heatmap = person_person_joint_attention_heatmap.view(self.batch_size, 1, self.hm_height_middle, self.hm_width_middle)
         person_person_joint_attention_heatmap = F.interpolate(person_person_joint_attention_heatmap, (self.hm_height, self.hm_width), mode='bilinear')
 

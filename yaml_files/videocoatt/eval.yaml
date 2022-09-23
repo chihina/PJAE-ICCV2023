@@ -12,15 +12,16 @@ exp_set:
   # model_name: videoattentiontarget-hgt-high
   # model_name: videoattentiontarget-dual-trans-pretrain
 
-  # model_name: videocoatt-dual-davt-freeze_sigma_10_middle
-  # model_name: videocoatt-dual-davt-freeze_sigma_10_middle_wo_dets
-  model_name: videocoatt-dual-davt-freeze_sigma_10_middle_wo_dets_wo_gaze
-  # model_name: videocoatt-dual-davt-freeze_sigma_10_middle_wo_dets_wo_position
+  # model_name: videocoatt-dual-people_fc_shallow
+  # model_name: videocoatt-dual-people_fc_middle
+  # model_name: videocoatt-dual-people_fc_deep
+  # model_name: videocoatt-dual-people_deconv_shallow
+  # model_name: videocoatt-dual-people_field_middle
 
   seed_num : 777
   gpu_mode : True
-  gpu_start : 6
-  gpu_finish : 6
+  gpu_start : 1
+  gpu_finish : 1
   num_workers : 1
   batch_size : 1
   wandb_name : test

@@ -5,23 +5,25 @@ data:
 
 exp_set:
   save_folder: saved_weights
-  # wandb_name: videocoatt-dual-people_sigma_10_wo_dets
-  # wandb_name: videocoatt-dual-people_sigma_10
-  # wandb_name: videocoatt-dual-people_sigma_10_wo_gaze
-  wandb_name: videocoatt-dual-people_sigma_10_wo_position
-
   wandb_log : True
+
+  # wandb_name: videocoatt-dual-people_fc_shallow
+  # wandb_name: videocoatt-dual-people_fc_middle
+  wandb_name: videocoatt-dual-people_fc_deep
+  # wandb_name: videocoatt-dual-people_deconv_shallow
+  # wandb_name: videocoatt-dual-people_field_middle
 
   batch_size: 16
   # batch_size: 2
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 5
-  gpu_finish : 5
+  gpu_start : 4
+  gpu_finish : 4
 
   resize_height: 320
-  resize_width: 480
+  # resize_width: 480
+  resize_width: 640
   resize_head_height: 224
   resize_head_width: 224
 
@@ -91,8 +93,8 @@ model_params:
   model_type: ja_transformer_dual_only_people
 
   # Position
-  use_position : False
-  # use_position : True
+  # use_position : False
+  use_position : True
 
   # Gaze
   # use_gaze : False
@@ -116,6 +118,13 @@ model_params:
   use_people_people_trans: True
   people_people_trans_enc_num : 2
   mha_num_heads_people_people : 2
+  # p_p_estimator_type : fc_shallow
+  # p_p_estimator_type : fc_middle
+  p_p_estimator_type : fc_deep
+  # p_p_estimator_type : deconv_shallow
+  # p_p_estimator_type : deconv_middle
+  # p_p_estimator_type : deconv_deep
+  # p_p_estimator_type : field_middle
 
   # rgb-person transformer
   rgb_feat_dim : 64

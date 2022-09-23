@@ -9,20 +9,19 @@ exp_set:
   # model_name: videoattentiontarget-hgt
   # model_name: videoattentiontarget-hgt-high
 
-  model_name: videoattentiontarget-dual-trans-pretrain_wo_gaze_loss
-  # model_name: videoattentiontarget-dual-trans-pretrain_w_gaze_loss
+  model_name: videoattentiontarget-dual-cnn
 
   seed_num : 777
   gpu_mode : True
-  gpu_start : 7
-  gpu_finish : 7
+  gpu_start : 3
+  gpu_finish : 3
   num_workers : 1
   batch_size : 1
   wandb_name : demo
 
-  # mode: test
+  mode: test
   # mode : validate
-  mode : train
+  # mode : train
 
 exp_params:
   test_gt_gaze : False

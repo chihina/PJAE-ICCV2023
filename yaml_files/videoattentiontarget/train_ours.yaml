@@ -6,8 +6,7 @@ exp_set:
   save_folder: saved_weights
   wandb_log : True
 
-  wandb_name: videoattentiontarget-dual-trans-pretrain_wo_gaze_loss
-  # wandb_name: videoattentiontarget-dual-trans-pretrain_w_gaze_loss
+  wandb_name: videoattentiontarget-dual-cnn
 
   batch_size: 16
   # batch_size: 8
@@ -15,8 +14,8 @@ exp_set:
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 3
-  gpu_finish : 3
+  gpu_start : 4
+  gpu_finish : 4
 
   resize_height: 320
   resize_width: 480
@@ -24,8 +23,8 @@ exp_set:
   resize_head_width: 224
 
 exp_params:
-  use_gaze_loss : False
-  # use_gaze_loss : True
+  # use_gaze_loss : False
+  use_gaze_loss : True
 
   use_person_person_att_loss : False
   # use_person_person_att_loss : True
@@ -58,11 +57,10 @@ exp_params:
   # loss : bce
 
   # learning rate
-  # lr : 0.0001
   lr : 0.00001
 
   # gt gaussian
-  gaussian_sigma: 20
+  gaussian_sigma: 40
 
   # learning schedule
   nEpochs : 500
@@ -74,11 +72,11 @@ exp_params:
   # pretrained models
   pretrained_models_dir: saved_weights
 
-  # use_pretrained_head_pose_estimator: False
-  use_pretrained_head_pose_estimator: True
+  use_pretrained_head_pose_estimator: False
+  # use_pretrained_head_pose_estimator: True
   pretrained_head_pose_estimator_name: videocoatt-head_pose_estimator
-  # freeze_head_pose_estimator: False
-  freeze_head_pose_estimator: True
+  freeze_head_pose_estimator: False
+  # freeze_head_pose_estimator: True
 
   use_pretrained_saliency_extractor: False
   # use_pretrained_saliency_extractor: True
@@ -116,24 +114,35 @@ model_params:
   use_img : True
 
   # person-person transformer
-  # people_feat_dim : 16
-  people_feat_dim : 256
+  people_feat_dim : 16
   # use_people_people_trans: False
   use_people_people_trans: True
   people_people_trans_enc_num : 2
   mha_num_heads_people_people : 2
 
   # rgb-person transformer
-  rgb_feat_dim : 64
+  rgb_feat_dim : 256
   rgb_people_trans_enc_num : 1
-  mha_num_heads_rgb_people : 1
+  mha_num_heads_rgb_people : 1 
+  # p_p_estimator_type : fc_shallow
+  # p_p_estimator_type : fc_middle
+  # p_p_estimator_type : fc_deep
+  # p_p_estimator_type : deconv_shallow
+  # p_p_estimator_type : deconv_middle
+  # p_p_estimator_type : deconv_deep
+  # p_p_estimator_type : field_shallow
+  p_p_estimator_type : field_middle
+  # p_p_estimator_type : field_deep
 
   # rgb_cnn_extractor_type : rgb_patch
   # rgb_patch_size : 8
   rgb_cnn_extractor_type : resnet18
-  # rgb_cnn_extractor_type : resnet50
+  rgb_cnn_extractor_type : resnet50
   # rgb_cnn_extractor_stage_idx : 1
   # rgb_cnn_extractor_stage_idx : 2
-  rgb_cnn_extractor_stage_idx : 3
-  # rgb_cnn_extractor_stage_idx : 4
-  # rgb_cnn_extractor_type : davt
+  # rgb_cnn_extractor_stage_idx : 3
+  rgb_cnn_extractor_stage_idx : 4
+
+  # p_s_estimator_type : davt
+  # p_s_estimator_type : transformer
+  p_s_estimator_type : cnn

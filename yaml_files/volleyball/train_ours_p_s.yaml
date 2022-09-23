@@ -8,16 +8,25 @@ data:
 
 exp_set:
   save_folder: saved_weights
-  wandb_name: volleyball-dual-people
-
   wandb_log : True
+
+  # wandb_name: volleyball-dual-people_fc_shallow
+  # wandb_name: volleyball-dual-people_fc_middle
+  # wandb_name: volleyball-dual-people_fc_deep
+  # wandb_name: volleyball-dual-people_field_shallow
+  # wandb_name: volleyball-dual-people_field_middle
+  wandb_name: volleyball-dual-people_field_deep
+  # wandb_name: volleyball-dual-people_deconv_shallow
+  # wandb_name: volleyball-dual-people_deconv_middle
+  # wandb_name: volleyball-dual-people_deconv_deep
+
 
   batch_size: 16
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 3
-  gpu_finish : 3
+  gpu_start : 1
+  gpu_finish : 1
 
   resize_height : 320
   resize_width : 640
@@ -85,11 +94,11 @@ exp_params:
   # freeze_head_pose_estimator: False
   freeze_head_pose_estimator: True
 
-  # use_pretrained_saliency_extractor: False
-  use_pretrained_saliency_extractor: True
+  use_pretrained_saliency_extractor: False
+  # use_pretrained_saliency_extractor: True
   pretrained_saliency_extractor_name: pretrained_scene_extractor_davt
-  # freeze_saliency_extractor: False
-  freeze_saliency_extractor: True
+  freeze_saliency_extractor: False
+  # freeze_saliency_extractor: True
 
   use_pretrained_joint_attention_estimator: False
   # use_pretrained_head_pose_estimator: True
@@ -126,6 +135,15 @@ model_params:
   use_people_people_trans: True
   people_people_trans_enc_num : 2
   mha_num_heads_people_people : 2
+  # p_p_estimator_type : fc_shallow
+  # p_p_estimator_type : fc_middle
+  # p_p_estimator_type : fc_deep
+  # p_p_estimator_type : deconv_shallow
+  # p_p_estimator_type : deconv_middle
+  # p_p_estimator_type : deconv_deep
+  # p_p_estimator_type : field_shallow
+  # p_p_estimator_type : field_middle
+  p_p_estimator_type : field_deep
 
   # rgb-person transformer
   rgb_feat_dim : 64

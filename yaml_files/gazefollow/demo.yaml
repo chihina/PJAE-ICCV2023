@@ -1,0 +1,23 @@
+data: 
+  name: gazefollow
+  dataset_dir : data/gazefollow
+
+exp_set:
+  save_folder : saved_weights
+  model_name: gazefollow-dual-cnn
+
+  seed_num : 777
+  gpu_mode : True
+  gpu_start : 3
+  gpu_finish : 3
+  num_workers : 1
+  batch_size : 1
+  wandb_name : demo
+
+  mode: test
+  # mode : validate
+  # mode : train
+
+exp_params:
+  test_gt_gaze : False
+  # test_gt_gaze : True

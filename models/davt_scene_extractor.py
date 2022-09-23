@@ -164,7 +164,6 @@ class ModelSpatial(nn.Module):
             y_min = y_min.long()
             y_max = y_max.long()
             head[head_idx, 0, y_min:y_max, x_min:x_max] = 1.
-        
 
         face = head_img.view(batch_size*people_num, 3, resize_head_height, resize_head_width)
         face = F.interpolate(face, (resousion_height, resousion_width), mode='bilinear')

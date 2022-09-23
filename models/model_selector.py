@@ -6,6 +6,7 @@ from models.inferring_shared_attention_estimation import InferringSharedAttentio
 from models.end_to_end_human_gaze_target import EndToEndHumanGazeTargetTransformer
 from models.davt_scene_extractor import ModelSpatial, ModelSpatialDummy
 from models.transformer_scene_extractor import SceneFeatureTransformer
+from models.cnn_scene_extractor import SceneFeatureCNN
 import sys
 
 def model_generator(cfg):
@@ -16,21 +17,12 @@ def model_generator(cfg):
     elif cfg.model_params.model_type == 'ja_transformer_dual':
         model_head = HeadPoseEstimatorResnet(cfg)
         model_gaussian = JointAttentionEstimatorTransformerDual(cfg)
-        if cfg.data.name == 'volleyball':
-            if cfg.model_params.rgb_cnn_extractor_type == 'davt':
-                model_saliency = ModelSpatial()
-            else:
-                model_saliency = SceneFeatureTransformer(cfg)
-        elif cfg.data.name == 'videocoatt':
-            if cfg.model_params.rgb_cnn_extractor_type == 'davt':
-                model_saliency = ModelSpatial()
-            else:
-                model_saliency = SceneFeatureTransformer(cfg)
-        elif cfg.data.name == 'videoattentiontarget':
-            if cfg.model_params.rgb_cnn_extractor_type == 'davt':
-                model_saliency = ModelSpatial()
-            else:
-                model_saliency = SceneFeatureTransformer(cfg)
+        if cfg.model_params.p_s_estimator_type == 'davt':
+            model_saliency = ModelSpatial()
+        elif cfg.model_params.p_s_estimator_type == 'cnn':
+            model_saliency = SceneFeatureCNN(cfg)
+        elif cfg.model_params.p_s_estimator_type == 'transformer':
+            model_saliency = SceneFeatureTransformer(cfg)
     elif cfg.model_params.model_type == 'ja_transformer_dual_only_people':
         model_head = HeadPoseEstimatorResnet(cfg)
         model_gaussian = JointAttentionEstimatorTransformerDualOnlyPeople(cfg)
