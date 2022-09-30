@@ -6,7 +6,8 @@ exp_set:
   save_folder: saved_weights
   wandb_log : True
 
-  wandb_name: videoattentiontarget-dual-cnn
+  wandb_name: videoattentiontarget-dual-cnn-w_pre
+  # wandb_name: videoattentiontarget-dual-trans-w_pre
 
   batch_size: 16
   # batch_size: 8
@@ -14,8 +15,8 @@ exp_set:
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 4
-  gpu_finish : 4
+  gpu_start : 5
+  gpu_finish : 5
 
   resize_height: 320
   resize_width: 480
@@ -23,23 +24,28 @@ exp_set:
   resize_head_width: 224
 
 exp_params:
-  # use_gaze_loss : False
-  use_gaze_loss : True
+  use_gaze_loss : False
+  # use_gaze_loss : True
 
   use_person_person_att_loss : False
   # use_person_person_att_loss : True
+  person_person_att_loss_weight : 1
 
   use_person_person_jo_att_loss : False
   # use_person_person_jo_att_loss : True
+  person_person_jo_att_loss_weight : 1
 
   # use_person_scene_att_loss : False
   use_person_scene_att_loss : True
+  person_scene_att_loss_weight : 1
 
   use_person_scene_jo_att_loss : False
   # use_person_scene_jo_att_loss : True
+  person_scene_jo_att_loss_weight : 1
 
   use_final_jo_att_loss : False
   # use_final_jo_att_loss : True
+  final_jo_att_loss_weight : 1
 
   use_frame_type: mid
   # use_frame_type: all
@@ -60,7 +66,7 @@ exp_params:
   lr : 0.00001
 
   # gt gaussian
-  gaussian_sigma: 40
+  gaussian_sigma: 20
 
   # learning schedule
   nEpochs : 500
@@ -72,15 +78,17 @@ exp_params:
   # pretrained models
   pretrained_models_dir: saved_weights
 
-  use_pretrained_head_pose_estimator: False
-  # use_pretrained_head_pose_estimator: True
-  pretrained_head_pose_estimator_name: videocoatt-head_pose_estimator
-  freeze_head_pose_estimator: False
-  # freeze_head_pose_estimator: True
+  # use_pretrained_head_pose_estimator: False
+  use_pretrained_head_pose_estimator: True
+  pretrained_head_pose_estimator_name: gazefollow-dual-cnn-w_pre
+  # pretrained_head_pose_estimator_name: gazefollow-dual-trans-w_pre
+  # freeze_head_pose_estimator: False
+  freeze_head_pose_estimator: True
 
-  use_pretrained_saliency_extractor: False
-  # use_pretrained_saliency_extractor: True
-  pretrained_saliency_extractor_name: pretrained_scene_extractor_davt
+  # use_pretrained_saliency_extractor: False
+  use_pretrained_saliency_extractor: True
+  pretrained_saliency_extractor_name: gazefollow-dual-cnn-w_pre
+  # pretrained_saliency_extractor_name: gazefollow-dual-trans-w_pre
   freeze_saliency_extractor: False
   # freeze_saliency_extractor: True
 
@@ -136,7 +144,7 @@ model_params:
 
   # rgb_cnn_extractor_type : rgb_patch
   # rgb_patch_size : 8
-  rgb_cnn_extractor_type : resnet18
+  # rgb_cnn_extractor_type : resnet18
   rgb_cnn_extractor_type : resnet50
   # rgb_cnn_extractor_stage_idx : 1
   # rgb_cnn_extractor_stage_idx : 2
@@ -146,3 +154,7 @@ model_params:
   # p_s_estimator_type : davt
   # p_s_estimator_type : transformer
   p_s_estimator_type : cnn
+  # p_s_estimator_cnn_pretrain : False
+  p_s_estimator_cnn_pretrain : True
+  # use_p_s_estimator_att_inside : False
+  use_p_s_estimator_att_inside : True

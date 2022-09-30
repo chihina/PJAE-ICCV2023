@@ -22,12 +22,18 @@ exp_set:
   # model_name: volleyball-dual-people_deconv_deep
 
   # model_name: volleyball-dual-mid_p_p_field_deep_p_s_davt
-  model_name: volleyball-dual-mid_p_p_field_deep_p_s_cnn
+  # model_name: volleyball-dual-mid_p_p_field_deep_p_s_cnn
+  # model_name: volleyball-dual-mid_p_p_field_deep_p_s_cnn_wo_action
+  # model_name: volleyball-dual-mid_p_p_field_deep_p_s_cnn_wo_gaze
+  # model_name: volleyball-dual-mid_p_p_field_deep_p_s_cnn_wo_position
+  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_5
+
+  model_name: volleyball-dual-mid_p_p_field_middle_p_s_trans_loss_weight_1_1_1_scalr_fusion
 
   seed_num : 777
   gpu_mode : True
-  gpu_start : 7
-  gpu_finish : 7
+  gpu_start : 4
+  gpu_finish : 4
   num_workers : 1
   batch_size : 1
   wandb_name : demo
@@ -38,12 +44,12 @@ exp_params:
   use_frame_type: mid
   # use_frame_type: all
 
-  bbox_types: GT
-  # bbox_types: PRED
-  action_types: GT
-  # action_types: PRED
-  gaze_types: GT
-  # gaze_types: PRED
+  # bbox_types: GT
+  bbox_types: PRED
+  # action_types: GT
+  action_types: PRED
+  # gaze_types: GT
+  gaze_types: PRED
   # gaze_types: NONE
 
   # use_action: True

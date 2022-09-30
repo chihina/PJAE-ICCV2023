@@ -47,6 +47,9 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
         self.mha_num_heads_people_people = cfg.model_params.mha_num_heads_people_people
         self.p_p_estimator_type = cfg.model_params.p_p_estimator_type
 
+        # fusion network type
+        self.fusion_net_type = cfg.model_params.fusion_net_type
+
         # define loss function
         self.loss = cfg.exp_params.loss
         if self.loss == 'mse':
@@ -218,34 +221,109 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
             print('please use correct p_p estimator type')
             sys.exit()
 
-        self.person_person_preconv = nn.Sequential(
-            nn.Conv2d(in_channels=1, out_channels=4, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(in_channels=4, out_channels=8, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(in_channels=8, out_channels=8, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
-        )
-
-        self.person_scene_preconv = nn.Sequential(
-            nn.Conv2d(in_channels=1, out_channels=4, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(in_channels=4, out_channels=8, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(in_channels=8, out_channels=8, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
-        )
-
-        self.final_joint_atention_heatmap = nn.Sequential(
-            nn.Conv2d(in_channels=16, out_channels=8, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(in_channels=8, out_channels=8, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(in_channels=8, out_channels=8, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(in_channels=8, out_channels=1, kernel_size=1),
-            final_activation_layer,
-        )
+        if self.fusion_net_type == 'early':
+            self.person_person_preconv = nn.Sequential(
+                nn.Identity(),
+            )
+            self.person_scene_preconv = nn.Sequential(
+                nn.Identity(),
+            )
+            self.final_joint_atention_heatmap = nn.Sequential(
+                nn.Conv2d(in_channels=2, out_channels=8, kernel_size=5, stride=2, padding=2),
+                nn.ReLU(),
+                nn.Conv2d(in_channels=8, out_channels=8, kernel_size=5, stride=2, padding=2),
+                nn.ReLU(),
+                nn.ConvTranspose2d(8, 8, 4, 2, 1, bias=False),
+                nn.ReLU(),
+                nn.ConvTranspose2d(8, 8, 4, 2, 1, bias=False),
+                nn.ReLU(),
+                nn.Conv2d(in_channels=8, out_channels=1, kernel_size=1),
+                final_activation_layer,
+            )
+        elif self.fusion_net_type == 'mid':
+            self.person_person_preconv = nn.Sequential(
+                nn.Conv2d(in_channels=1, out_channels=4, kernel_size=5, stride=1, padding=2),
+                nn.ReLU(),
+                nn.Conv2d(in_channels=4, out_channels=8, kernel_size=5, stride=1, padding=2),
+                nn.ReLU(),
+                nn.Conv2d(in_channels=8, out_channels=8, kernel_size=5, stride=1, padding=2),
+                nn.ReLU(),
+            )
+            self.person_scene_preconv = nn.Sequential(
+                nn.Conv2d(in_channels=1, out_channels=4, kernel_size=5, stride=1, padding=2),
+                nn.ReLU(),
+                nn.Conv2d(in_channels=4, out_channels=8, kernel_size=5, stride=1, padding=2),
+                nn.ReLU(),
+                nn.Conv2d(in_channels=8, out_channels=8, kernel_size=5, stride=1, padding=2),
+                nn.ReLU(),
+            )
+            self.final_joint_atention_heatmap = nn.Sequential(
+                nn.Conv2d(in_channels=16, out_channels=8, kernel_size=5, stride=1, padding=2),
+                nn.ReLU(),
+                nn.Conv2d(in_channels=8, out_channels=8, kernel_size=5, stride=1, padding=2),
+                nn.ReLU(),
+                nn.Conv2d(in_channels=8, out_channels=1, kernel_size=1),
+                final_activation_layer,
+            )
+        elif self.fusion_net_type == 'late':
+            pass
+        elif self.fusion_net_type == 'scalar_weight':
+            self.weight_feat_dim = 16
+            self.person_person_preconv = nn.Sequential(
+                nn.Conv2d(in_channels=1, out_channels=4, kernel_size=5, stride=2, padding=2),
+                nn.ReLU(),
+                nn.Conv2d(in_channels=4, out_channels=8, kernel_size=5, stride=2, padding=2),
+                nn.ReLU(),
+                nn.Conv2d(in_channels=8, out_channels=self.weight_feat_dim, kernel_size=5, stride=2, padding=2),
+                nn.ReLU(),
+                nn.AdaptiveAvgPool2d((1, 1))
+            )
+            self.person_scene_preconv = nn.Sequential(
+                nn.Conv2d(in_channels=1, out_channels=4, kernel_size=5, stride=2, padding=2),
+                nn.ReLU(),
+                nn.Conv2d(in_channels=4, out_channels=8, kernel_size=5, stride=2, padding=2),
+                nn.ReLU(),
+                nn.Conv2d(in_channels=8, out_channels=self.weight_feat_dim, kernel_size=5, stride=2, padding=2),
+                nn.ReLU(),
+                nn.AdaptiveAvgPool2d((1, 1))
+            )
+            self.fusion_weight_fc_softmax = nn.Sequential(
+                nn.Linear(self.weight_feat_dim*2, self.weight_feat_dim),
+                nn.ReLU(),
+                nn.Linear(self.weight_feat_dim, self.weight_feat_dim//2),
+                nn.ReLU(),
+                nn.Linear(self.weight_feat_dim//2, 2),
+                nn.Softmax(dim=-1)
+            )
+        else:
+            print('please use correct fusion net type')
+            # sys.exit()
+            self.person_person_preconv = nn.Sequential(
+                nn.Conv2d(in_channels=1, out_channels=4, kernel_size=3, stride=1, padding=1),
+                nn.ReLU(),
+                nn.Conv2d(in_channels=4, out_channels=8, kernel_size=3, stride=1, padding=1),
+                nn.ReLU(),
+                nn.Conv2d(in_channels=8, out_channels=8, kernel_size=3, stride=1, padding=1),
+                nn.ReLU(),
+            )
+            self.person_scene_preconv = nn.Sequential(
+                nn.Conv2d(in_channels=1, out_channels=4, kernel_size=3, stride=1, padding=1),
+                nn.ReLU(),
+                nn.Conv2d(in_channels=4, out_channels=8, kernel_size=3, stride=1, padding=1),
+                nn.ReLU(),
+                nn.Conv2d(in_channels=8, out_channels=8, kernel_size=3, stride=1, padding=1),
+                nn.ReLU(),
+            )
+            self.final_joint_atention_heatmap = nn.Sequential(
+                nn.Conv2d(in_channels=16, out_channels=8, kernel_size=3, stride=1, padding=1),
+                nn.ReLU(),
+                nn.Conv2d(in_channels=8, out_channels=8, kernel_size=3, stride=1, padding=1),
+                nn.ReLU(),
+                nn.Conv2d(in_channels=8, out_channels=8, kernel_size=3, stride=1, padding=1),
+                nn.ReLU(),
+                nn.Conv2d(in_channels=8, out_channels=1, kernel_size=1),
+                final_activation_layer,
+            )
 
     def forward(self, inp):
 
@@ -370,10 +448,23 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
         person_scene_joint_attention_heatmap = person_scene_joint_attention_heatmap[:, None, :, :]
 
         # final joint attention estimation
-        person_person_joint_attention_heatmap_preconv = self.person_person_preconv(person_person_joint_attention_heatmap)
-        person_scene_joint_attention_heatmap_preconv = self.person_scene_preconv(person_scene_joint_attention_heatmap)
-        dual_heatmap = torch.cat([person_person_joint_attention_heatmap_preconv, person_scene_joint_attention_heatmap_preconv], dim=1)
-        final_joint_attention_heatmap = self.final_joint_atention_heatmap(dual_heatmap)
+        if 'weight' in self.fusion_net_type:
+            person_person_joint_attention_heatmap_preconv = self.person_person_preconv(person_person_joint_attention_heatmap)
+            person_scene_joint_attention_heatmap_preconv = self.person_scene_preconv(person_scene_joint_attention_heatmap)
+            fusion_weight = torch.cat([person_person_joint_attention_heatmap_preconv, person_scene_joint_attention_heatmap_preconv], dim=-1)
+            fusion_weight = fusion_weight.view(self.batch_size, -1)
+            fusion_weight = self.fusion_weight_fc_softmax(fusion_weight)
+            person_person_weight = fusion_weight[:, 0, None, None, None]
+            person_scene_weight = fusion_weight[:, 1, None, None, None]
+            person_person_joint_attention_heatmap_weight = person_person_joint_attention_heatmap * person_person_weight
+            person_scene_joint_attention_heatmap_weight = person_scene_joint_attention_heatmap * person_scene_weight
+            final_joint_attention_heatmap = person_person_joint_attention_heatmap_weight + person_scene_joint_attention_heatmap_weight
+            print(fusion_weight)
+        else:
+            person_person_joint_attention_heatmap_preconv = self.person_person_preconv(person_person_joint_attention_heatmap)
+            person_scene_joint_attention_heatmap_preconv = self.person_scene_preconv(person_scene_joint_attention_heatmap)
+            dual_heatmap = torch.cat([person_person_joint_attention_heatmap_preconv, person_scene_joint_attention_heatmap_preconv], dim=1)
+            final_joint_attention_heatmap = self.final_joint_atention_heatmap(dual_heatmap)
 
         # generate head xy map
         head_xy_map = head_xy_map * head_feature[:, :, :2, None, None]
@@ -420,6 +511,7 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
         return data
 
     def calc_loss(self, inp, out, cfg):
+
         # unpack data (input)
         img_gt_attention = inp['img_gt']
         gt_box = inp['gt_box']
@@ -434,34 +526,43 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
         final_joint_attention_heatmap = out['final_joint_attention_heatmap']
 
         self.use_person_person_att_loss = cfg.exp_params.use_person_person_att_loss
+        self.person_person_att_loss_weight = cfg.exp_params.person_person_att_loss_weight
+
         self.use_person_person_jo_att_loss = cfg.exp_params.use_person_person_jo_att_loss
+        self.person_person_jo_att_loss_weight = cfg.exp_params.person_person_jo_att_loss_weight
+        
         self.use_person_scene_att_loss = cfg.exp_params.use_person_scene_att_loss
+        self.person_scene_att_loss_weight = cfg.exp_params.person_scene_att_loss_weight
+        
         self.use_person_scene_jo_att_loss = cfg.exp_params.use_person_scene_jo_att_loss
+        self.person_scene_jo_att_loss_weight = cfg.exp_params.person_scene_jo_att_loss_weight
+        
         self.use_final_jo_att_loss = cfg.exp_params.use_final_jo_att_loss
+        self.final_jo_att_loss_weight = cfg.exp_params.final_jo_att_loss_weight
 
         # switch loss coeficient
         if self.use_person_person_att_loss:
-            loss_person_person_att_coef = 1
+            loss_person_person_att_coef = self.person_person_att_loss_weight
         else:
             loss_person_person_att_coef = 0
 
         if self.use_person_person_jo_att_loss:
-            use_person_person_jo_att_coef = 1
+            use_person_person_jo_att_coef = self.person_person_jo_att_loss_weight
         else:
             use_person_person_jo_att_coef = 0
 
         if self.use_person_scene_att_loss:
-            use_person_scene_att_coef = 1
+            use_person_scene_att_coef = self.person_scene_att_loss_weight
         else:
             use_person_scene_att_coef = 0
 
         if self.use_person_scene_jo_att_loss:
-            use_person_scene_jo_att_coef = 1
+            use_person_scene_jo_att_coef = self.person_scene_jo_att_loss_weight
         else:
             use_person_scene_jo_att_coef = 0
     
         if self.use_final_jo_att_loss:
-            use_final_jo_att_coef = 1
+            use_final_jo_att_coef = self.final_jo_att_loss_weight
         else:
             use_final_jo_att_coef = 0
 

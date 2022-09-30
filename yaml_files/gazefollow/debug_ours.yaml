@@ -11,12 +11,11 @@ exp_set:
   batch_size: 32
   # batch_size: 8
   # batch_size: 2
-  # batch_size: 1
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 6
-  gpu_finish : 6
+  gpu_start : 3
+  gpu_finish : 3
 
   resize_height: 320
   resize_width: 480
@@ -29,18 +28,23 @@ exp_params:
 
   use_person_person_att_loss : False
   # use_person_person_att_loss : True
+  person_person_att_loss_weight : 1
 
   use_person_person_jo_att_loss : False
   # use_person_person_jo_att_loss : True
+  person_person_jo_att_loss_weight : 1
 
   # use_person_scene_att_loss : False
   use_person_scene_att_loss : True
+  person_scene_att_loss_weight : 1
 
   use_person_scene_jo_att_loss : False
   # use_person_scene_jo_att_loss : True
+  person_scene_jo_att_loss_weight : 1
 
   use_final_jo_att_loss : False
   # use_final_jo_att_loss : True
+  final_jo_att_loss_weight : 1
 
   use_frame_type: mid
   # use_frame_type: all
@@ -145,5 +149,9 @@ model_params:
   rgb_cnn_extractor_stage_idx : 4
 
   # p_s_estimator_type : davt
-  # p_s_estimator_type : transformer
-  p_s_estimator_type : cnn
+  p_s_estimator_type : transformer
+  # p_s_estimator_type : cnn
+  # p_s_estimator_cnn_pretrain : False
+  p_s_estimator_cnn_pretrain : True
+  use_p_s_estimator_att_inside : False
+  # use_p_s_estimator_att_inside : True

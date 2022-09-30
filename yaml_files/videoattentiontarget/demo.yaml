@@ -9,12 +9,13 @@ exp_set:
   # model_name: videoattentiontarget-hgt
   # model_name: videoattentiontarget-hgt-high
 
-  model_name: videoattentiontarget-dual-cnn
+  # model_name: videoattentiontarget-dual-cnn
+  model_name: videoattentiontarget-dual-trans
 
   seed_num : 777
   gpu_mode : True
-  gpu_start : 3
-  gpu_finish : 3
+  gpu_start : 7
+  gpu_finish : 7
   num_workers : 1
   batch_size : 1
   wandb_name : demo

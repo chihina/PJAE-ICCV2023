@@ -248,6 +248,10 @@ class ModelSpatial(nn.Module):
 
         return out
 
+    def calc_loss(self, inp, out, cfg):
+        loss_set = {}
+        return loss_set
+
 class ModelSpatialDummy(nn.Module):
     # Define a ResNet 50-ish arch
     def __init__(self, block = Bottleneck, layers_scene = [3, 4, 6, 3, 2], layers_face = [3, 4, 6, 3, 2]):
@@ -264,3 +268,7 @@ class ModelSpatialDummy(nn.Module):
         out['person_scene_attention_heatmap'] = person_scene_attention_heatmap
 
         return out
+
+    def calc_loss(self, inp, out, cfg):
+        loss_set = {}
+        return loss_set

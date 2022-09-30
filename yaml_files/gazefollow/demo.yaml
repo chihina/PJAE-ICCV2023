@@ -4,12 +4,14 @@ data:
 
 exp_set:
   save_folder : saved_weights
-  model_name: gazefollow-dual-cnn
+  # model_name: gazefollow-dual-cnn-w_pre
+  # model_name: gazefollow-dual-cnn_wo_pre
+  model_name: gazefollow-dual-trans-wo_pre
 
   seed_num : 777
   gpu_mode : True
-  gpu_start : 3
-  gpu_finish : 3
+  gpu_start : 4
+  gpu_finish : 4
   num_workers : 1
   batch_size : 1
   wandb_name : demo

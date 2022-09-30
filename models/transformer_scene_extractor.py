@@ -9,7 +9,7 @@ from torch.nn import functional as F
 import sys
 import timm
 import math
-from einops.layers.torch import Rearrange
+import os
 
 class SceneFeatureTransformer(nn.Module):
     def __init__(self, cfg):
@@ -49,12 +49,15 @@ class SceneFeatureTransformer(nn.Module):
 
         # feature extractor
         self.people_feat_dim = cfg.model_params.people_feat_dim
-        self.rgb_feat_dim = self.people_feat_dim
+        self.rgb_feat_dim = cfg.model_params.rgb_feat_dim
         self.rgb_cnn_extractor_type = cfg.model_params.rgb_cnn_extractor_type
         self.rgb_cnn_extractor_stage_idx = cfg.model_params.rgb_cnn_extractor_stage_idx
+        self.p_s_estimator_cnn_pretrain = cfg.model_params.p_s_estimator_cnn_pretrain
+        self.use_p_s_estimator_att_inside = cfg.model_params.use_p_s_estimator_att_inside
 
         # rgb-person transformer
-        self.rgb_people_trans_dim = self.rgb_feat_dim
+        # self.rgb_people_trans_dim = self.rgb_feat_dim
+        self.rgb_people_trans_dim = self.rgb_feat_dim + self.people_feat_dim
         self.rgb_people_trans_enc_num = cfg.model_params.rgb_people_trans_enc_num
         self.mha_num_heads_rgb_people = cfg.model_params.mha_num_heads_rgb_people
 
@@ -82,17 +85,20 @@ class SceneFeatureTransformer(nn.Module):
                 nn.Linear(self.people_feat_dim, self.people_feat_dim),
             )
 
-        if self.rgb_cnn_extractor_type == 'rgb_patch':
-            down_scale_ratio = cfg.model_params.rgb_patch_size
-            patch_height = down_scale_ratio
-            patch_width = down_scale_ratio
-            patch_dim = 3 * patch_height * patch_width
-            self.rgb_feat_extractor = nn.Sequential(
-                Rearrange('b c (h p1) (w p2) -> b (h w) (p1 p2 c)', p1 = patch_height, p2 = patch_width),
-                nn.Linear(patch_dim, self.rgb_feat_dim),
-            )
-        elif 'resnet' in self.rgb_cnn_extractor_type:
-            self.rgb_feat_extractor = timm.create_model(self.rgb_cnn_extractor_type, features_only=True, pretrained=True)
+        if 'resnet' in self.rgb_cnn_extractor_type:
+            if self.p_s_estimator_cnn_pretrain:
+                self.rgb_feat_extractor = models.resnet50(pretrained=False)
+                num_ftrs = self.rgb_feat_extractor.fc.in_features
+                num_classes = 365
+                self.rgb_feat_extractor.fc = nn.Linear(num_ftrs, num_classes)
+                if self.dataset_name == "gazefollow":
+                    weight_path = os.path.join('saved_weights', 'videoattentiontarget', 'pretrained_models', 'resnet50_places365.pt')
+                    weight_params = torch.load(weight_path)
+                    self.rgb_feat_extractor.load_state_dict(weight_params)
+                self.rgb_feat_extractor = nn.Sequential(*list(self.rgb_feat_extractor.children())[:-2])
+            else:
+                self.rgb_feat_extractor = timm.create_model(self.rgb_cnn_extractor_type, features_only=True, pretrained=True)
+
             self.rgb_cnn_extractor_stage_idx = self.rgb_cnn_extractor_stage_idx
             if self.rgb_cnn_extractor_type == 'resnet50':
                 feat_dim_list = [64, 256, 512, 1024, 2048]
@@ -136,6 +142,15 @@ class SceneFeatureTransformer(nn.Module):
                 final_activation_layer,
             )
 
+        if self.use_p_s_estimator_att_inside:
+            self.loss_func_att_inside = nn.BCELoss(reduction='mean')
+            self.person_att_inside_estimator = nn.Sequential(
+            nn.Linear(self.rgb_people_trans_dim, 16),
+            nn.ReLU(),
+            nn.Linear(16, 1),
+            nn.Sigmoid(),
+            )
+
     def forward(self, inp):
         input_feature = inp['input_feature']
         input_gaze = inp['input_gaze']
@@ -177,18 +192,17 @@ class SceneFeatureTransformer(nn.Module):
         head_info_params = self.head_info_feat_embeding(head_info_params)
 
         # rgb feature extraction
-        if self.rgb_cnn_extractor_type == 'rgb_patch':
-            rgb_feat_patch = self.rgb_feat_extractor(rgb_img)
-            rgb_feat_channel, rgb_feat_height, rgb_feat_width = rgb_feat_patch.shape[-1], self.hm_height, self.hm_width
-        elif 'resnet' in self.rgb_cnn_extractor_type:
+        if self.p_s_estimator_cnn_pretrain:
+            rgb_feat = self.rgb_feat_extractor(rgb_img)
+            rgb_feat = self.one_by_one_conv(rgb_feat)
+        else:
             rgb_feat_set = self.rgb_feat_extractor(rgb_img)
             rgb_feat = rgb_feat_set[self.rgb_cnn_extractor_stage_idx]
             rgb_feat = self.one_by_one_conv(rgb_feat)
-            rgb_feat_channel, rgb_feat_height, rgb_feat_width = rgb_feat.shape[-3:]
-            rgb_feat_patch = rgb_feat.view(self.batch_size, rgb_feat_channel, -1)
-            rgb_feat_patch = torch.transpose(rgb_feat_patch, 1, 2)
-        else:
-            sys.exit()
+
+        rgb_feat_channel, rgb_feat_height, rgb_feat_width = rgb_feat.shape[-3:]
+        rgb_feat_patch = rgb_feat.view(self.batch_size, rgb_feat_channel, -1)
+        rgb_feat_patch = torch.transpose(rgb_feat_patch, 1, 2)
         
         # angle attention map for rgb feature extraction
         rgb_feat_patch_view = rgb_feat_patch.view(self.batch_size, 1, -1, self.rgb_feat_dim)
@@ -198,10 +212,20 @@ class SceneFeatureTransformer(nn.Module):
         rgb_pos_embedding = self.pe_generator_rgb.pos_embedding
         rgb_pos_embedding_view = rgb_pos_embedding.view(1, 1, -1, rgb_feat_channel)
         rgb_feat_patch_pos_expand = rgb_feat_patch_expand + rgb_pos_embedding_view
-        rgb_people_feat_all = torch.cat([rgb_feat_patch_expand, head_info_params_view], dim=-2)
-        rgb_people_feat_all_pos = torch.cat([rgb_feat_patch_pos_expand, head_info_params_view], dim=-2)
-        rgb_people_feat_all = rgb_people_feat_all.view(self.batch_size*people_num, -1, self.rgb_feat_dim)
-        rgb_people_feat_all_pos = rgb_people_feat_all_pos.view(self.batch_size*people_num, -1, self.rgb_feat_dim)
+
+        # parallel
+        # rgb_people_feat_all = torch.cat([rgb_feat_patch_expand, head_info_params_view], dim=-2)
+        # rgb_people_feat_all_pos = torch.cat([rgb_feat_patch_pos_expand, head_info_params_view], dim=-2)
+        # concat
+        rgb_people_feat_all = torch.cat([rgb_feat_patch_expand, head_info_params_expand], dim=-1)
+        rgb_people_feat_all_pos = torch.cat([rgb_feat_patch_pos_expand, head_info_params_expand], dim=-1)
+
+        # parallel
+        # rgb_people_feat_all = rgb_people_feat_all.view(self.batch_size*people_num, -1, self.rgb_feat_dim)
+        # rgb_people_feat_all_pos = rgb_people_feat_all_pos.view(self.batch_size*people_num, -1, self.rgb_feat_dim)
+        # concat
+        rgb_people_feat_all = rgb_people_feat_all.view(self.batch_size*people_num, -1, self.rgb_feat_dim+self.people_feat_dim)
+        rgb_people_feat_all_pos = rgb_people_feat_all_pos.view(self.batch_size*people_num, -1, self.rgb_feat_dim+self.people_feat_dim)
 
         # rgb person transformer
         for i in range(self.rgb_people_trans_enc_num):
@@ -211,7 +235,12 @@ class SceneFeatureTransformer(nn.Module):
             rgb_people_feat_feed_res = rgb_people_feat_res + rgb_people_feat_feed
             rgb_people_feat_feed_res = self.trans_layer_norm_people_rgb(rgb_people_feat_feed_res)
             rgb_people_feat_all = rgb_people_feat_feed_res
-            rgb_people_trans_weights_people_rgb = rgb_people_trans_weights[:, (rgb_feat_height*rgb_feat_width):, :(rgb_feat_height*rgb_feat_width)]            
+
+            # parallel
+            # rgb_people_trans_weights_people_rgb = rgb_people_trans_weights[:, (rgb_feat_height*rgb_feat_width):, :(rgb_feat_height*rgb_feat_width)]            
+            # concat
+            rgb_people_trans_weights_people_rgb = torch.zeros(self.batch_size*people_num, 1, rgb_feat_height*rgb_feat_width)
+
             trans_att_people_rgb_i = rgb_people_trans_weights_people_rgb.view(self.batch_size, people_num, 1, rgb_feat_height, rgb_feat_width)
 
             if i == 0:
@@ -222,19 +251,47 @@ class SceneFeatureTransformer(nn.Module):
         rgb_people_feat_all = rgb_people_feat_all[:, :(rgb_feat_height*rgb_feat_width), :]
         person_scene_attention_heatmap = self.person_scene_heatmap_estimator(rgb_people_feat_all)
         person_scene_attention_heatmap = person_scene_attention_heatmap.view(self.batch_size, people_num, self.hm_height, self.hm_width)
+        person_scene_attention_heatmap = F.interpolate(person_scene_attention_heatmap, (self.resize_height, self.resize_width), mode='bilinear')
+
+        rgb_people_feat_all_pool = torch.mean(rgb_people_feat_all, dim=-2)
+        # attention inside estimation
+        if self.use_p_s_estimator_att_inside:
+            estimated_att_inside = self.person_att_inside_estimator(rgb_people_feat_all_pool)
+            estimated_att_inside = estimated_att_inside.view(self.batch_size, people_num)
+            # estimated_att_inside_inv = 1-estimated_att_inside[:, :, 0]
+            # estimated_att_inside_inv = estimated_att_inside_inv.view(self.batch_size, people_num, 1, 1)
+            # person_scene_attention_heatmap = person_scene_attention_heatmap - estimated_att_inside_inv
+            # person_scene_attention_heatmap = torch.clamp(input=person_scene_attention_heatmap, min=-0, max=1)
 
         # pack return values
         data = {}
         data['person_scene_attention_heatmap'] = person_scene_attention_heatmap
+        if self.use_p_s_estimator_att_inside:
+            data['estimated_att_inside'] = estimated_att_inside
 
         return data
 
     def calc_loss(self, inp, out, cfg):
         # unpack data
-        img_gt = inp['img_gt']
+        att_inside_flag = inp['att_inside_flag']
+        head_feature = inp['head_feature']
+        no_padding_flag = torch.sum(head_feature == 0, dim=-1) == 0
+        if self.use_p_s_estimator_att_inside:
+            estimated_att_inside = inp['estimated_att_inside']
 
         loss_set = {}
-
+        if self.use_p_s_estimator_att_inside:
+            no_padding_flag_mask = no_padding_flag.flatten()
+            estimated_att_inside_filt = estimated_att_inside[no_padding_flag]
+            att_inside_flag_filt = att_inside_flag[no_padding_flag]
+            estimated_att_inside = estimated_att_inside * no_padding_flag
+            att_inside_flag = att_inside_flag * no_padding_flag
+            loss_att_inside = self.loss_func_att_inside(estimated_att_inside_filt.float(), att_inside_flag_filt.float())
+            loss_att_inside = loss_att_inside * 1e-2
+            loss_set['loss_att_inside'] = loss_att_inside
+            print(estimated_att_inside[0, no_padding_flag[0, :]])
+            print(att_inside_flag[0, no_padding_flag[0, :]])
+    
         return loss_set
 
 class PositionalEmbeddingGenerator(nn.Module):

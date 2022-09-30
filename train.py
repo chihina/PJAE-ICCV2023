@@ -113,8 +113,9 @@ def process_epoch(epoch, data_set, mode):
         out_attention = model_attention(batch)
 
         loss_set_head = model_head.calc_loss(batch, out_head)
+        loss_set_saliency = model_saliency.calc_loss(batch, out_attention, cfg)
         loss_set_attention = model_attention.calc_loss(batch, out_attention, cfg)
-        loss_set = {**loss_set_head, **loss_set_attention}
+        loss_set = {**loss_set_head, **loss_set_saliency, **loss_set_attention}
 
         # accumulate all loss
         for loss_idx, loss_val in enumerate(loss_set.values()):
@@ -233,10 +234,14 @@ if cfg.exp_params.use_pretrained_head_pose_estimator:
 if cfg.exp_params.use_pretrained_saliency_extractor:
     print("===> Load pretrained model (saliecny extractor)")
     model_name = cfg.exp_params.pretrained_saliency_extractor_name
-    model_weight_path = os.path.join(cfg.exp_params.pretrained_models_dir, cfg.data.name, model_name, "model_demo.pt")
+    if cfg.model_params.p_s_estimator_type == 'davt':
+        model_weight_path = os.path.join(cfg.exp_params.pretrained_models_dir, cfg.data.name, model_name, "model_demo.pt")
+    else:
+        model_weight_path = os.path.join(cfg.exp_params.pretrained_models_dir, cfg.data.name, model_name, "model_saliency_best.pth.tar")
     model_saliency_dict = model_saliency.state_dict()
     pretrained_dict = torch.load(model_weight_path,  map_location='cuda:'+str(gpus_list[0]))
-    pretrained_dict = pretrained_dict['model']
+    if cfg.model_params.p_s_estimator_type == 'davt':
+        pretrained_dict = pretrained_dict['model']
     model_saliency_dict.update(pretrained_dict)
     model_saliency.load_state_dict(model_saliency_dict)
 
@@ -268,7 +273,6 @@ if cuda:
         model_head = torch.nn.DataParallel(model_head, device_ids=gpus_list)
         model_attention = torch.nn.DataParallel(model_attention, device_ids=gpus_list)
         model_saliency = torch.nn.DataParallel(model_saliency, device_ids=gpus_list)
-
     else:
         print("===> Use single GPU")
     

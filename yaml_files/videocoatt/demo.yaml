@@ -7,22 +7,21 @@ exp_set:
   save_folder : saved_weights
   # model_name: videocoatt-head_pose_estimator
 
-  # model_name: videocoatt-isa
   # model_name: videoattentiontarget-hgt
   # model_name: videoattentiontarget-hgt-high
-  model_name: gazefollow-dual-cnn
-  # model_name: videoattentiontarget-dual-cnn
+  model_name: videoattentiontarget-dual-trans
+  # model_name: gazefollow-dual-cnn-w_pre
+  # model_name: gazefollow-dual-trans-wo_pre
+  # model_name: videocoatt-isa
 
-  # model_name: videocoatt-dual-people_fc_shallow
-  # model_name: videocoatt-dual-people_fc_middle
-  # model_name: videocoatt-dual-people_fc_deep
-  # model_name: videocoatt-dual-people_deconv_shallow
-  # model_name: videocoatt-dual-people_field_middle
+  # model_name: videocoatt-p_p_field_deep_p_s_gaze_follow_freeze
+  # model_name: videocoatt-p_p_field_deep_p_s_davt_freeze
+  # model_name: videocoatt-p_p_field_deep_p_s_trans_gaze_follow_freeze
 
   seed_num : 777
   gpu_mode : True
-  gpu_start : 7
-  gpu_finish : 7
+  gpu_start : 4
+  gpu_finish : 4
   num_workers : 1
   batch_size : 1
   wandb_name : demo

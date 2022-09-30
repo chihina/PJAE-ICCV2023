@@ -185,6 +185,8 @@ class VideoAttentionTargetDataset(Dataset):
                         # follow the cvpr2022 paper
                         if line_idx % 5 != 0:
                             continue
+                        # if line_idx % 30 != 0:
+                        #     continue
 
                         line = line.strip().split(',')
                         img_name = line[0]

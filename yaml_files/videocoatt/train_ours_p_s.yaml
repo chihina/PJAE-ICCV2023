@@ -30,9 +30,23 @@ exp_set:
 exp_params:
   use_person_person_att_loss : False
   # use_person_person_att_loss : True
+  person_person_att_loss_weight : 1
 
   # use_person_person_jo_att_loss : False
   use_person_person_jo_att_loss : True
+  person_person_jo_att_loss_weight : 1
+
+  use_person_scene_att_loss : False
+  # use_person_scene_att_loss : True
+  person_scene_att_loss_weight : 1
+
+  use_person_scene_jo_att_loss : False
+  # use_person_scene_jo_att_loss : True
+  person_scene_jo_att_loss_weight : 1
+
+  use_final_jo_att_loss : False
+  # use_final_jo_att_loss : True
+  final_jo_att_loss_weight : 1
 
   use_frame_type: mid
   # use_frame_type: all
@@ -73,15 +87,19 @@ exp_params:
 
   # use_pretrained_head_pose_estimator: False
   use_pretrained_head_pose_estimator: True
-  pretrained_head_pose_estimator_name: videocoatt-head_pose_estimator
+  # pretrained_head_pose_estimator_name: videocoatt-head_pose_estimator
+  # pretrained_head_pose_estimator_name: gazefollow-dual-cnn
+  pretrained_head_pose_estimator_name: videoattentiontarget-dual-cnn_wo_pre_w_att_ins
   # freeze_head_pose_estimator: False
   freeze_head_pose_estimator: True
 
-  use_pretrained_saliency_extractor: False
-  # use_pretrained_saliency_extractor: True
-  pretrained_saliency_extractor_name: pretrained_scene_extractor_davt
-  freeze_saliency_extractor: False
-  # freeze_saliency_extractor: True
+  # use_pretrained_saliency_extractor: False
+  use_pretrained_saliency_extractor: True
+  # pretrained_saliency_extractor_name: pretrained_scene_extractor_davt
+  # pretrained_saliency_extractor_name: gazefollow-dual-cnn
+  pretrained_saliency_extractor_name: videoattentiontarget-dual-cnn_wo_pre_w_att_ins
+  # freeze_saliency_extractor: False
+  freeze_saliency_extractor: True
 
   use_pretrained_joint_attention_estimator: False
   # use_pretrained_head_pose_estimator: True
@@ -120,23 +138,32 @@ model_params:
   mha_num_heads_people_people : 2
   # p_p_estimator_type : fc_shallow
   # p_p_estimator_type : fc_middle
-  p_p_estimator_type : fc_deep
+  # p_p_estimator_type : fc_deep
   # p_p_estimator_type : deconv_shallow
   # p_p_estimator_type : deconv_middle
   # p_p_estimator_type : deconv_deep
+  # p_p_estimator_type : field_shallow
   # p_p_estimator_type : field_middle
+  p_p_estimator_type : field_deep  
 
   # rgb-person transformer
-  rgb_feat_dim : 64
-  rgb_people_trans_enc_num : 2
-  mha_num_heads_rgb_people : 2
+  rgb_feat_dim : 256
+  rgb_people_trans_enc_num : 1
+  mha_num_heads_rgb_people : 1
 
   # rgb_cnn_extractor_type : rgb_patch
   # rgb_patch_size : 8
   # rgb_cnn_extractor_type : resnet18
-  # rgb_cnn_extractor_type : resnet50
+  rgb_cnn_extractor_type : resnet50
   # rgb_cnn_extractor_stage_idx : 1
   # rgb_cnn_extractor_stage_idx : 2
   # rgb_cnn_extractor_stage_idx : 3
-  # rgb_cnn_extractor_stage_idx : 4
-  rgb_cnn_extractor_type : davt
+  rgb_cnn_extractor_stage_idx : 4
+
+  # p_s_estimator_type : davt
+  # p_s_estimator_type : transformer
+  p_s_estimator_type : cnn
+  p_s_estimator_cnn_pretrain : False
+  # p_s_estimator_cnn_pretrain : True
+  # use_p_s_estimator_att_inside : False
+  use_p_s_estimator_att_inside : True

@@ -19,15 +19,33 @@ exp_set:
   # model_name: volleyball-dual-people_deconv_shallow
   # model_name: volleyball-dual-people_deconv_middle
 
-  model_name: volleyball-dual-mid_p_p_field_deep_p_s_davt
-  # model_name: volleyball-dual-mid_p_p_field_deep_p_s_davt_wo_action
-  # model_name: volleyball-dual-mid_p_p_field_deep_p_s_davt_wo_gaze
-  # model_name: volleyball-dual-mid_p_p_field_deep_p_s_davt_wo_position
+  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_5
+  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_5_wo_action
+  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_5_wo_gaze
+  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_5_wo_position
+
+  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_trans_loss_weight_1_1_5_early
+  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_trans_loss_weight_1_1_5_early_wo_action
+  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_trans_loss_weight_1_1_5_early_wo_gaze
+  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_trans_loss_weight_1_1_5_early_wo_position
+
+  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_trans_loss_weight_1_1_5_mid
+  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_trans_loss_weight_1_1_5_mid_wo_action
+  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_trans_loss_weight_1_1_5_mid_wo_gaze
+  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_trans_loss_weight_1_1_5_mid_wo_position
+
+  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_trans_loss_weight_1_1_1_mid
+  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_trans_loss_weight_1_1_1_mid_wo_action
+  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_trans_loss_weight_1_1_1_mid_wo_gaze
+  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_trans_loss_weight_1_1_1_mid_wo_position
+
+  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_trans_loss_weight_1_1_1_scalr_fusion
+  model_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_mid
 
   seed_num : 777
   gpu_mode : True
-  gpu_start : 0
-  gpu_finish : 0
+  gpu_start : 7
+  gpu_finish : 7
   num_workers : 1
   batch_size : 1
   wandb_name : test
@@ -38,10 +56,10 @@ exp_params:
   use_frame_type: mid
   # use_frame_type: all
 
-  # bbox_types: GT
-  bbox_types: PRED
-  # action_types: GT
-  action_types: PRED
+  bbox_types: GT
+  # bbox_types: PRED
+  action_types: GT
+  # action_types: PRED
   # gaze_types: GT
   gaze_types: PRED
   # gaze_types: NONE

@@ -1,3 +1,4 @@
+from errno import ESHUTDOWN
 import  numpy as np
 import torch
 import torch.nn as nn
@@ -48,6 +49,8 @@ class SceneFeatureCNN(nn.Module):
         self.rgb_feat_dim = cfg.model_params.rgb_feat_dim
         self.rgb_cnn_extractor_type = cfg.model_params.rgb_cnn_extractor_type
         self.rgb_cnn_extractor_stage_idx = cfg.model_params.rgb_cnn_extractor_stage_idx
+        self.p_s_estimator_cnn_pretrain = cfg.model_params.p_s_estimator_cnn_pretrain
+        self.use_p_s_estimator_att_inside = cfg.model_params.use_p_s_estimator_att_inside
 
         # define loss function
         self.loss = cfg.exp_params.loss
@@ -74,16 +77,17 @@ class SceneFeatureCNN(nn.Module):
             )
         
         if 'resnet' in self.rgb_cnn_extractor_type:
-            self.rgb_feat_extractor = timm.create_model(self.rgb_cnn_extractor_type, features_only=True, pretrained=True)
-
-            # self.rgb_feat_extractor = models.resnet50(pretrained=False)
-            # num_ftrs = self.rgb_feat_extractor.fc.in_features
-            # num_classes = 365
-            # self.rgb_feat_extractor.fc = nn.Linear(num_ftrs, num_classes)
-            # weight_path = os.path.join('saved_weights', 'videoattentiontarget', 'pretrained_models', 'resnet50_places365.pt')
-            # weight_params = torch.load(weight_path)
-            # self.rgb_feat_extractor.load_state_dict(weight_params)
-            # self.rgb_feat_extractor = nn.Sequential(*list(self.rgb_feat_extractor.children())[:-2])
+            if self.p_s_estimator_cnn_pretrain:
+                self.rgb_feat_extractor = models.resnet50(pretrained=False)
+                num_ftrs = self.rgb_feat_extractor.fc.in_features
+                num_classes = 365
+                self.rgb_feat_extractor.fc = nn.Linear(num_ftrs, num_classes)
+                weight_path = os.path.join('saved_weights', 'videoattentiontarget', 'pretrained_models', 'resnet50_places365.pt')
+                weight_params = torch.load(weight_path)
+                self.rgb_feat_extractor.load_state_dict(weight_params)
+                self.rgb_feat_extractor = nn.Sequential(*list(self.rgb_feat_extractor.children())[:-2])
+            else:
+                self.rgb_feat_extractor = timm.create_model(self.rgb_cnn_extractor_type, features_only=True, pretrained=True)
 
             self.rgb_cnn_extractor_stage_idx = self.rgb_cnn_extractor_stage_idx
             if self.rgb_cnn_extractor_type == 'resnet50':
@@ -130,6 +134,15 @@ class SceneFeatureCNN(nn.Module):
             final_activation_layer,
         )
 
+        if self.use_p_s_estimator_att_inside:
+            self.loss_func_att_inside = nn.BCELoss(reduction='mean')
+            self.person_att_inside_estimator = nn.Sequential(
+            nn.Linear(self.rgb_feat_dim, 16),
+            nn.ReLU(),
+            nn.Linear(16, 1),
+            nn.Sigmoid(),
+            )
+
     def forward(self, inp):
         input_feature = inp['input_feature']
         input_gaze = inp['input_gaze']
@@ -148,14 +161,14 @@ class SceneFeatureCNN(nn.Module):
         self.batch_size, people_num, _, _, _ = xy_axis_map.shape
 
         # rgb feature extraction
-        rgb_feat_set = self.rgb_feat_extractor(rgb_img)
-        rgb_feat = rgb_feat_set[self.rgb_cnn_extractor_stage_idx]
-        rgb_feat = self.one_by_one_conv(rgb_feat)
+        if self.p_s_estimator_cnn_pretrain:
+            rgb_feat = self.rgb_feat_extractor(rgb_img)
+            rgb_feat = self.one_by_one_conv(rgb_feat)
+        else:
+            rgb_feat_set = self.rgb_feat_extractor(rgb_img)
+            rgb_feat = rgb_feat_set[self.rgb_cnn_extractor_stage_idx]
+            rgb_feat = self.one_by_one_conv(rgb_feat)
         
-        # rgb feature extraction
-        # rgb_feat = self.rgb_feat_extractor(rgb_img)
-        # rgb_feat = self.one_by_one_conv(rgb_feat)
-
         rgb_feat_channel, rgb_feat_height, rgb_feat_width = rgb_feat.shape[-3:]
         rgb_feat_view = rgb_feat.view(self.batch_size, 1, rgb_feat_channel, rgb_feat_height, rgb_feat_width)
         rgb_feat_expand = rgb_feat_view.expand(self.batch_size, people_num, rgb_feat_channel, rgb_feat_height, rgb_feat_width)
@@ -209,17 +222,44 @@ class SceneFeatureCNN(nn.Module):
         person_scene_attention_heatmap = self.person_scene_heatmap_estimator(rgb_feat_head_att)
         person_scene_attention_heatmap = person_scene_attention_heatmap.view(self.batch_size, people_num, self.resize_height, self.resize_width)
 
+        # attention inside estimation
+        if self.use_p_s_estimator_att_inside:
+            rgb_feat_head_att_gap = torch.mean(rgb_feat_head_att, dim=(-1, -2))
+            estimated_att_inside = self.person_att_inside_estimator(rgb_feat_head_att_gap)
+            estimated_att_inside = estimated_att_inside.view(self.batch_size, people_num)
+            # estimated_att_inside_inv = 1-estimated_att_inside[:, :, 0]
+            # estimated_att_inside_inv = estimated_att_inside_inv.view(self.batch_size, people_num, 1, 1)
+            # person_scene_attention_heatmap = person_scene_attention_heatmap - estimated_att_inside_inv
+            # person_scene_attention_heatmap = torch.clamp(input=person_scene_attention_heatmap, min=-0, max=1)
+
         # pack return values
         data = {}
         data['person_scene_attention_heatmap'] = person_scene_attention_heatmap
         data['ang_att_map'] = head_att_map
+        if self.use_p_s_estimator_att_inside:
+            data['estimated_att_inside'] = estimated_att_inside
 
         return data
 
     def calc_loss(self, inp, out, cfg):
         # unpack data
-        img_gt = inp['img_gt']
+        att_inside_flag = inp['att_inside_flag']
+        head_feature = inp['head_feature']
+        no_padding_flag = torch.sum(head_feature == 0, dim=-1) == 0
+        if self.use_p_s_estimator_att_inside:
+            estimated_att_inside = inp['estimated_att_inside']
 
         loss_set = {}
-
+        if self.use_p_s_estimator_att_inside:
+            no_padding_flag_mask = no_padding_flag.flatten()
+            estimated_att_inside_filt = estimated_att_inside[no_padding_flag]
+            att_inside_flag_filt = att_inside_flag[no_padding_flag]
+            estimated_att_inside = estimated_att_inside * no_padding_flag
+            att_inside_flag = att_inside_flag * no_padding_flag
+            loss_att_inside = self.loss_func_att_inside(estimated_att_inside_filt.float(), att_inside_flag_filt.float())
+            loss_att_inside = loss_att_inside * 1e-2
+            loss_set['loss_att_inside'] = loss_att_inside
+            # print(estimated_att_inside[0, no_padding_flag[0, :]])
+            # print(att_inside_flag[0, no_padding_flag[0, :]])
+    
         return loss_set

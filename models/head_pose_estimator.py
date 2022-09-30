@@ -62,7 +62,7 @@ class HeadPoseEstimatorResnet(nn.Module):
 
         # define coeficient
         if self.use_gaze_loss:
-            loss_head_coef = 0.1
+            loss_head_coef = 0.01
         else:
             loss_head_coef = 0
 

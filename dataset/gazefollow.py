@@ -7,6 +7,7 @@ import os
 import sys
 from PIL import Image
 import matplotlib
+from tqdm import tqdm
 matplotlib.use('Agg')
 
 class GazeFollowDataset(Dataset):
@@ -14,10 +15,10 @@ class GazeFollowDataset(Dataset):
 
         # dataset variables
         self.dataset_dir = cfg.data.dataset_dir
-        self.wandb_name = cfg.data.wandb_name
         self.mode = mode
 
         # data parameters
+        self.wandb_name = cfg.exp_set.wandb_name
         self.resize_width = cfg.exp_set.resize_width
         self.resize_height = cfg.exp_set.resize_height
         self.resize_head_width = cfg.exp_set.resize_head_width
@@ -180,7 +181,12 @@ class GazeFollowDataset(Dataset):
             lines = f.readlines()
 
         img_id_list = []
-        for line_idx, line in enumerate(lines):
+        line_idx = 0
+        for line in tqdm(lines):
+            line_idx += 1
+            # if line_idx % 10 != 0:
+                # continue
+
             line_comp = line.split(',')
             img_name, img_index, head_x_min, head_y_min, head_width, head_height, eye_x, eye_y, gaze_x, gaze_y, _, _ = line_comp
 
@@ -230,8 +236,9 @@ class GazeFollowDataset(Dataset):
             self.gt_bbox_id.append(gt_bbox_idx)
             self.att_inside_list.append(att_inside)
 
-            # if line_idx > 2000:
-                # break
+            if self.wandb_name == 'debug':
+                if line_idx > 100:
+                    break
 
     # generage gt imgs for probability heatmap
     def load_gt_img(self, img_width, img_height, bbox, gamma):
