@@ -247,8 +247,8 @@ if cfg.exp_params.use_pretrained_saliency_extractor:
 
 if cfg.exp_params.use_pretrained_joint_attention_estimator:
     print("===> Load pretrained model (joint attention estimator)")
-    model_name = cfg.pretrained_joint_attention_estimator_name
-    model_weight_path = os.path.join(cfg.pretrained_model_dir, cfg.data.name, model_name, "model_gaussian_best.pth.tar")
+    model_name = cfg.exp_params.pretrained_joint_attention_estimator_name
+    model_weight_path = os.path.join(cfg.exp_params.pretrained_models_dir, cfg.data.name, model_name, "model_gaussian_best.pth.tar")
     fixed_model_state_dict = load_multi_gpu_models(torch.load(model_weight_path,  map_location='cuda:'+str(gpus_list[0])))
     model_attention.load_state_dict(fixed_model_state_dict)
 

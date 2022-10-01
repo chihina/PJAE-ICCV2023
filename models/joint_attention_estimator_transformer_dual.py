@@ -267,33 +267,18 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
             )
         elif self.fusion_net_type == 'late':
             pass
+        elif self.fusion_net_type == 'simple_average':
+            pass
         elif self.fusion_net_type == 'scalar_weight':
-            self.weight_feat_dim = 16
             self.person_person_preconv = nn.Sequential(
-                nn.Conv2d(in_channels=1, out_channels=4, kernel_size=5, stride=2, padding=2),
-                nn.ReLU(),
-                nn.Conv2d(in_channels=4, out_channels=8, kernel_size=5, stride=2, padding=2),
-                nn.ReLU(),
-                nn.Conv2d(in_channels=8, out_channels=self.weight_feat_dim, kernel_size=5, stride=2, padding=2),
-                nn.ReLU(),
-                nn.AdaptiveAvgPool2d((1, 1))
+                nn.Identity(),
             )
             self.person_scene_preconv = nn.Sequential(
-                nn.Conv2d(in_channels=1, out_channels=4, kernel_size=5, stride=2, padding=2),
-                nn.ReLU(),
-                nn.Conv2d(in_channels=4, out_channels=8, kernel_size=5, stride=2, padding=2),
-                nn.ReLU(),
-                nn.Conv2d(in_channels=8, out_channels=self.weight_feat_dim, kernel_size=5, stride=2, padding=2),
-                nn.ReLU(),
-                nn.AdaptiveAvgPool2d((1, 1))
+                nn.Identity(),
             )
-            self.fusion_weight_fc_softmax = nn.Sequential(
-                nn.Linear(self.weight_feat_dim*2, self.weight_feat_dim),
-                nn.ReLU(),
-                nn.Linear(self.weight_feat_dim, self.weight_feat_dim//2),
-                nn.ReLU(),
-                nn.Linear(self.weight_feat_dim//2, 2),
-                nn.Softmax(dim=-1)
+            self.final_joint_atention_heatmap = nn.Sequential(
+                nn.Conv2d(in_channels=2, out_channels=1, kernel_size=1),
+                final_activation_layer,
             )
         else:
             print('please use correct fusion net type')
@@ -448,18 +433,8 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
         person_scene_joint_attention_heatmap = person_scene_joint_attention_heatmap[:, None, :, :]
 
         # final joint attention estimation
-        if 'weight' in self.fusion_net_type:
-            person_person_joint_attention_heatmap_preconv = self.person_person_preconv(person_person_joint_attention_heatmap)
-            person_scene_joint_attention_heatmap_preconv = self.person_scene_preconv(person_scene_joint_attention_heatmap)
-            fusion_weight = torch.cat([person_person_joint_attention_heatmap_preconv, person_scene_joint_attention_heatmap_preconv], dim=-1)
-            fusion_weight = fusion_weight.view(self.batch_size, -1)
-            fusion_weight = self.fusion_weight_fc_softmax(fusion_weight)
-            person_person_weight = fusion_weight[:, 0, None, None, None]
-            person_scene_weight = fusion_weight[:, 1, None, None, None]
-            person_person_joint_attention_heatmap_weight = person_person_joint_attention_heatmap * person_person_weight
-            person_scene_joint_attention_heatmap_weight = person_scene_joint_attention_heatmap * person_scene_weight
-            final_joint_attention_heatmap = person_person_joint_attention_heatmap_weight + person_scene_joint_attention_heatmap_weight
-            print(fusion_weight)
+        if self.fusion_net_type == 'simple_average':
+            final_joint_attention_heatmap = (person_person_joint_attention_heatmap+person_scene_joint_attention_heatmap) / 2            
         else:
             person_person_joint_attention_heatmap_preconv = self.person_person_preconv(person_person_joint_attention_heatmap)
             person_scene_joint_attention_heatmap_preconv = self.person_scene_preconv(person_scene_joint_attention_heatmap)

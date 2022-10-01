@@ -259,7 +259,7 @@ class SceneFeatureCNN(nn.Module):
             loss_att_inside = self.loss_func_att_inside(estimated_att_inside_filt.float(), att_inside_flag_filt.float())
             loss_att_inside = loss_att_inside * 1e-2
             loss_set['loss_att_inside'] = loss_att_inside
-            # print(estimated_att_inside[0, no_padding_flag[0, :]])
-            # print(att_inside_flag[0, no_padding_flag[0, :]])
+            print(estimated_att_inside[0, no_padding_flag[0, :]])
+            print(att_inside_flag[0, no_padding_flag[0, :]])
     
         return loss_set

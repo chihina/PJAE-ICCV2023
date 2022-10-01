@@ -39,6 +39,7 @@ class VolleyBallDataset(Dataset):
         self.gaussian_sigma_head = cfg.exp_params.gaussian_sigma
         self.iar_type = cfg.exp_params.iar_type
         self.pass_winpoint = True
+        self.use_blured_img = cfg.exp_params.use_blured_img
 
         # data pack list
         self.feature_list = []
@@ -86,16 +87,27 @@ class VolleyBallDataset(Dataset):
             ]
         )
 
-        self.transforms_rgb = transforms.Compose(
-            [
-                transforms.Resize((self.resize_height, self.resize_width)),
-                transforms.ToTensor(),
-                # transforms.GaussianBlur(5, sigma=(2.0, 2.0)),
-                transforms.Normalize(
-                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-                ),
-            ]
-        )
+        if self.use_blured_img:
+            self.transforms_rgb = transforms.Compose(
+                [
+                    transforms.Resize((self.resize_height, self.resize_width)),
+                    transforms.ToTensor(),
+                    transforms.GaussianBlur(5, sigma=(2.0, 2.0)),
+                    transforms.Normalize(
+                        mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                    ),
+                ]
+            )
+        else:
+            self.transforms_rgb = transforms.Compose(
+                [
+                    transforms.Resize((self.resize_height, self.resize_width)),
+                    transforms.ToTensor(),
+                    transforms.Normalize(
+                        mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                    ),
+                ]
+            )
 
         self.transforms_gt = transforms.Compose(
             [

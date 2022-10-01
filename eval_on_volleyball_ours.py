@@ -30,7 +30,7 @@ from dataset.dataset_selector import dataset_generator
 from models.model_selector import model_generator
 
 def data_type_id_generator(cfg):
-    data_type_id = f'bbox_{cfg.exp_params.bbox_types}_gaze_{cfg.exp_params.gaze_types}_act_{cfg.exp_params.action_types}'
+    data_type_id = f'bbox_{cfg.exp_params.bbox_types}_gaze_{cfg.exp_params.gaze_types}_act_{cfg.exp_params.action_types}_blur_{cfg.exp_params.use_blured_img}'
     return data_type_id
 
 print("===> Getting configuration")
@@ -77,6 +77,12 @@ if cuda:
     model_head.eval()
     model_saliency.eval()
     model_attention.eval()
+
+# for weight_key, weight_val in model_attention.state_dict().items():
+    # print(weight_key)
+    # if 'final' in weight_key:
+        # print(weight_key, weight_val)
+# sys.exit()
 
 print("===> Loading dataset")
 mode = cfg.exp_set.mode
@@ -139,19 +145,18 @@ for iteration, batch in enumerate(test_data_loader):
 
         # head pose estimation
         out_head = model_head(batch)
-        head_vector = out_head['head_vector']
         batch['head_img_extract'] = out_head['head_img_extract']
 
-        if cfg.exp_params.use_gt_gaze:
+        if cfg.exp_params.gaze_types == 'GT':
             batch['head_vector'] = batch['head_vector_gt']
         else:
             batch['head_vector'] = out_head['head_vector']
 
         # change position inputs
         if cfg.model_params.use_gaze:
-            batch['input_gaze'] = head_vector.clone() 
+            batch['input_gaze'] = batch['head_vector'].clone() 
         else:
-            batch['input_gaze'] = head_vector.clone() * 0
+            batch['input_gaze'] = batch['head_vector'].clone() * 0
 
         # scene feature extraction
         out_scene_feat = model_saliency(batch)

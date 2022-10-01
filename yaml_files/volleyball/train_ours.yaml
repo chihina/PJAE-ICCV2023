@@ -15,28 +15,20 @@ exp_set:
   # wandb_name: volleyball-dual-mid_p_p_field_deep_p_s_davt_wo_gaze
   # wandb_name: volleyball-dual-mid_p_p_field_deep_p_s_davt_wo_position
 
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_5
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_5_wo_action
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_5_wo_gaze
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_5_wo_position
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_mid
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_mid_wo_action
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_mid_wo_gaze
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_mid_wo_position
 
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_trans_loss_weight_1_1_5_early
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_trans_loss_weight_1_1_5_early_wo_action
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_trans_loss_weight_1_1_5_early_wo_gaze
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_trans_loss_weight_1_1_5_early_wo_position
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_simple_average
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_simple_average_wo_action
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_simple_average_wo_gaze
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_simple_average_wo_position
 
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_trans_loss_weight_1_1_5_mid
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_trans_loss_weight_1_1_5_mid_wo_action
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_trans_loss_weight_1_1_5_mid_wo_gaze
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_trans_loss_weight_1_1_5_mid_wo_position
-
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_trans_loss_weight_1_1_1_mid
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_trans_loss_weight_1_1_1_mid_wo_action
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_trans_loss_weight_1_1_1_mid_wo_gaze
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_trans_loss_weight_1_1_1_mid_wo_position
-
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_trans_loss_weight_1_1_1_scalr_fusion
-  wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_mid
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_scalar_weight
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_scalar_weight_wo_action
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_scalar_weight_wo_gaze
+  wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_scalar_weight_wo_position
 
   batch_size: 8
   num_workers: 16
@@ -124,8 +116,9 @@ exp_params:
   # freeze_saliency_extractor: True
 
   use_pretrained_joint_attention_estimator: False
-  # use_pretrained_head_pose_estimator: True
-  pretrained_joint_attention_estimator_name: pretrain_head_estimator
+  # use_pretrained_joint_attention_estimator: True
+  # pretrained_joint_attention_estimator_name: pretrain_head_estimator
+  pretrained_joint_attention_estimator_name: volleyball-dual-people_field_middle
   freeze_joint_attention_estimator: False
   # freeze_joint_attention_estimator: True
 
@@ -133,8 +126,8 @@ model_params:
   model_type: ja_transformer_dual
 
   # Position
-  # use_position : False
-  use_position : True
+  use_position : False
+  # use_position : True
 
   # Gaze
   # use_gaze : False
@@ -191,6 +184,7 @@ model_params:
   # use_p_s_estimator_att_inside : True
 
   # fusion_net_type : early
-  fusion_net_type : mid
+  # fusion_net_type : mid
   # fusion_net_type : late
-  # fusion_net_type : scalar_weight
+  # fusion_net_type : simple_average
+  fusion_net_type : scalar_weight

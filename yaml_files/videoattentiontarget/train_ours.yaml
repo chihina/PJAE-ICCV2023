@@ -6,7 +6,8 @@ exp_set:
   save_folder: saved_weights
   wandb_log : True
 
-  wandb_name: videoattentiontarget-dual-cnn-w_pre
+  # wandb_name: videoattentiontarget-dual-cnn-w_pre-w_att_in
+  wandb_name: videoattentiontarget-dual-cnn-w_pre-wo_att_in
   # wandb_name: videoattentiontarget-dual-trans-w_pre
 
   batch_size: 16
@@ -156,5 +157,5 @@ model_params:
   p_s_estimator_type : cnn
   # p_s_estimator_cnn_pretrain : False
   p_s_estimator_cnn_pretrain : True
-  # use_p_s_estimator_att_inside : False
-  use_p_s_estimator_att_inside : True
+  use_p_s_estimator_att_inside : False
+  # use_p_s_estimator_att_inside : True

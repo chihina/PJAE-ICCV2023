@@ -9,15 +9,10 @@ saved_result_dir = os.path.join('results', 'volleyball')
 
 # define analyze model type
 analyze_name_list = []
-# analyze_name_list.append('volleyball-dual-mid_p_p_field_deep_p_s_davt')
-# analyze_name_list.append('volleyball-dual-mid_p_p_field_deep_p_s_cnn')
-# analyze_name_list.append('volleyball-dual-all_p_p_field_deep_p_s_cnn')
-# analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_cnn')
-# analyze_name_list.append('volleyball-dual-all_p_p_field_middle_p_s_cnn')
-# analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_5')
-# analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_trans_loss_weight_1_1_5_early')
-# analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_trans_loss_weight_1_1_5_mid')
-analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_trans_loss_weight_1_1_1_mid')
+analyze_name_list.append('volleyball-dual-mid_p_p_field_deep_p_s_davt')
+analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1')
+analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_scalar_weight')
+analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_simple_average')
 
 # define ablate type
 analyze_name_ablation_list = []
@@ -30,9 +25,8 @@ analyze_name_ablation_list.append('_wo_position')
 
 # define test data type
 test_data_type_list = []
-# test_data_type_list.append('bbox_GT_gaze_GT_act_GT')
-test_data_type_list.append('bbox_GT_gaze_PRED_act_GT')
-# test_data_type_list.append('bbox_PRED_gaze_PRED_act_PRED')
+test_data_type_list.append('bbox_GT_gaze_GT_act_GT')
+test_data_type_list.append('bbox_PRED_gaze_PRED_act_PRED_')
 for test_data_type in test_data_type_list:
     print(f'==={test_data_type}===')
     for analyze_name in analyze_name_list:
@@ -45,6 +39,8 @@ for test_data_type in test_data_type_list:
             model_name_list.append(model_name)
 
             json_file_path = os.path.join(saved_result_dir, model_name, 'eval_results', test_data_type, 'eval_results.json')
+            if 
+
             with open(json_file_path, 'r') as f:
                 eval_results_dic = json.load(f)
             eval_results_list.append(list(eval_results_dic.values()))
