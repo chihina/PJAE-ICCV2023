@@ -114,6 +114,12 @@ if cuda:
     model_saliency.eval()
     model_attention.eval()
 
+# for weight_key, weight_val in model_attention.state_dict().items():
+#     print(weight_key)
+#     if 'final' in weight_key:
+#         print(weight_key, weight_val)
+# sys.exit()
+
 print("===> Loading dataset")
 mode = cfg.exp_set.mode
 cfg.data.name = 'videocoatt_no_att'
