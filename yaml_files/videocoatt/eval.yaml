@@ -17,7 +17,7 @@ exp_set:
   # model_name: videocoatt-dual-people_fc_middle
   # model_name: videocoatt-dual-people_fc_deep
   # model_name: videocoatt-dual-people_deconv_shallow
-  model_name: videocoatt-dual-people_deconv_middle
+  # model_name: videocoatt-dual-people_deconv_middle
   # model_name: videocoatt-dual-people_field_middle
   # model_name: videocoatt-dual-people_field_deep
 
@@ -25,7 +25,7 @@ exp_set:
   # model_name: videocoatt-p_p_field_deep_p_s_davt_freeze
   # model_name: videocoatt-p_p_field_deep_p_s_cnn_gaze_follow_w_pre_simple_average
   # model_name: videocoatt-p_p_field_deep_p_s_davt_simple_average
-  # model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight
+  model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight
 
   seed_num : 777
   gpu_mode : True

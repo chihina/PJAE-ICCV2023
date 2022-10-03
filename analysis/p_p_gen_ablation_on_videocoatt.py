@@ -17,6 +17,7 @@ analyze_name_ablation_list.append('fc_shallow')
 analyze_name_ablation_list.append('fc_middle')
 analyze_name_ablation_list.append('fc_deep')
 analyze_name_ablation_list.append('deconv_shallow')
+analyze_name_ablation_list.append('deconv_middle')
 analyze_name_ablation_list.append('field_middle')
 analyze_name_ablation_list.append('field_deep')
 
