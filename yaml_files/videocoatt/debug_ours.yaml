@@ -162,3 +162,9 @@ model_params:
   # p_s_estimator_cnn_pretrain : True
   # use_p_s_estimator_att_inside : False
   use_p_s_estimator_att_inside : True
+
+  # fusion_net_type : early
+  # fusion_net_type : mid
+  # fusion_net_type : late
+  fusion_net_type : simple_average
+  # fusion_net_type : scalar_weight

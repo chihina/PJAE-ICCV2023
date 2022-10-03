@@ -3,6 +3,8 @@ import torch.nn as nn
 from torch.nn import functional as F
 import sys
 import  numpy as np
+import pandas as pd
+import os
 
 class PersonToPersonEstimator(nn.Module):
     def __init__(self, p_p_estimator_type):
@@ -106,11 +108,13 @@ class PersonToPersonEstimator(nn.Module):
         data = {}
         return data
 
-p_p_estimator_type_list = ['field_shallow', 'field_middle', 'field_deep', 
+p_p_estimator_type_list = [
                            'fc_shallow', 'fc_middle', 'fc_deep',
-                           'deconv_shallow', 'deconv_middle', 'deconv_deep',
+                           'deconv_shallow', 'deconv_middle',
+                           'field_middle', 'field_deep', 
                            ]
 
+eval_results_list = []
 for p_p_estimator_type in p_p_estimator_type_list:
     print(p_p_estimator_type)
     model = PersonToPersonEstimator(p_p_estimator_type)
@@ -118,4 +122,10 @@ for p_p_estimator_type in p_p_estimator_type_list:
     for p in model.parameters():
         if p.requires_grad:
             params += p.numel()
+    eval_results_list.append([params])
     print(params)
+
+eval_results_array = np.array(eval_results_list)
+df_eval_results = pd.DataFrame(eval_results_array, p_p_estimator_type_list, ['params'])
+save_csv_file_path = os.path.join('models', f'model_params_checker.csv')
+df_eval_results.to_csv(save_csv_file_path)

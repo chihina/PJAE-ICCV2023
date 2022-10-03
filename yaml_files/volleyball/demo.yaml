@@ -21,7 +21,7 @@ exp_set:
   # model_name: volleyball-dual-people_deconv_middle
   # model_name: volleyball-dual-people_deconv_deep
 
-  # model_name: volleyball-dual-mid_p_p_field_deep_p_s_davt
+  model_name: volleyball-dual-mid_p_p_field_deep_p_s_davt
   # model_name: volleyball-dual-mid_p_p_field_deep_p_s_cnn
   # model_name: volleyball-dual-mid_p_p_field_deep_p_s_cnn_wo_action
   # model_name: volleyball-dual-mid_p_p_field_deep_p_s_cnn_wo_gaze
@@ -29,12 +29,12 @@ exp_set:
   # model_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_5
 
   # model_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_mid
-  model_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_simple_average
+  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_simple_average
 
   seed_num : 777
   gpu_mode : True
-  gpu_start : 7
-  gpu_finish : 7
+  gpu_start : 5
+  gpu_finish : 5
   num_workers : 1
   batch_size : 1
   wandb_name : demo

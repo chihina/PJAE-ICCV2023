@@ -227,7 +227,7 @@ class SceneFeatureCNN(nn.Module):
             rgb_feat_head_att_gap = torch.mean(rgb_feat_head_att, dim=(-1, -2))
             estimated_att_inside = self.person_att_inside_estimator(rgb_feat_head_att_gap)
             estimated_att_inside = estimated_att_inside.view(self.batch_size, people_num)
-            # estimated_att_inside_inv = 1-estimated_att_inside[:, :, 0]
+            # estimated_att_inside_inv = 1-estimated_att_inside
             # estimated_att_inside_inv = estimated_att_inside_inv.view(self.batch_size, people_num, 1, 1)
             # person_scene_attention_heatmap = person_scene_attention_heatmap - estimated_att_inside_inv
             # person_scene_attention_heatmap = torch.clamp(input=person_scene_attention_heatmap, min=-0, max=1)
