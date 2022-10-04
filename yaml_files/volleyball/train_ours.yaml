@@ -13,9 +13,7 @@ exp_set:
   # wandb_name: volleyball-dual-mid_p_p_field_deep_p_s_davt
   # wandb_name: volleyball-dual-mid_p_p_field_deep_p_s_davt_wo_action
   # wandb_name: volleyball-dual-mid_p_p_field_deep_p_s_davt_wo_gaze
-  # wandb_name: volleyball-dual-mid_p_p_field_deep_p_s_davt_wo_position
-  # wandb_name: volleyball-dual-mid_p_p_field_deep_p_s_davt_w_lr
-  wandb_name: volleyball-dual-mid_p_p_field_deep_p_s_davt_w_pretrain
+  wandb_name: volleyball-dual-mid_p_p_field_deep_p_s_davt_wo_position
 
   # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_mid
   # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_mid_wo_action
@@ -37,8 +35,8 @@ exp_set:
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 3
-  gpu_finish : 3
+  gpu_start : 4
+  gpu_finish : 4
 
   resize_height : 320
   resize_width : 640
@@ -51,8 +49,8 @@ exp_params:
   # use_person_person_att_loss : True
   person_person_att_loss_weight : 1
 
-  use_person_person_jo_att_loss : False
-  # use_person_person_jo_att_loss : True
+  # use_person_person_jo_att_loss : False
+  use_person_person_jo_att_loss : True
   person_person_jo_att_loss_weight : 1
 
   use_person_scene_att_loss : False
@@ -63,8 +61,8 @@ exp_params:
   use_person_scene_jo_att_loss : True
   person_scene_jo_att_loss_weight : 1
 
-  use_final_jo_att_loss : False
-  # use_final_jo_att_loss : True
+  # use_final_jo_att_loss : False
+  use_final_jo_att_loss : True
   final_jo_att_loss_weight : 1
   # final_jo_att_loss_weight : 5
 
@@ -129,8 +127,8 @@ model_params:
   model_type: ja_transformer_dual
 
   # Position
-  # use_position : False
-  use_position : True
+  use_position : False
+  # use_position : True
 
   # Gaze
   # use_gaze : False

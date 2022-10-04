@@ -342,9 +342,6 @@ for iteration, batch in enumerate(test_data_loader,1):
     person_person_joint_attention_heatmap = cv2.addWeighted(img, 0.5, person_person_joint_attention_heatmap, 0.5, 0)
     person_scene_joint_attention_heatmap = cv2.addWeighted(img, 0.5, person_scene_joint_attention_heatmap, 0.5, 0)
     final_joint_attention_heatmap = cv2.addWeighted(img, 0.5, final_joint_attention_heatmap, 0.5, 0)
-    cv2.imwrite(os.path.join(save_image_dir_dic['person_person_jo_att_superimposed'], data_type_id, f'{mode}_{data_id}_person_person_jo_att_superimposed.png'), person_person_joint_attention_heatmap)
-    cv2.imwrite(os.path.join(save_image_dir_dic['person_scene_jo_att_superimposed'], data_type_id, f'{mode}_{data_id}_person_scene_jo_att_superimposed.png'), person_scene_joint_attention_heatmap)
-    cv2.imwrite(os.path.join(save_image_dir_dic['final_jo_att_superimposed'], data_type_id, f'{mode}_{data_id}_final_jo_att_superimposed.png'), final_joint_attention_heatmap)
 
     # save an attention estimation as a superimposed image
     key_no_padding_num = torch.sum((torch.sum(head_feature, dim=-1) != 0)).numpy()
@@ -396,3 +393,11 @@ for iteration, batch in enumerate(test_data_loader,1):
         cv2.imwrite(os.path.join(save_image_dir_dic['person_scene_att_superimposed'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_person_scene_att_superimposed.png'), person_scene_att)
         if cfg.model_params.p_s_estimator_type == 'cnn':
             cv2.imwrite(os.path.join(save_image_dir_dic['person_scene_ang_att_superimposed'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_person_scene_ang_att_superimposed.png'), person_scene_ang_att)
+
+        cv2.rectangle(person_person_joint_attention_heatmap, (head_x_min, head_y_min), (head_x_max, head_y_max), (128, 0, 128), thickness=5)
+        cv2.rectangle(person_scene_joint_attention_heatmap, (head_x_min, head_y_min), (head_x_max, head_y_max), (128, 0, 128), thickness=5)
+        cv2.rectangle(final_joint_attention_heatmap, (head_x_min, head_y_min), (head_x_max, head_y_max), (128, 0, 128), thickness=5)
+
+    cv2.imwrite(os.path.join(save_image_dir_dic['person_person_jo_att_superimposed'], data_type_id, f'{mode}_{data_id}_person_person_jo_att_superimposed.png'), person_person_joint_attention_heatmap)
+    cv2.imwrite(os.path.join(save_image_dir_dic['person_scene_jo_att_superimposed'], data_type_id, f'{mode}_{data_id}_person_scene_jo_att_superimposed.png'), person_scene_joint_attention_heatmap)
+    cv2.imwrite(os.path.join(save_image_dir_dic['final_jo_att_superimposed'], data_type_id, f'{mode}_{data_id}_final_jo_att_superimposed.png'), final_joint_attention_heatmap)
