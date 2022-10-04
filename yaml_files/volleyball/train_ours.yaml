@@ -11,10 +11,11 @@ exp_set:
   wandb_log : True
 
   # wandb_name: volleyball-dual-mid_p_p_field_deep_p_s_davt
-  wandb_name: volleyball-dual-mid_p_p_field_deep_p_s_davt_retrain
   # wandb_name: volleyball-dual-mid_p_p_field_deep_p_s_davt_wo_action
   # wandb_name: volleyball-dual-mid_p_p_field_deep_p_s_davt_wo_gaze
   # wandb_name: volleyball-dual-mid_p_p_field_deep_p_s_davt_wo_position
+  # wandb_name: volleyball-dual-mid_p_p_field_deep_p_s_davt_w_lr
+  wandb_name: volleyball-dual-mid_p_p_field_deep_p_s_davt_w_pretrain
 
   # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_mid
   # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_mid_wo_action
@@ -31,13 +32,13 @@ exp_set:
   # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_scalar_weight_wo_gaze
   # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_scalar_weight_wo_position
 
-  batch_size: 8
-  # batch_size: 4
+  # batch_size: 8
+  batch_size: 4
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 2
-  gpu_finish : 2
+  gpu_start : 3
+  gpu_finish : 3
 
   resize_height : 320
   resize_width : 640
@@ -50,20 +51,20 @@ exp_params:
   # use_person_person_att_loss : True
   person_person_att_loss_weight : 1
 
-  # use_person_person_jo_att_loss : False
-  use_person_person_jo_att_loss : True
+  use_person_person_jo_att_loss : False
+  # use_person_person_jo_att_loss : True
   person_person_jo_att_loss_weight : 1
 
-  # use_person_scene_att_loss : False
-  use_person_scene_att_loss : True
+  use_person_scene_att_loss : False
+  # use_person_scene_att_loss : True
   person_scene_att_loss_weight : 1
 
-  use_person_scene_jo_att_loss : False
-  # use_person_scene_jo_att_loss : True
+  # use_person_scene_jo_att_loss : False
+  use_person_scene_jo_att_loss : True
   person_scene_jo_att_loss_weight : 1
 
-  # use_final_jo_att_loss : False
-  use_final_jo_att_loss : True
+  use_final_jo_att_loss : False
+  # use_final_jo_att_loss : True
   final_jo_att_loss_weight : 1
   # final_jo_att_loss_weight : 5
 
@@ -111,8 +112,8 @@ exp_params:
   # freeze_head_pose_estimator: False
   freeze_head_pose_estimator: True
 
-  use_pretrained_saliency_extractor: False
-  # use_pretrained_saliency_extractor: True
+  # use_pretrained_saliency_extractor: False
+  use_pretrained_saliency_extractor: True
   pretrained_saliency_extractor_name: pretrained_scene_extractor_davt
   freeze_saliency_extractor: False
   # freeze_saliency_extractor: True

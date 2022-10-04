@@ -20,7 +20,7 @@ exp_set:
   # model_name: volleyball-dual-people_deconv_middle
 
   # model_name: volleyball-dual-mid_p_p_field_deep_p_s_davt
-  model_name: volleyball-dual-mid_p_p_field_deep_p_s_davt_retrain
+  # model_name: volleyball-dual-mid_p_p_field_deep_p_s_davt_retrain
   # model_name: volleyball-dual-mid_p_p_field_deep_p_s_davt_wo_action
   # model_name: volleyball-dual-mid_p_p_field_deep_p_s_davt_wo_gaze
   # model_name: volleyball-dual-mid_p_p_field_deep_p_s_davt_wo_position
@@ -30,7 +30,7 @@ exp_set:
   # model_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_mid_wo_gaze
   # model_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_mid_wo_position
 
-  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_simple_average
+  model_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_simple_average
   # model_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_simple_average_wo_action
   # model_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_simple_average_wo_gaze
   # model_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_simple_average_wo_position
@@ -42,8 +42,8 @@ exp_set:
 
   seed_num : 777
   gpu_mode : True
-  gpu_start : 3
-  gpu_finish : 3
+  gpu_start : 4
+  gpu_finish : 4
   num_workers : 1
   batch_size : 1
   wandb_name : test
@@ -56,10 +56,10 @@ exp_params:
 
   bbox_types: GT
   # bbox_types: PRED
-  action_types: GT
-  # action_types: PRED
-  gaze_types: GT
-  # gaze_types: PRED
+  # action_types: GT
+  action_types: PRED
+  # gaze_types: GT
+  gaze_types: PRED
   # gaze_types: NONE
 
   # use_action: True

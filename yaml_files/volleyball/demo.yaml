@@ -21,7 +21,9 @@ exp_set:
   # model_name: volleyball-dual-people_deconv_middle
   # model_name: volleyball-dual-people_deconv_deep
 
-  model_name: volleyball-dual-mid_p_p_field_deep_p_s_davt
+  # model_name: volleyball-dual-mid_p_p_field_deep_p_s_davt
+  model_name: volleyball-dual-mid_p_p_field_deep_p_s_davt_w_lr
+  # model_name: volleyball-dual-mid_p_p_field_deep_p_s_davt_w_pretrain
   # model_name: volleyball-dual-mid_p_p_field_deep_p_s_cnn
   # model_name: volleyball-dual-mid_p_p_field_deep_p_s_cnn_wo_action
   # model_name: volleyball-dual-mid_p_p_field_deep_p_s_cnn_wo_gaze

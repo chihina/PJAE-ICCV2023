@@ -24,13 +24,13 @@ exp_set:
   # model_name: videocoatt-p_p_field_deep_p_s_gaze_follow_freeze
   # model_name: videocoatt-p_p_field_deep_p_s_davt_freeze
   # model_name: videocoatt-p_p_field_deep_p_s_cnn_gaze_follow_w_pre_simple_average
-  model_name: videocoatt-p_p_field_deep_p_s_davt_simple_average
-  # model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight
+  # model_name: videocoatt-p_p_field_deep_p_s_davt_simple_average
+  model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight
 
   seed_num : 777
   gpu_mode : True
-  gpu_start : 7
-  gpu_finish : 7
+  gpu_start : 3
+  gpu_finish : 3
   num_workers : 1
   batch_size : 1
   wandb_name : test
