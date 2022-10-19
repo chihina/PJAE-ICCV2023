@@ -15,11 +15,8 @@ class VolleyBallDataset(Dataset):
 
         # data
         self.sendo_dataset_dir = cfg.data.sendo_dataset_dir
-        self.train_dataset_dir = cfg.data.train_dataset_dir
-        self.train_dataset_dir_gt = cfg.data.train_dataset_dir_gt
-        self.train_dataset_dir_pred = cfg.data.train_dataset_dir_pred
-        self.test_dataset_dir_gt = cfg.data.test_dataset_dir_gt
-        self.test_dataset_dir_pred = cfg.data.test_dataset_dir_pred
+        self.dataset_bbox_gt = cfg.data.dataset_bbox_gt
+        self.dataset_bbox_pred = cfg.data.dataset_bbox_pred
         self.rgb_dataset_dir = cfg.data.rgb_dataset_dir
         self.annotation_dir = cfg.data.annotation_dir
         self.att_inside_dir = cfg.data.att_inside_dir
@@ -161,26 +158,14 @@ class VolleyBallDataset(Dataset):
                 else:
                     pass
 
-                if self.mode in ['train', 'valid']:
-                    if self.bbox_types == 'GT':
-                        self.dataset_dir = self.train_dataset_dir_gt
-                    elif self.bbox_types == 'PRED':
-                        self.dataset_dir = self.train_dataset_dir_pred
-                    else:
-                        print('Employ correct bbox dataset')
-                        sys.exit()          
-                elif self.mode == 'test':
-                    if self.bbox_types == 'GT':
-                        self.dataset_dir = self.test_dataset_dir_gt
-                    elif self.bbox_types == 'PRED':
-                        self.dataset_dir = self.test_dataset_dir_pred
-                    else:
-                        print('Employ correct bbox dataset')
-                        sys.exit()                   
+                if self.bbox_types == 'GT':
+                    self.dataset_dir = self.dataset_bbox_gt
+                elif self.bbox_types == 'PRED':
+                    self.dataset_dir = self.dataset_bbox_pred
                 else:
-                    print('Employ correct dataset')
-                    sys.exit()
-                
+                    print('Employ correct bbox dataset')
+                    sys.exit()                           
+
                 # get gt person bbox
                 annotation_path_person = os.path.join(self.sendo_dataset_dir, str(video_num), str(seq_num), f'{seq_num}.txt')
                 annotated_bbox = self.get_person_bbox_from_txt(annotation_path_person)

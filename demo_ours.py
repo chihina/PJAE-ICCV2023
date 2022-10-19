@@ -345,11 +345,11 @@ for iteration, batch in enumerate(test_data_loader,1):
         gt_x_min, gt_x_max = map(lambda x:x*cfg.exp_set.resize_width, [gt_x_min, gt_x_max])
         gt_y_min, gt_y_max = map(lambda y:y*cfg.exp_set.resize_height, [gt_y_min, gt_y_max])
         gt_x_mid, gt_y_mid = (gt_x_min+gt_x_max)/2, (gt_y_min+gt_y_max)/2
-        # pred_y_mid, pred_x_mid = np.unravel_index(np.argmax(person_person_joint_attention_heatmap), person_person_joint_attention_heatmap.shape)
+        pred_y_mid, pred_x_mid = np.unravel_index(np.argmax(person_person_joint_attention_heatmap), person_person_joint_attention_heatmap.shape)
         l2_dist_x = ((gt_x_mid-pred_x_mid)**2)**0.5
-        l2_dist_y = ((gt_y_mid-gt_y_mid)**2)**0.5
+        l2_dist_y = ((gt_y_mid-pred_y_mid)**2)**0.5
         l2_dist_euc = (l2_dist_x**2+l2_dist_y**2)**0.5
-        print(l2_dist_euc)
+        # print(l2_dist_euc)
 
     person_person_joint_attention_heatmap = cv2.applyColorMap(person_person_joint_attention_heatmap, cv2.COLORMAP_JET)
     person_scene_joint_attention_heatmap = cv2.applyColorMap(person_scene_joint_attention_heatmap, cv2.COLORMAP_JET)

@@ -1,29 +1,14 @@
 data: 
   name: volleyball
-  sendo_dataset_dir: data/volleyball_tracking_annotation
-  train_dataset_dir: data/social_saliency_dataset_unipose_gt_20
-  test_dataset_dir: data/social_saliency_dataset_unipose_pred_mid
-  rgb_dataset_dir: data/videos
-  annotation_dir: data/vatic_ball_annotation/annotation_data/
+  sendo_dataset_dir : data/volleyball_tracking_annotation
+  rgb_dataset_dir : data/videos
+  annotation_dir : data/vatic_ball_annotation/annotation_data/
+  dataset_bbox_gt: data/jae_dataset_bbox_gt
+  dataset_bbox_pred: data/jae_dataset_bbox_pred
 
 exp_set:
   save_folder: saved_weights
   wandb_log : True
-
-  # wandb_name: volleyball-dual-people_fc_shallow
-  # wandb_name: volleyball-dual-people_fc_middle
-  # wandb_name: volleyball-dual-people_fc_deep
-  # wandb_name: volleyball-dual-people_field_shallow
-  # wandb_name: volleyball-dual-people_field_middle
-  # wandb_name: volleyball-dual-people_field_deep
-  # wandb_name: volleyball-dual-people_deconv_shallow
-  # wandb_name: volleyball-dual-people_deconv_middle
-  # wandb_name: volleyball-dual-people_deconv_deep
-
-  # wandb_name: volleyball-dual-people_field_middle
-  # wandb_name: volleyball-dual-people_field_middle_wo_action
-  # wandb_name: volleyball-dual-people_field_middle_wo_gaze
-  # wandb_name: volleyball-dual-people_field_middle_wo_position
 
   wandb_name: volleyball-dual-people_field_middle_heavy
 

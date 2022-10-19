@@ -1,31 +1,32 @@
 data: 
   name: volleyball
-  sendo_dataset_dir: data/volleyball_tracking_annotation
-  train_dataset_dir_gt: data/jae_dataset_gt
-  train_dataset_dir_pred: data/jae_dataset_pred
-  test_dataset_dir: data/social_saliency_dataset_unipose_pred_mid
-  rgb_dataset_dir: data/videos
-  annotation_dir: data/vatic_ball_annotation/annotation_data/
+  sendo_dataset_dir : data/volleyball_tracking_annotation
+  rgb_dataset_dir : data/videos
+  annotation_dir : data/vatic_ball_annotation/annotation_data/
+  dataset_bbox_gt: data/jae_dataset_bbox_gt
+  dataset_bbox_pred: data/jae_dataset_bbox_pred
 
 exp_set:
   save_folder: saved_weights
   wandb_log : True
 
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_pre_p_p_pre_p_s
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_pre_p_p_pre_p_s_wo_action
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_pre_p_p_pre_p_s_wo_gaze
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_pre_p_p_pre_p_s_wo_position
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_only_w_p_s
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_wo_action
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_wo_gaze
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_wo_position
 
-  wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_wo_action
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_wo_gaze
+  wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_wo_position
 
   # batch_size: 8
   batch_size: 4
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 3
-  gpu_finish : 3
+  gpu_start : 6
+  gpu_finish : 6
 
   resize_height : 320
   resize_width : 640
@@ -57,14 +58,14 @@ exp_params:
   use_frame_type: mid
   # use_frame_type: all
 
-  bbox_types: GT
-  # bbox_types: PRED
+  # bbox_types: GT
+  bbox_types: PRED
 
-  gaze_types: GT
-  # gaze_types: PRED
+  # gaze_types: GT
+  gaze_types: PRED
   
-  action_types: GT
-  # action_types: PRED
+  # action_types: GT
+  action_types: PRED
   # action_types: DEBUG
   
   # position augmentation
@@ -117,8 +118,8 @@ model_params:
   model_type: ja_transformer_dual
 
   # Position
-  # use_position : False
-  use_position : True
+  use_position : False
+  # use_position : True
 
   # Gaze
   # use_gaze : False
