@@ -23,6 +23,8 @@ import seaborn as sns
 import glob
 import sys
 
+os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
+
 # original module
 from dataset.dataset_selector import dataset_generator
 from models.model_selector import model_generator
@@ -253,6 +255,7 @@ for iteration, batch in enumerate(test_data_loader,1):
     angle_dist = out['angle_dist'].to('cpu').detach()[0]
     distance_dist = out['distance_dist'].to('cpu').detach()[0]
     saliency_img = out['saliency_img'].to('cpu').detach()[0]
+    head_vector = out['head_vector'].to('cpu').detach()[0].numpy()
     head_vector_gt = out['head_vector_gt'].to('cpu').detach()[0].numpy()
     head_feature = out['head_feature'].to('cpu').detach()[0]
     head_bbox = out['head_bbox'].to('cpu').detach()[0].numpy()
@@ -336,6 +339,18 @@ for iteration, batch in enumerate(test_data_loader,1):
     person_person_joint_attention_heatmap = norm_heatmap(person_person_joint_attention_heatmap).astype(np.uint8)
     person_scene_joint_attention_heatmap = norm_heatmap(person_scene_joint_attention_heatmap).astype(np.uint8)
     final_joint_attention_heatmap = norm_heatmap(final_joint_attention_heatmap).astype(np.uint8)
+
+    if cfg.exp_params.vis_dist_error:
+        gt_x_min, gt_y_min, gt_x_max, gt_y_max = map(float, gt_box[0])
+        gt_x_min, gt_x_max = map(lambda x:x*cfg.exp_set.resize_width, [gt_x_min, gt_x_max])
+        gt_y_min, gt_y_max = map(lambda y:y*cfg.exp_set.resize_height, [gt_y_min, gt_y_max])
+        gt_x_mid, gt_y_mid = (gt_x_min+gt_x_max)/2, (gt_y_min+gt_y_max)/2
+        # pred_y_mid, pred_x_mid = np.unravel_index(np.argmax(person_person_joint_attention_heatmap), person_person_joint_attention_heatmap.shape)
+        l2_dist_x = ((gt_x_mid-pred_x_mid)**2)**0.5
+        l2_dist_y = ((gt_y_mid-gt_y_mid)**2)**0.5
+        l2_dist_euc = (l2_dist_x**2+l2_dist_y**2)**0.5
+        print(l2_dist_euc)
+
     person_person_joint_attention_heatmap = cv2.applyColorMap(person_person_joint_attention_heatmap, cv2.COLORMAP_JET)
     person_scene_joint_attention_heatmap = cv2.applyColorMap(person_scene_joint_attention_heatmap, cv2.COLORMAP_JET)
     final_joint_attention_heatmap = cv2.applyColorMap(final_joint_attention_heatmap, cv2.COLORMAP_JET)
@@ -371,9 +386,28 @@ for iteration, batch in enumerate(test_data_loader,1):
         # get person location and gt location
         head_feature_person = head_feature[person_idx]
         head_x, head_y = head_feature_person[0:2]
+        action_vector = head_feature_person[2:]
         head_x, head_y = int(head_x*cfg.exp_set.resize_width), int(head_y*cfg.exp_set.resize_height)
         gt_mid_x, gt_mid_y = (gt_box[person_idx, 0]+gt_box[person_idx, 2])/2, (gt_box[person_idx, 1]+gt_box[person_idx, 3])/2
         gt_mid_x, gt_mid_y = int(gt_mid_x*cfg.exp_set.resize_width), int(gt_mid_y*cfg.exp_set.resize_height)
+
+        # gaze estimation
+        gaze_vec_x, gaze_vec_y = head_vector[person_idx, 0:2]
+        gaze_l = 50
+        gaze_x, gaze_y = int(head_x+gaze_vec_x*gaze_l), int(head_y+gaze_vec_y*gaze_l)
+        cv2.arrowedLine(person_person_joint_attention_heatmap, (head_x, head_y), (gaze_x, gaze_y), (0, 255, 0), 1)
+        cv2.arrowedLine(person_scene_joint_attention_heatmap, (head_x, head_y), (gaze_x, gaze_y), (0, 255, 0), 1)
+        cv2.arrowedLine(final_joint_attention_heatmap, (head_x, head_y), (gaze_x, gaze_y), (0, 255, 0), 1)
+        
+        # action prediction
+        action_idx = np.argmax(action_vector.numpy())
+        cv2.putText(person_person_joint_attention_heatmap, text=f'{action_idx}', org=(head_x, head_y-30), color=(0, 0, 255),
+                    fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1.0, thickness=2, lineType=cv2.LINE_4)
+        cv2.putText(person_scene_joint_attention_heatmap, text=f'{action_idx}', org=(head_x, head_y-30), color=(0, 0, 255),
+                    fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1.0, thickness=2, lineType=cv2.LINE_4)
+        cv2.putText(final_joint_attention_heatmap, text=f'{action_idx}', org=(head_x, head_y-30), color=(0, 0, 255),
+                    fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1.0, thickness=2, lineType=cv2.LINE_4)
+
         cv2.circle(person_person_att, (gt_mid_x, gt_mid_y), 10, (0, 255, 0), thickness=-1)
         cv2.circle(person_scene_att, (gt_mid_x, gt_mid_y), 10, (0, 255, 0), thickness=-1)
         if cfg.model_params.p_s_estimator_type == 'cnn':
@@ -394,9 +428,10 @@ for iteration, batch in enumerate(test_data_loader,1):
         if cfg.model_params.p_s_estimator_type == 'cnn':
             cv2.imwrite(os.path.join(save_image_dir_dic['person_scene_ang_att_superimposed'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_person_scene_ang_att_superimposed.png'), person_scene_ang_att)
 
-        cv2.rectangle(person_person_joint_attention_heatmap, (head_x_min, head_y_min), (head_x_max, head_y_max), (128, 0, 128), thickness=5)
-        cv2.rectangle(person_scene_joint_attention_heatmap, (head_x_min, head_y_min), (head_x_max, head_y_max), (128, 0, 128), thickness=5)
-        cv2.rectangle(final_joint_attention_heatmap, (head_x_min, head_y_min), (head_x_max, head_y_max), (128, 0, 128), thickness=5)
+        if cfg.exp_params.vis_dist_error:
+            cv2.rectangle(person_person_joint_attention_heatmap, (head_x_min, head_y_min), (head_x_max, head_y_max), (128, 0, 128), thickness=5)
+            cv2.rectangle(person_scene_joint_attention_heatmap, (head_x_min, head_y_min), (head_x_max, head_y_max), (128, 0, 128), thickness=5)
+            cv2.rectangle(final_joint_attention_heatmap, (head_x_min, head_y_min), (head_x_max, head_y_max), (128, 0, 128), thickness=5)
 
     cv2.imwrite(os.path.join(save_image_dir_dic['person_person_jo_att_superimposed'], data_type_id, f'{mode}_{data_id}_person_person_jo_att_superimposed.png'), person_person_joint_attention_heatmap)
     cv2.imwrite(os.path.join(save_image_dir_dic['person_scene_jo_att_superimposed'], data_type_id, f'{mode}_{data_id}_person_scene_jo_att_superimposed.png'), person_scene_joint_attention_heatmap)

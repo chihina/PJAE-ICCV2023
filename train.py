@@ -94,7 +94,7 @@ def process_epoch(epoch, data_set, mode):
         out_head = model_head(batch)
         batch['head_img_extract'] = out_head['head_img_extract']
 
-        if cfg.exp_params.use_gt_gaze:
+        if cfg.exp_params.gaze_types == 'GT':
             batch['head_vector'] = batch['head_vector_gt']
         else:
             batch['head_vector'] = out_head['head_vector']
@@ -234,13 +234,13 @@ if cfg.exp_params.use_pretrained_head_pose_estimator:
 if cfg.exp_params.use_pretrained_saliency_extractor:
     print("===> Load pretrained model (saliecny extractor)")
     model_name = cfg.exp_params.pretrained_saliency_extractor_name
-    if cfg.model_params.p_s_estimator_type == 'davt':
+    if cfg.model_params.p_s_estimator_type == 'davt' and cfg.exp_params.pretrained_saliency_extractor_name == 'pretrained_scene_extractor_davt':
         model_weight_path = os.path.join(cfg.exp_params.pretrained_models_dir, cfg.data.name, model_name, "model_demo.pt")
     else:
         model_weight_path = os.path.join(cfg.exp_params.pretrained_models_dir, cfg.data.name, model_name, "model_saliency_best.pth.tar")
     model_saliency_dict = model_saliency.state_dict()
     pretrained_dict = torch.load(model_weight_path,  map_location='cuda:'+str(gpus_list[0]))
-    if cfg.model_params.p_s_estimator_type == 'davt':
+    if cfg.model_params.p_s_estimator_type == 'davt' and cfg.exp_params.pretrained_saliency_extractor_name == 'pretrained_scene_extractor_davt':
         pretrained_dict = pretrained_dict['model']
     model_saliency_dict.update(pretrained_dict)
     model_saliency.load_state_dict(model_saliency_dict)

@@ -108,28 +108,21 @@ class JointAttentionEstimatorTransformerDualOnlyPeople(nn.Module):
             final_activation_layer = nn.Sigmoid()
 
         # define person-to-scene relation extractor
-        self.rgb_cnn_extractor_type = cfg.model_params.rgb_cnn_extractor_type
-        self.rgb_cnn_extractor_stage_idx = cfg.model_params.rgb_cnn_extractor_stage_idx
-        if self.rgb_cnn_extractor_type == 'rgb_patch':
-            down_scale_ratio = 8
-            self.hm_height = self.resize_height//down_scale_ratio
-            self.hm_width = self.resize_width//down_scale_ratio
-            self.hm_height_middle = self.hm_height
-            self.hm_width_middle = self.hm_width
-        elif 'resnet' in self.rgb_cnn_extractor_type:
-            self.rgb_cnn_extractor_stage_idx = self.rgb_cnn_extractor_stage_idx
+        self.p_s_estimator_type = cfg.model_params.p_s_estimator_type
+        if self.p_s_estimator_type == 'cnn' or self.p_s_estimator_type == 'transformer':
+            self.rgb_cnn_extractor_stage_idx = cfg.model_params.rgb_cnn_extractor_stage_idx
             down_scale_list = [2, 4, 8, 16, 32]
             down_scale_ratio = down_scale_list[self.rgb_cnn_extractor_stage_idx]
-            self.hm_height = self.resize_height//down_scale_ratio
-            self.hm_width = self.resize_width//down_scale_ratio
-            self.hm_height_middle = self.hm_height
-            self.hm_width_middle = self.hm_width
-        elif self.rgb_cnn_extractor_type == 'davt':
-            self.hm_height = 64
-            self.hm_width = 64
+            self.hm_height_p_s = self.resize_height
+            self.hm_width_p_s = self.resize_width
+            self.hm_height_middle_p_s = self.resize_height
+            self.hm_width_middle_p_s = self.resize_width
+        elif self.p_s_estimator_type == 'davt':
+            self.hm_height_p_s = self.resize_height
+            self.hm_width_p_s = self.resize_width
             down_scale_ratio = 8
-            self.hm_height_middle = self.resize_height//down_scale_ratio
-            self.hm_width_middle = self.resize_width//down_scale_ratio
+            self.hm_height_middle_p_s = 64
+            self.hm_width_middle_p_s = 64
 
         if 'fc' in self.p_p_estimator_type:
             if self.p_p_estimator_type == 'fc_shallow':

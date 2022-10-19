@@ -13,10 +13,9 @@ analyze_name = 'volleyball-dual-mid_p_p_field_middle_p_s_davt_pre_p_p_pre_p_s'
 # define test data type
 test_data_type_list = []
 test_data_type_list.append('bbox_GT_gaze_GT_act_GT_blur_False')
-test_data_type_list.append('bbox_GT_gaze_PRED_act_GT_blur_False')
-test_data_type_list.append('bbox_GT_gaze_GT_act_PRED_blur_False')
-test_data_type_list.append('bbox_GT_gaze_PRED_act_PRED_blur_False')
+test_data_type_list.append('bbox_GT_gaze_GT_act_GT_blur_True')
 test_data_type_list.append('bbox_PRED_gaze_PRED_act_PRED_blur_False')
+test_data_type_list.append('bbox_PRED_gaze_PRED_act_PRED_blur_True')
 
 eval_results_list = []
 for test_data_type in test_data_type_list:
@@ -29,5 +28,5 @@ for test_data_type in test_data_type_list:
 
 eval_results_array = np.array(eval_results_list)
 df_eval_results = pd.DataFrame(eval_results_array, test_data_type_list, eval_metrics_list)
-save_csv_file_path = os.path.join(saved_result_dir, f'gt_pred_ablation_{analyze_name}.csv')
+save_csv_file_path = os.path.join(saved_result_dir, f'blur_ablation_{analyze_name}.csv')
 df_eval_results.to_csv(save_csv_file_path)

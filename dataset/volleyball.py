@@ -16,6 +16,8 @@ class VolleyBallDataset(Dataset):
         # data
         self.sendo_dataset_dir = cfg.data.sendo_dataset_dir
         self.train_dataset_dir = cfg.data.train_dataset_dir
+        self.train_dataset_dir_gt = cfg.data.train_dataset_dir_gt
+        self.train_dataset_dir_pred = cfg.data.train_dataset_dir_pred
         self.test_dataset_dir_gt = cfg.data.test_dataset_dir_gt
         self.test_dataset_dir_pred = cfg.data.test_dataset_dir_pred
         self.rgb_dataset_dir = cfg.data.rgb_dataset_dir
@@ -37,7 +39,6 @@ class VolleyBallDataset(Dataset):
         self.bbox_types = cfg.exp_params.bbox_types
         self.action_types = cfg.exp_params.action_types
         self.gaussian_sigma_head = cfg.exp_params.gaussian_sigma
-        self.iar_type = cfg.exp_params.iar_type
         self.pass_winpoint = True
         self.use_blured_img = cfg.exp_params.use_blured_img
 
@@ -161,7 +162,13 @@ class VolleyBallDataset(Dataset):
                     pass
 
                 if self.mode in ['train', 'valid']:
-                    self.dataset_dir = self.train_dataset_dir
+                    if self.bbox_types == 'GT':
+                        self.dataset_dir = self.train_dataset_dir_gt
+                    elif self.bbox_types == 'PRED':
+                        self.dataset_dir = self.train_dataset_dir_pred
+                    else:
+                        print('Employ correct bbox dataset')
+                        sys.exit()          
                 elif self.mode == 'test':
                     if self.bbox_types == 'GT':
                         self.dataset_dir = self.test_dataset_dir_gt
@@ -225,28 +232,19 @@ class VolleyBallDataset(Dataset):
 
                         feature_list_img_item = [head_x, head_y]
 
-                        if self.mode in ['train', 'valid']:
-                            if self.iar_type == 'gt':
-                                iar_label = float(person_info['action_num'])
-                                feature_list_img_item += [iar_idx == int(iar_label) for iar_idx in range(9)]
-                            elif self.iar_type == 'pred_label':
-                                iar_label_pred = float(person_info['pred_action_num'])
-                                feature_list_img_item += [iar_idx == int(iar_label_pred) for iar_idx in range(9)]
-                            elif self.iar_type == 'none':
-                                feature_list_img_item += [0 for iar_idx in range(9)]
-                            else:
-                                print('please select correct iar type')
-                                sys.exit()
+                        if self.action_types == 'GT':
+                            iar_label = float(person_info['action_num'])
+                            feature_list_img_item += [iar_idx == int(iar_label) for iar_idx in range(9)]
+                        elif self.action_types == 'PRED':
+                            iar_label = float(person_info['pred_action_num'])
+                            feature_list_img_item += [iar_idx == int(iar_label) for iar_idx in range(9)]
+                        elif self.action_types == 'DEBUG':
+                            iar_action_gt = float(person_info['action_num'])
+                            iar_action_pred = float(person_info['pred_action_num'])
+                            feature_list_img_item += [iar_idx == int(iar_action_pred) for iar_idx in range(9)]
                         else:
-                            if self.action_types == 'GT':
-                                iar_label = float(person_info['action_num'])
-                                feature_list_img_item += [iar_idx == int(iar_label) for iar_idx in range(9)]
-                            elif self.action_types == 'PRED':
-                                iar_label = float(person_info['pred_action_num'])
-                                feature_list_img_item += [iar_idx == int(iar_label) for iar_idx in range(9)]
-                            else:
-                                print('please select correct action types')
-                                sys.exit()   
+                            print('please select correct action types')
+                            sys.exit()   
 
                         self.feature_list_img.append(feature_list_img_item)
                         self.head_radius_img.append(head_radius)
@@ -350,7 +348,8 @@ class VolleyBallDataset(Dataset):
         # generate gt box id for joint attention estimation
         gt_box_id_original = torch.tensor(self.gt_bbox_id[idx])
         gt_box_id_original_num = gt_box_id_original.shape[0]
-        gt_box_id_original_max = torch.max(gt_box_id_original)
+        gt_box_id_original_max = 0 if gt_box_id_original_num == 0 else torch.max(gt_box_id_original)
+
         gt_box_id_expand_num = self.max_num_people - gt_box_id_original_num
         gt_box_id_expand = torch.tensor([(gt_box_id_original_max+i+1) for i in range(gt_box_id_expand_num)]).view(-1, 1)
         gt_box_id = torch.cat([gt_box_id_original, gt_box_id_expand], dim=0).long()

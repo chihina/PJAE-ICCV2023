@@ -2,8 +2,16 @@ data:
   name: volleyball
   sendo_dataset_dir : data/volleyball_tracking_annotation
   train_dataset_dir_gt : data/social_saliency_dataset_unipose_gt_20
-  test_dataset_dir_gt :  data/social_saliency_dataset_unipose_gt_20_w_pred_action
-  test_dataset_dir_pred : data/social_saliency_dataset_unipose_pred_20_w_pred_action
+  
+  # test_dataset_dir_gt :  data/social_saliency_dataset_unipose_gt_20_w_pred_action
+  test_dataset_dir_gt :  data/social_saliency_dataset_unipose_gt_20_w_pred_action_arg
+  
+  # test_dataset_dir_pred : data/social_saliency_dataset_unipose_pred_20_w_pred_action
+  # test_dataset_dir_pred : data/social_saliency_dataset_unipose_pred_20_w_pred_action_cpd
+  # test_dataset_dir_pred : data/social_saliency_dataset_unipose_pred_20_w_pred_action_arg
+  # test_dataset_dir_pred : data/jae_dataset_unipose_pred_20_w_pred_action_cpd
+  test_dataset_dir_pred : data/jae_dataset_unipose_pred_20_w_pred_action_arg
+
   rgb_dataset_dir : data/videos
   annotation_dir : data/vatic_ball_annotation/annotation_data/
 
@@ -21,27 +29,19 @@ exp_set:
   # model_name: volleyball-dual-people_deconv_middle
   # model_name: volleyball-dual-people_deconv_deep
 
-  model_name: volleyball-dual-mid_p_p_field_deep_p_s_davt
-  # model_name: volleyball-dual-mid_p_p_field_deep_p_s_davt_wo_action
-  # model_name: volleyball-dual-mid_p_p_field_deep_p_s_davt_wo_gaze
-  # model_name: volleyball-dual-mid_p_p_field_deep_p_s_davt_wo_position
-  # model_name: volleyball-dual-mid_p_p_field_deep_p_s_cnn
-  # model_name: volleyball-dual-mid_p_p_field_deep_p_s_cnn_wo_action
-  # model_name: volleyball-dual-mid_p_p_field_deep_p_s_cnn_wo_gaze
-  # model_name: volleyball-dual-mid_p_p_field_deep_p_s_cnn_wo_position
-  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_5
-
-  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_mid
-  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_simple_average
+  # model_name: volleyball-dual-mid_p_p_field_deep_p_s_davt
+  model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_pre_p_p_pre_p_s
+  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_only_w_p_s
 
   seed_num : 777
   gpu_mode : True
-  gpu_start : 0
-  gpu_finish : 0
+  gpu_start : 3
+  gpu_finish : 3
   num_workers : 1
   batch_size : 1
   wandb_name : demo
 
+  # mode: train
   mode: test
 
 exp_params:
@@ -62,3 +62,6 @@ exp_params:
 
   use_gt_gaze: False
   # use_gt_gaze: True
+
+  # vis_dist_error: False
+  vis_dist_error: True

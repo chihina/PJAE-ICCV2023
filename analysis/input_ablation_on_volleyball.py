@@ -9,10 +9,15 @@ saved_result_dir = os.path.join('results', 'volleyball')
 
 # define analyze model type
 analyze_name_list = []
-analyze_name_list.append('volleyball-dual-mid_p_p_field_deep_p_s_davt')
-analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_mid')
-analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_scalar_weight')
-analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_simple_average')
+# analyze_name_list.append('volleyball-dual-people_field_middle')
+# analyze_name_list.append('volleyball-dual-people_field_deep')
+# analyze_name_list.append('volleyball-dual-mid_p_p_field_deep_p_s_davt')
+# analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt')
+analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_pre_p_p')
+# analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_pre_p_p_pre_p_s')
+# analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_mid')
+# analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_scalar_weight')
+# analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_simple_average')
 
 # define ablate type
 analyze_name_ablation_list = []

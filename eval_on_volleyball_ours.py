@@ -235,6 +235,16 @@ l2_dist_list = [
 for l2_dist_idx, l2_dist_type in enumerate(l2_dist_list):
     metrics_dict[l2_dist_type] = l2_dist_mean[l2_dist_idx]
 
+# save l2 dist (Histgrad analysis)
+for l2_dist_idx, l2_dist_type in enumerate(l2_dist_list):
+    if not l2_dist_type in ['l2_dist_euc_p_p', 'l2_dist_euc_p_s', 'l2_dist_euc_final']:
+        continue
+    save_figure_path = os.path.join(save_results_dir, f'{l2_dist_type}_hist.png')
+    plt.figure()
+    plt.hist(l2_dist_array[:, l2_dist_idx], bins=10)
+    plt.xlim(0, 800)
+    plt.savefig(save_figure_path)
+
 # save detection rate
 det_rate_list = [f'Det p-p (Thr={det_thr})' for det_thr in range(0, 110, 10)]
 for det_rate_idx, det_rate_type in enumerate(det_rate_list, 1):

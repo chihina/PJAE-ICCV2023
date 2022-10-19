@@ -486,7 +486,6 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
         return data
 
     def calc_loss(self, inp, out, cfg):
-
         # unpack data (input)
         img_gt_attention = inp['img_gt']
         gt_box = inp['gt_box']

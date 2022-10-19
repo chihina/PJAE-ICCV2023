@@ -1,43 +1,41 @@
 data:
   name: volleyball
   sendo_dataset_dir : data/volleyball_tracking_annotation
-  train_dataset_dir_gt : data/social_saliency_dataset_unipose_gt_20
-  test_dataset_dir_gt :  data/social_saliency_dataset_unipose_gt_20_w_pred_action
-  test_dataset_dir_pred : data/social_saliency_dataset_unipose_pred_20_w_pred_action
   rgb_dataset_dir : data/videos
   annotation_dir : data/vatic_ball_annotation/annotation_data/
+  train_dataset_dir_gt : data/social_saliency_dataset_unipose_gt_20
+  
+  # test_dataset_dir_gt :  data/social_saliency_dataset_unipose_gt_20_w_pred_action
+  test_dataset_dir_gt :  data/social_saliency_dataset_unipose_gt_20_w_pred_action_arg
+  
+  # test_dataset_dir_pred : data/social_saliency_dataset_unipose_pred_20_w_pred_action
+  # test_dataset_dir_pred : data/social_saliency_dataset_unipose_pred_20_w_pred_action_cpd
+  # test_dataset_dir_pred : data/social_saliency_dataset_unipose_pred_20_w_pred_action_arg
+  # test_dataset_dir_pred : data/jae_dataset_unipose_pred_20_w_pred_action_cpd
+  test_dataset_dir_pred : data/jae_dataset_unipose_pred_20_w_pred_action_arg
 
 exp_set:
   save_folder : saved_weights
   # model_name: volleyball-concat_independent
 
-  # model_name: volleyball-dual-people_fc_shallow
-  # model_name: volleyball-dual-people_fc_middle
-  # model_name: volleyball-dual-people_fc_deep
+  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_only_w_p_s
+
+  # model_name: volleyball-dual-people_field_middle_heavy
   # model_name: volleyball-dual-people_field_middle
-  # model_name: volleyball-dual-people_field_deep
-  # model_name: volleyball-dual-people_deconv_shallow
-  # model_name: volleyball-dual-people_deconv_middle
+  # model_name: volleyball-dual-people_field_middle_wo_action
+  # model_name: volleyball-dual-people_field_middle_wo_gaze
+  # model_name: volleyball-dual-people_field_middle_wo_position
 
-  model_name: volleyball-dual-mid_p_p_field_deep_p_s_davt
-  # model_name: volleyball-dual-mid_p_p_field_deep_p_s_davt_wo_action
-  # model_name: volleyball-dual-mid_p_p_field_deep_p_s_davt_wo_gaze
-  # model_name: volleyball-dual-mid_p_p_field_deep_p_s_davt_wo_position
+  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_pre_p_p_pre_p_s
+  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_pre_p_p_pre_p_s
+  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_pre_p_p_pre_p_s
+  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_pre_p_p_pre_p_s
 
-  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_mid
-  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_mid_wo_action
-  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_mid_wo_gaze
-  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_mid_wo_position
 
-  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_simple_average
-  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_simple_average_wo_action
-  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_simple_average_wo_gaze
-  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_simple_average_wo_position
-
-  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_scalar_weight
-  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_scalar_weight_wo_action
-  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_scalar_weight_wo_gaze
-  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_scalar_weight_wo_position
+  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_pre_p_p_pre_p_s
+  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_pre_p_p_pre_p_s_wo_action
+  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_pre_p_p_pre_p_s_wo_gaze
+  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_pre_p_p_pre_p_s_wo_position
 
   seed_num : 777
   gpu_mode : True
@@ -53,12 +51,13 @@ exp_params:
   use_frame_type: mid
   # use_frame_type: all
 
-  # bbox_types: GT
-  bbox_types: PRED
-  # action_types: GT
-  action_types: PRED
-  # gaze_types: GT
-  gaze_types: PRED
+  bbox_types: GT
+  # bbox_types: PRED
+  action_types: GT
+  # action_types: PRED
+  # action_types: DEBUG
+  gaze_types: GT
+  # gaze_types: PRED
   # gaze_types: NONE
 
   # use_action: True
