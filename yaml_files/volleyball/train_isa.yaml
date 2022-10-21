@@ -8,11 +8,11 @@ data:
 
 exp_set:
   save_folder: saved_weights
-  # wandb_name: volleyball-isa_bbox_GT_gaze_GT_act_GT
-  wandb_name: volleyball-isa_bbox_PRED_gaze_PRED_act_PRED
+  wandb_name: volleyball-isa_bbox_GT_gaze_GT_act_GT
+  # wandb_name: volleyball-isa_bbox_PRED_gaze_PRED_act_PRED
   wandb_log : True
 
-  batch_size: 16
+  batch_size: 4
   num_workers: 16
   seed_num: 777
   gpu_mode : True
@@ -31,14 +31,14 @@ exp_params:
   use_frame_type: mid
   # use_frame_type: all
 
-  # bbox_types: GT
-  bbox_types: PRED
+  bbox_types: GT
+  # bbox_types: PRED
 
-  # gaze_types: GT
-  gaze_types: PRED
+  gaze_types: GT
+  # gaze_types: PRED
   
-  # action_types: GT
-  action_types: PRED
+  action_types: GT
+  # action_types: PRED
 
   # position augmentation
   use_position_aug: False
@@ -50,7 +50,8 @@ exp_params:
   # loss : bce
 
   # learning rate
-  lr : 0.0001
+  # lr : 0.0001
+  lr : 0.001
 
   # gt gaussian
   gaussian_sigma: 40

@@ -63,8 +63,8 @@ weight_saved_dir = os.path.join(cfg.exp_set.save_folder,cfg.data.name, model_nam
 model_head_weight_path = os.path.join(weight_saved_dir, "model_head_best.pth.tar")
 model_head.load_state_dict(torch.load(model_head_weight_path,  map_location='cuda:'+str(gpus_list[0])))
 
-model_saliency_weight_path = os.path.join(os.path.join(cfg.exp_set.save_folder,cfg.data.name, 'volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_average_fusion_pre_p_s_wo_position'), "model_saliency_best.pth.tar")
-# model_saliency_weight_path = os.path.join(weight_saved_dir, "model_saliency_best.pth.tar")
+# model_saliency_weight_path = os.path.join(os.path.join(cfg.exp_set.save_folder,cfg.data.name, 'volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_average_fusion_pre_p_s_wo_position'), "model_saliency_best.pth.tar")
+model_saliency_weight_path = os.path.join(weight_saved_dir, "model_saliency_best.pth.tar")
 model_saliency.load_state_dict(torch.load(model_saliency_weight_path,  map_location='cuda:'+str(gpus_list[0])))
 
 model_attention_weight_path = os.path.join(weight_saved_dir, "model_gaussian_best.pth.tar")

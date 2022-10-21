@@ -61,8 +61,7 @@ print("===> Loading trained model")
 model_name = cfg.exp_set.model_name
 weight_saved_dir = os.path.join(cfg.exp_set.save_folder,cfg.data.name, model_name)
 model_saliency_weight_path = os.path.join(weight_saved_dir, "model_saliency_best.pth.tar")
-if os.path.exists(model_saliency_weight_path):
-    model_saliency.load_state_dict(torch.load(model_saliency_weight_path,  map_location='cuda:'+str(gpus_list[0])))
+model_saliency.load_state_dict(torch.load(model_saliency_weight_path,  map_location='cuda:'+str(gpus_list[0])))
 
 if cuda:
     model_saliency = model_saliency.cuda(gpus_list[0])

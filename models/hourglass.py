@@ -133,7 +133,7 @@ class HourglassNet(nn.Module):
         rgb_img = inp['rgb_img']
         rgb_img_wo_norm = inp['rgb_img_wo_norm']
 
-        x = self.pre(rgb_img)
+        x = self.pre(rgb_img_wo_norm)
         combined_hm_preds = []
         for i in range(self.nstack):
             hg = self.hgs[i](x)
