@@ -7,6 +7,7 @@ from models.end_to_end_human_gaze_target import EndToEndHumanGazeTargetTransform
 from models.davt_scene_extractor import ModelSpatial, ModelSpatialDummy
 from models.transformer_scene_extractor import SceneFeatureTransformer
 from models.cnn_scene_extractor import SceneFeatureCNN
+from models.hourglass import HourglassNet
 import sys
 
 def model_generator(cfg):
@@ -30,11 +31,18 @@ def model_generator(cfg):
     elif cfg.model_params.model_type == 'isa':
         model_head = HeadPoseEstimatorResnet(cfg)
         model_gaussian = InferringSharedAttentionEstimator(cfg)
-        model_saliency = ModelSpatialDummy(cfg)
+        if cfg.data.name == 'volleyball':
+            model_saliency = HourglassNet(3, 3, 5)
+        else:
+            model_saliency = ModelSpatialDummy(cfg)
     elif cfg.model_params.model_type == 'human_gaze_target_transformer':
         model_head = HeadPoseEstimatorResnet(cfg)
         model_gaussian = EndToEndHumanGazeTargetTransformer(cfg)
         model_saliency = ModelSpatialDummy(cfg)
+    elif cfg.model_params.model_type == 'ball_detection':
+        model_head = None
+        model_gaussian = None
+        model_saliency = HourglassNet(3, 3, 5)
     else:
         assert True, 'cfg.exp_parames.model_type is incorrect'
     

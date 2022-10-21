@@ -21,6 +21,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 import glob
+import sys
 
 # original module
 from dataset.dataset_selector import dataset_generator
@@ -144,13 +145,22 @@ print("===> Loading trained model")
 model_name = cfg.exp_set.model_name
 weight_saved_dir = os.path.join(cfg.exp_set.save_folder,cfg.data.name, model_name)
 model_head_weight_path = os.path.join(weight_saved_dir, "model_head_best.pth.tar")
-model_attention_weight_path = os.path.join(weight_saved_dir, "model_gaussian_best.pth.tar")
 model_head.load_state_dict(torch.load(model_head_weight_path,  map_location='cuda:'+str(gpus_list[0])))
+
+# model_saliency_weight_path = os.path.join(weight_saved_dir, "model_saliency_best.pth.tar")
+model_saliency_weight_path = os.path.join(os.path.join(cfg.exp_set.save_folder,cfg.data.name, '2021_0708_lr_e3_gamma_1_stack_3_mid_frame_ver2', "model_saliency_best.pth.tar"))
+if os.path.exists(model_saliency_weight_path):
+    model_saliency.load_state_dict(torch.load(model_saliency_weight_path,  map_location='cuda:'+str(gpus_list[0])))
+
+model_attention_weight_path = os.path.join(weight_saved_dir, "model_gaussian_best.pth.tar")
 model_attention.load_state_dict(torch.load(model_attention_weight_path,  map_location='cuda:'+str(gpus_list[0])))
+
 if cuda:
     model_head = model_head.cuda(gpus_list[0])
+    model_saliency = model_saliency.cuda(gpus_list[0])
     model_attention = model_attention.cuda(gpus_list[0])
     model_head.eval()
+    model_saliency.eval()
     model_attention.eval()
 
 print("===> Loading dataset")
@@ -168,8 +178,11 @@ if cfg.exp_set.test_gt_gaze:
     model_name = model_name + f'_use_gt_gaze'
 
 save_image_dir_dic = {}
-save_image_dir_list = ['joint_attention', 'joint_attention_superimposed', 'attention', 'attention_fan', 'attention_dist',
-                    'gt_map', 'people_people_att', 'people_rgb_att']
+save_image_dir_list = ['joint_attention', 'joint_attention_superimposed',
+                       'attention_fan', 'attention_fan_pool', 'attention_fan_pool_superimposed',
+                       'saliency_map', 'saliency_map_superimposed',
+                       'gt_map'
+                       ]
 for dir_name in save_image_dir_list:
     save_image_dir_dic[dir_name] = os.path.join('results', cfg.data.name, model_name, dir_name)
     if not os.path.exists(save_image_dir_dic[dir_name]):
@@ -234,6 +247,10 @@ for iteration, batch in enumerate(test_data_loader,1):
         else:
             batch['input_gaze'] = head_vector.clone() * 0
 
+        # scene feature extraction
+        out_scene_feat = model_saliency(batch)
+        batch = {**batch, **out_scene_feat}
+
         out_attention = model_attention(batch)
         # loss_set_head = model_head.calc_loss(batch, out_head)
         # loss_set_attention = model_attention.calc_loss(batch, out_attention, cfg)
@@ -244,6 +261,8 @@ for iteration, batch in enumerate(test_data_loader,1):
 
     img_pred = out['img_pred'].to('cpu').detach()[0]
     angle_dist = out['angle_dist'].to('cpu').detach()[0]
+    angle_dist_pool = out['angle_dist_pool'].to('cpu').detach()[0]
+    saliency_map = out['saliency_map'].to('cpu').detach()[0]
     gt_box = out['gt_box'].to('cpu').detach()[0]
     head_tensor = out['head_tensor'].to('cpu').detach()[0].numpy()
     head_feature = out['head_feature'].to('cpu').detach()[0].numpy()
@@ -261,24 +280,48 @@ for iteration, batch in enumerate(test_data_loader,1):
     print(f'Iter:{iteration}, {data_id}, {data_type_id}')
 
     # expand directories
-    for dir_name in ['joint_attention', 'joint_attention_superimposed', 'people_people_att']:
+    single_image_dir = ['joint_attention', 'joint_attention_superimposed',
+                        'attention_fan_pool', 'attention_fan_pool_superimposed',
+                        'saliency_map', 'saliency_map_superimposed',
+                        ]
+    for dir_name in single_image_dir:
         if not os.path.exists(os.path.join(save_image_dir_dic[dir_name], data_type_id)):
             os.makedirs(os.path.join(save_image_dir_dic[dir_name], data_type_id))
-    for dir_name in ['attention', 'attention_fan', 'attention_dist', 'people_people_att', 'people_rgb_att', 'gt_map']:
+    for dir_name in ['attention_fan', 'gt_map']:
         if not os.path.exists(os.path.join(save_image_dir_dic[dir_name], data_type_id, f'{data_id}')):
             os.makedirs(os.path.join(save_image_dir_dic[dir_name], data_type_id, f'{data_id}'))
 
     # save joint attention estimation
     save_image(img_pred, os.path.join(save_image_dir_dic['joint_attention'], data_type_id, f'{mode}_{data_id}_joint_attention.png'))
+    save_image(saliency_map, os.path.join(save_image_dir_dic['saliency_map'], data_type_id, f'{mode}_{data_id}_joint_attention.png'))
+    save_image(angle_dist_pool, os.path.join(save_image_dir_dic['attention_fan_pool'], data_type_id, f'{mode}_{data_id}_joint_attention.png'))
 
     # save joint attention estimation as a superimposed image
     img = cv2.resize(img, (original_width, original_height))
+    
     img_heatmap = cv2.imread(os.path.join(save_image_dir_dic['joint_attention'], data_type_id, f'{mode}_{data_id}_joint_attention.png'), cv2.IMREAD_GRAYSCALE)
+    attention_fan_pool = cv2.imread(os.path.join(save_image_dir_dic['attention_fan_pool'], data_type_id, f'{mode}_{data_id}_joint_attention.png'), cv2.IMREAD_GRAYSCALE)
+    saliency_map = cv2.imread(os.path.join(save_image_dir_dic['saliency_map'], data_type_id, f'{mode}_{data_id}_joint_attention.png'), cv2.IMREAD_GRAYSCALE)
+
     img_heatmap = cv2.resize(img_heatmap, (img.shape[1], img.shape[0]))
+    attention_fan_pool = cv2.resize(attention_fan_pool, (img.shape[1], img.shape[0]))
+    saliency_map = cv2.resize(saliency_map, (img.shape[1], img.shape[0]))
+
     img_heatmap_norm = norm_heatmap(img_heatmap)
+    attention_fan_pool = norm_heatmap(attention_fan_pool)
+    saliency_map = norm_heatmap(saliency_map)
+
     img_heatmap_norm = img_heatmap_norm.astype(np.uint8)
+    attention_fan_pool = attention_fan_pool.astype(np.uint8)
+    saliency_map = saliency_map.astype(np.uint8)
+
     img_heatmap_norm = cv2.applyColorMap(img_heatmap_norm, cv2.COLORMAP_JET)
+    attention_fan_pool = cv2.applyColorMap(attention_fan_pool, cv2.COLORMAP_JET)
+    saliency_map = cv2.applyColorMap(saliency_map, cv2.COLORMAP_JET)
+
     superimposed_image = cv2.addWeighted(img, 0.5, img_heatmap_norm, 0.5, 0)
+    superimposed_fan = cv2.addWeighted(img, 0.5, attention_fan_pool, 0.5, 0)
+    superimposed_sal = cv2.addWeighted(img, 0.5, saliency_map, 0.5, 0)
 
     for person_idx in range(angle_dist.shape[0]):
         save_image(angle_dist[person_idx], os.path.join(save_image_dir_dic['attention_fan'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_fan.png'))
@@ -315,5 +358,6 @@ for iteration, batch in enumerate(test_data_loader,1):
     cv2.rectangle(superimposed_image, (x_min_pred, y_min_pred), (x_max_pred, y_max_pred), (128, 0, 128), thickness=1)
     cv2.rectangle(superimposed_image, (x_min_gt, y_min_gt), (x_max_gt, y_max_gt), (0, 255, 0), thickness=1)
 
-
     cv2.imwrite(os.path.join(save_image_dir_dic['joint_attention_superimposed'], data_type_id, f'{mode}_{data_id}_superimposed.png'), superimposed_image)
+    cv2.imwrite(os.path.join(save_image_dir_dic['attention_fan_pool_superimposed'], data_type_id, f'{mode}_{data_id}_superimposed.png'), superimposed_fan)
+    cv2.imwrite(os.path.join(save_image_dir_dic['saliency_map_superimposed'], data_type_id, f'{mode}_{data_id}_superimposed.png'), superimposed_sal)

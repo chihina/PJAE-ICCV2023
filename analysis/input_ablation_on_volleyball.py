@@ -9,15 +9,11 @@ saved_result_dir = os.path.join('results', 'volleyball')
 
 # define analyze model type
 analyze_name_list = []
-# analyze_name_list.append('volleyball-dual-people_field_middle')
-# analyze_name_list.append('volleyball-dual-people_field_deep')
-# analyze_name_list.append('volleyball-dual-mid_p_p_field_deep_p_s_davt')
-# analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt')
-analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_pre_p_p')
-# analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_pre_p_p_pre_p_s')
-# analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_mid')
-# analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_scalar_weight')
-# analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_cnn_loss_weight_1_1_1_simple_average')
+# analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT')
+# analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED')
+# analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_early_fusion')
+# analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_mid_fusion')
+analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_average_fusion')
 
 # define ablate type
 analyze_name_ablation_list = []
@@ -30,7 +26,7 @@ analyze_name_ablation_list.append('_wo_position')
 
 # define test data type
 test_data_type_list = []
-test_data_type_list.append('bbox_GT_gaze_GT_act_GT_blur_False')
+# test_data_type_list.append('bbox_GT_gaze_GT_act_GT_blur_False')
 test_data_type_list.append('bbox_PRED_gaze_PRED_act_PRED_blur_False')
 for test_data_type in test_data_type_list:
     print(f'==={test_data_type}===')

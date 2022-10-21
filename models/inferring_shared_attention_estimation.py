@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torchvision.models as models
+import sys
 
 class InferringSharedAttentionEstimator(nn.Module):
     def __init__(self, cfg):
@@ -44,7 +45,7 @@ class InferringSharedAttentionEstimator(nn.Module):
             nn.Conv2d(in_channels=16, out_channels=8, kernel_size=3, padding=1),
             nn.ReLU(inplace=False),
             nn.Conv2d(in_channels=8, out_channels=1, kernel_size=1),
-            nn.Sigmoid(),
+            # nn.Sigmoid(),
         )
 
     def forward(self, inp):
@@ -54,6 +55,9 @@ class InferringSharedAttentionEstimator(nn.Module):
         head_xy_map = inp['head_xy_map']
         gaze_xy_map = inp['gaze_xy_map']
         saliency_img = inp['saliency_img']
+
+        people_exist_mask = (torch.sum(head_feature, dim=-1) != 0).bool()
+        people_exist_num = torch.sum(people_exist_mask, dim=-1)
         
         # generate head xy map
         head_xy_map = head_xy_map * head_feature[:, :, :2, None, None]
@@ -79,6 +83,7 @@ class InferringSharedAttentionEstimator(nn.Module):
 
         # sum all gaze maps (divide people num excluding padding people)
         angle_dist_sum_pooling = torch.sum(angle_dist, dim=1)[:, None, :, :]
+        angle_dist_sum_pooling = angle_dist_sum_pooling/people_exist_num[:, None, None, None]
 
         # cat angle img and saliency img
         # spatial detection module
@@ -90,9 +95,11 @@ class InferringSharedAttentionEstimator(nn.Module):
 
         # pack return values
         data = {}
+        data['head_tensor'] = head_vector
         data['img_pred'] = estimated_joint_attention
         data['angle_dist'] = angle_dist
-        data['head_tensor'] = head_vector
+        data['angle_dist_pool'] = angle_dist_sum_pooling
+        data['saliency_map'] = saliency_img
 
         return data
 

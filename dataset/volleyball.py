@@ -107,6 +107,13 @@ class VolleyBallDataset(Dataset):
                 ]
             )
 
+        self.transforms_rgb_wo_norm = transforms.Compose(
+            [
+                transforms.Resize((self.resize_height, self.resize_width)),
+                transforms.ToTensor(),
+            ]
+        )
+
         self.transforms_gt = transforms.Compose(
             [
                 transforms.Resize((self.resize_height, self.resize_width)),
@@ -223,10 +230,6 @@ class VolleyBallDataset(Dataset):
                         elif self.action_types == 'PRED':
                             iar_label = float(person_info['pred_action_num'])
                             feature_list_img_item += [iar_idx == int(iar_label) for iar_idx in range(9)]
-                        elif self.action_types == 'DEBUG':
-                            iar_action_gt = float(person_info['action_num'])
-                            iar_action_pred = float(person_info['pred_action_num'])
-                            feature_list_img_item += [iar_idx == int(iar_action_pred) for iar_idx in range(9)]
                         else:
                             print('please select correct action types')
                             sys.exit()   
@@ -325,6 +328,8 @@ class VolleyBallDataset(Dataset):
         # transform tensor
         if self.transforms_rgb:
             rgb_tensor = self.transforms_rgb(img)
+        if self.transforms_rgb_wo_norm:
+            rgb_tensor_wo_norm = self.transforms_rgb_wo_norm(img)
         if self.transforms_gt:
             img_gt = torch.tensor(img_gt).float()
             img_gt = self.transforms_gt(img_gt)
@@ -349,6 +354,7 @@ class VolleyBallDataset(Dataset):
         data['gt_box'] = gt_box_expand
         data['gt_box_id'] = gt_box_id
         data['rgb_img'] = rgb_tensor
+        data['rgb_img_wo_norm'] = rgb_tensor_wo_norm
         data['saliency_img'] = rgb_tensor
         data['att_inside_flag'] = att_inside_flag
         data['rgb_path'] = img_file_path

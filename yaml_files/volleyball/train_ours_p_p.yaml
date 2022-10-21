@@ -49,17 +49,19 @@ exp_params:
   use_frame_type: mid
   # use_frame_type: all
 
-  use_gt_gaze: False
-  # use_gt_gaze: True
+  bbox_types: GT
+  # bbox_types: PRED
+
+  gaze_types: GT
+  # gaze_types: PRED
+  
+  action_types: GT
+  # action_types: PRED
   
   # position augmentation
   use_position_aug: False
   # use_position_aug: True
   position_aug_std: 0.05
-
-  iar_type: gt
-  # iar_type: pred_label
-  # iar_type: none
 
   # loss function
   loss : mse

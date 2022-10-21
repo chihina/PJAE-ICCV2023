@@ -23,8 +23,6 @@ import seaborn as sns
 import glob
 import sys
 
-os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
-
 # original module
 from dataset.dataset_selector import dataset_generator
 from models.model_selector import model_generator
@@ -107,6 +105,13 @@ def norm_heatmap(img_heatmap):
 
     return img_heatmap
 
+def action_idx_to_name(action_idx):
+    ACTIONS = ['blocking', 'digging', 'falling', 'jumping',
+                'moving', 'setting', 'spiking', 'standing',
+                'waiting']
+
+    return ACTIONS[action_idx]
+
 print("===> Getting configuration")
 parser = argparse.ArgumentParser(description="parameters for training")
 parser.add_argument("config", type=str, help="configuration yaml file path")
@@ -144,6 +149,7 @@ if os.path.exists(model_saliency_weight_path):
 
 model_attention_weight_path = os.path.join(weight_saved_dir, "model_gaussian_best.pth.tar")
 model_attention.load_state_dict(torch.load(model_attention_weight_path,  map_location='cuda:'+str(gpus_list[0])))
+# print(model_attention.state_dict())
 
 if cuda:
     model_head = model_head.cuda(gpus_list[0])
@@ -174,7 +180,9 @@ save_image_dir_list = ['person_person_att', 'person_person_jo_att',
                        'person_scene_att_superimposed', 'person_scene_jo_att_superimposed',
                        'person_scene_ang_att', 'person_scene_ang_att_superimposed',
                        'final_jo_att', 'final_jo_att_superimposed',
-                       'gt_map', 'person_person_self_att_weight']
+                       'gt_map', 'person_person_self_att_weight',
+                       'whole_image', 'whole_image_gaze', 'whole_image_action',
+                       ]
 for dir_name in save_image_dir_list:
     save_image_dir_dic[dir_name] = os.path.join('results', cfg.data.name, model_name, dir_name)
     if not os.path.exists(save_image_dir_dic[dir_name]):
@@ -289,6 +297,7 @@ for iteration, batch in enumerate(test_data_loader,1):
     single_image_dir_list = ['person_person_jo_att', 'person_person_jo_att_superimposed',
                              'person_scene_jo_att', 'person_scene_jo_att_superimposed',
                              'final_jo_att', 'final_jo_att_superimposed',
+                             'whole_image', 'whole_image_gaze', 'whole_image_action'
                             ]
     for dir_name in single_image_dir_list:
         if not os.path.exists(os.path.join(save_image_dir_dic[dir_name], data_type_id)):
@@ -301,6 +310,9 @@ for iteration, batch in enumerate(test_data_loader,1):
     for dir_name in multi_image_dir_list:
         if not os.path.exists(os.path.join(save_image_dir_dic[dir_name], data_type_id, f'{data_id}')):
             os.makedirs(os.path.join(save_image_dir_dic[dir_name], data_type_id, f'{data_id}'))
+
+    # save whole image
+    cv2.imwrite(os.path.join(save_image_dir_dic['whole_image'], data_type_id, f'{mode}_{data_id}_whole_image.png'), img)
 
     # save joint attention estimation
     save_image(person_person_joint_attention_heatmap, os.path.join(save_image_dir_dic['person_person_jo_att'], data_type_id, f'{mode}_{data_id}_person_person_jo_att.png'))
@@ -357,6 +369,8 @@ for iteration, batch in enumerate(test_data_loader,1):
     person_person_joint_attention_heatmap = cv2.addWeighted(img, 0.5, person_person_joint_attention_heatmap, 0.5, 0)
     person_scene_joint_attention_heatmap = cv2.addWeighted(img, 0.5, person_scene_joint_attention_heatmap, 0.5, 0)
     final_joint_attention_heatmap = cv2.addWeighted(img, 0.5, final_joint_attention_heatmap, 0.5, 0)
+    whole_image_gaze = cv2.addWeighted(img, 1.0, img, 0.0, 0)
+    whole_image_action = cv2.addWeighted(img, 1.0, img, 0.0, 0)
 
     # save an attention estimation as a superimposed image
     key_no_padding_num = torch.sum((torch.sum(head_feature, dim=-1) != 0)).numpy()
@@ -364,24 +378,14 @@ for iteration, batch in enumerate(test_data_loader,1):
         # load heatmaps
         person_person_att = cv2.imread(os.path.join(save_image_dir_dic['person_person_att'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_person_person_att.png'), cv2.IMREAD_GRAYSCALE)
         person_scene_att = cv2.imread(os.path.join(save_image_dir_dic['person_scene_att'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_person_scene_att.png'), cv2.IMREAD_GRAYSCALE)
-        if cfg.model_params.p_s_estimator_type == 'cnn':
-            person_scene_ang_att = cv2.imread(os.path.join(save_image_dir_dic['person_scene_ang_att'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_person_scene_ang_att.png'), cv2.IMREAD_GRAYSCALE)
         person_person_att = cv2.resize(person_person_att, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_NEAREST)
         person_scene_att = cv2.resize(person_scene_att, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_NEAREST)
-        if cfg.model_params.p_s_estimator_type == 'cnn':
-            person_scene_ang_att = cv2.resize(person_scene_ang_att, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_NEAREST)
         person_person_att = norm_heatmap(person_person_att).astype(np.uint8)
         person_scene_att = norm_heatmap(person_scene_att).astype(np.uint8)
-        if cfg.model_params.p_s_estimator_type == 'cnn':
-            person_scene_ang_att = norm_heatmap(person_scene_ang_att).astype(np.uint8)
         person_person_att = cv2.applyColorMap(person_person_att, cv2.COLORMAP_JET)
         person_scene_att = cv2.applyColorMap(person_scene_att, cv2.COLORMAP_JET)
-        if cfg.model_params.p_s_estimator_type == 'cnn':
-            person_scene_ang_att = cv2.applyColorMap(person_scene_ang_att, cv2.COLORMAP_JET)
         person_person_att = cv2.addWeighted(img, 0.5, person_person_att, 0.5, 0)
         person_scene_att = cv2.addWeighted(img, 0.5, person_scene_att, 0.5, 0)
-        if cfg.model_params.p_s_estimator_type == 'cnn':
-            person_scene_ang_att = cv2.addWeighted(img, 0.5, person_scene_ang_att, 0.5, 0)
 
         # get person location and gt location
         head_feature_person = head_feature[person_idx]
@@ -395,44 +399,49 @@ for iteration, batch in enumerate(test_data_loader,1):
         gaze_vec_x, gaze_vec_y = head_vector[person_idx, 0:2]
         gaze_l = 50
         gaze_x, gaze_y = int(head_x+gaze_vec_x*gaze_l), int(head_y+gaze_vec_y*gaze_l)
-        cv2.arrowedLine(person_person_joint_attention_heatmap, (head_x, head_y), (gaze_x, gaze_y), (0, 255, 0), 1)
-        cv2.arrowedLine(person_scene_joint_attention_heatmap, (head_x, head_y), (gaze_x, gaze_y), (0, 255, 0), 1)
-        cv2.arrowedLine(final_joint_attention_heatmap, (head_x, head_y), (gaze_x, gaze_y), (0, 255, 0), 1)
+        gaze_color = (255, 255, 255)
+        # gaze_color = (0, 0, 0)
+        gaze_size = 2
+        # cv2.arrowedLine(person_person_joint_attention_heatmap, (head_x, head_y), (gaze_x, gaze_y), gaze_color, gaze_size)
+        # cv2.arrowedLine(person_scene_joint_attention_heatmap, (head_x, head_y), (gaze_x, gaze_y), gaze_color, gaze_size)
+        # cv2.arrowedLine(final_joint_attention_heatmap, (head_x, head_y), (gaze_x, gaze_y), gaze_color, gaze_size)
+        cv2.arrowedLine(whole_image_gaze, (head_x, head_y), (gaze_x, gaze_y), gaze_color, gaze_size)
         
         # action prediction
         action_idx = np.argmax(action_vector.numpy())
-        cv2.putText(person_person_joint_attention_heatmap, text=f'{action_idx}', org=(head_x, head_y-30), color=(0, 0, 255),
-                    fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1.0, thickness=2, lineType=cv2.LINE_4)
-        cv2.putText(person_scene_joint_attention_heatmap, text=f'{action_idx}', org=(head_x, head_y-30), color=(0, 0, 255),
-                    fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1.0, thickness=2, lineType=cv2.LINE_4)
-        cv2.putText(final_joint_attention_heatmap, text=f'{action_idx}', org=(head_x, head_y-30), color=(0, 0, 255),
-                    fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1.0, thickness=2, lineType=cv2.LINE_4)
+        action_idx = action_idx_to_name(action_idx)
+        action_color = (255, 255, 255)
+        action_size = 2
+        action_shift = 20
+
+        # cv2.putText(person_person_joint_attention_heatmap, text=f'{action_idx}', org=(head_x, head_y-action_shift), color=action_color,
+        #             fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1.0, thickness=action_size, lineType=cv2.LINE_4)
+        # cv2.putText(person_scene_joint_attention_heatmap, text=f'{action_idx}', org=(head_x, head_y-action_shift), color=action_color,
+        #             fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1.0, thickness=action_size, lineType=cv2.LINE_4)
+        # cv2.putText(final_joint_attention_heatmap, text=f'{action_idx}', org=(head_x, head_y-action_shift), color=action_color,
+        #             fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1.0, thickness=action_size, lineType=cv2.LINE_4)
+        cv2.putText(whole_image_action, text=f'{action_idx}', org=(head_x, head_y-action_shift), color=action_color,
+                    fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1.0, thickness=action_size, lineType=cv2.LINE_4)
 
         cv2.circle(person_person_att, (gt_mid_x, gt_mid_y), 10, (0, 255, 0), thickness=-1)
         cv2.circle(person_scene_att, (gt_mid_x, gt_mid_y), 10, (0, 255, 0), thickness=-1)
-        if cfg.model_params.p_s_estimator_type == 'cnn':
-            cv2.circle(person_scene_ang_att, (gt_mid_x, gt_mid_y), 10, (0, 255, 0), thickness=-1)
         cv2.line(person_person_att, (head_x, head_y), (gt_mid_x, gt_mid_y), (0, 255, 0), 1)
         cv2.line(person_scene_att, (head_x, head_y), (gt_mid_x, gt_mid_y), (0, 255, 0), 1)
-        if cfg.model_params.p_s_estimator_type == 'cnn':
-            cv2.line(person_scene_ang_att, (head_x, head_y), (gt_mid_x, gt_mid_y), (0, 255, 0), 1)
 
         head_x_min, head_y_min, head_x_max, head_y_max = map(float, head_bbox[person_idx])
         head_x_min, head_x_max = map(lambda x: int(x*img.shape[1]), [head_x_min, head_x_max])
         head_y_min, head_y_max = map(lambda x: int(x*img.shape[0]), [head_y_min, head_y_max])
-        cv2.rectangle(person_scene_att, (head_x_min, head_y_min), (head_x_max, head_y_max), (128, 0, 128), thickness=5)
 
         # save image
         cv2.imwrite(os.path.join(save_image_dir_dic['person_person_att_superimposed'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_person_person_att_superimposed.png'), person_person_att)
         cv2.imwrite(os.path.join(save_image_dir_dic['person_scene_att_superimposed'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_person_scene_att_superimposed.png'), person_scene_att)
-        if cfg.model_params.p_s_estimator_type == 'cnn':
-            cv2.imwrite(os.path.join(save_image_dir_dic['person_scene_ang_att_superimposed'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_person_scene_ang_att_superimposed.png'), person_scene_ang_att)
-
-        if cfg.exp_params.vis_dist_error:
-            cv2.rectangle(person_person_joint_attention_heatmap, (head_x_min, head_y_min), (head_x_max, head_y_max), (128, 0, 128), thickness=5)
-            cv2.rectangle(person_scene_joint_attention_heatmap, (head_x_min, head_y_min), (head_x_max, head_y_max), (128, 0, 128), thickness=5)
-            cv2.rectangle(final_joint_attention_heatmap, (head_x_min, head_y_min), (head_x_max, head_y_max), (128, 0, 128), thickness=5)
+        # if cfg.exp_params.vis_dist_error:
+            # cv2.rectangle(person_person_joint_attention_heatmap, (head_x_min, head_y_min), (head_x_max, head_y_max), (128, 0, 128), thickness=5)
+            # cv2.rectangle(person_scene_joint_attention_heatmap, (head_x_min, head_y_min), (head_x_max, head_y_max), (128, 0, 128), thickness=5)
+            # cv2.rectangle(final_joint_attention_heatmap, (head_x_min, head_y_min), (head_x_max, head_y_max), (128, 0, 128), thickness=5)
 
     cv2.imwrite(os.path.join(save_image_dir_dic['person_person_jo_att_superimposed'], data_type_id, f'{mode}_{data_id}_person_person_jo_att_superimposed.png'), person_person_joint_attention_heatmap)
     cv2.imwrite(os.path.join(save_image_dir_dic['person_scene_jo_att_superimposed'], data_type_id, f'{mode}_{data_id}_person_scene_jo_att_superimposed.png'), person_scene_joint_attention_heatmap)
     cv2.imwrite(os.path.join(save_image_dir_dic['final_jo_att_superimposed'], data_type_id, f'{mode}_{data_id}_final_jo_att_superimposed.png'), final_joint_attention_heatmap)
+    cv2.imwrite(os.path.join(save_image_dir_dic['whole_image_gaze'], data_type_id, f'{mode}_{data_id}_final_jo_att_superimposed.png'), whole_image_gaze)
+    cv2.imwrite(os.path.join(save_image_dir_dic['whole_image_action'], data_type_id, f'{mode}_{data_id}_final_jo_att_superimposed.png'), whole_image_action)

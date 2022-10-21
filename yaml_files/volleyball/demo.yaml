@@ -9,20 +9,22 @@ data:
 exp_set:
   save_folder : saved_weights
 
+  model_name: volleyball-isa
+
   # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT
   # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_wo_action
   # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_wo_gaze
   # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_wo_position
 
-  model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED
+  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED
   # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_wo_action
   # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_wo_gaze
   # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_wo_position
 
   seed_num : 777
   gpu_mode : True
-  gpu_start : 7
-  gpu_finish : 7
+  gpu_start : 2
+  gpu_finish : 2
   num_workers : 1
   batch_size : 1
   wandb_name : demo

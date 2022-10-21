@@ -57,7 +57,6 @@ exp_params:
   
   action_types: GT
   # action_types: PRED
-  # action_types: DEBUG
 
   # position augmentation
   use_position_aug: False
