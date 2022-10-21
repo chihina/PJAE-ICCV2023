@@ -9,7 +9,8 @@ data:
 exp_set:
   save_folder : saved_weights
 
-  model_name: 2021_0708_lr_e3_gamma_1_stack_3_mid_frame_ver2
+  # model_name: 2021_0708_lr_e3_gamma_1_stack_3_mid_frame_ver2
+  model_name: volleyball-isa_bbox_PRED_gaze_PRED_act_PRED
 
   # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT
   # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_wo_action
@@ -40,12 +41,10 @@ exp_set:
 
   # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_p_s_only
 
-  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_average_fusion_pre_p_s
+  model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_average_fusion_pre_p_s
   # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_average_fusion_pre_p_s_wo_action
   # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_average_fusion_pre_p_s_wo_gaze
   # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_average_fusion_pre_p_s_wo_position
-
-  # model_name: volleyball-isa
 
   seed_num : 777
   gpu_mode : True
@@ -56,9 +55,6 @@ exp_set:
   wandb_name : test
 
   mode: test
-
-  resize_height : 720
-  resize_width : 1280
   
 exp_params:
   use_frame_type: mid

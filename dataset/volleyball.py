@@ -20,9 +20,11 @@ class VolleyBallDataset(Dataset):
         self.rgb_dataset_dir = cfg.data.rgb_dataset_dir
         self.annotation_dir = cfg.data.annotation_dir
         self.att_inside_dir = cfg.data.att_inside_dir
+        self.data_name = cfg.data.name
 
         # exp settings
         self.wandb_name = cfg.exp_set.wandb_name
+        self.model_type = cfg.model_params.model_type
         self.mode = mode
         self.resize_width = cfg.exp_set.resize_width
         self.resize_height = cfg.exp_set.resize_height
@@ -110,6 +112,7 @@ class VolleyBallDataset(Dataset):
         self.transforms_rgb_wo_norm = transforms.Compose(
             [
                 transforms.Resize((self.resize_height, self.resize_width)),
+                transforms.Resize((720, 1280)),
                 transforms.ToTensor(),
             ]
         )
@@ -354,10 +357,12 @@ class VolleyBallDataset(Dataset):
         data['gt_box'] = gt_box_expand
         data['gt_box_id'] = gt_box_id
         data['rgb_img'] = rgb_tensor
-        data['rgb_img_wo_norm'] = rgb_tensor_wo_norm
         data['saliency_img'] = rgb_tensor
         data['att_inside_flag'] = att_inside_flag
         data['rgb_path'] = img_file_path
+
+        if self.model_type == 'ball_detection' or self.model_type == 'isa' and self.data_name == 'volleyball':
+            data['rgb_img_wo_norm'] = rgb_tensor_wo_norm
 
         return data
 

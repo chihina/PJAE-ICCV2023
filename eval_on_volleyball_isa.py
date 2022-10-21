@@ -204,8 +204,8 @@ for iteration, batch in enumerate(test_data_loader):
     l2_dist_array[iteration, 7] = l2_dist_y_final
     l2_dist_array[iteration, 8] = l2_dist_euc_final
 
-    # cfg.exp_set.resize_height = resize_height_old
-    # cfg.exp_set.resize_width = resize_width_old
+    cfg.exp_set.resize_height = resize_height_old
+    cfg.exp_set.resize_width = resize_width_old
 
     # stop_iter = 20
     # if iteration > stop_iter:

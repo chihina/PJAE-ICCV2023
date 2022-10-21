@@ -147,8 +147,7 @@ weight_saved_dir = os.path.join(cfg.exp_set.save_folder,cfg.data.name, model_nam
 model_head_weight_path = os.path.join(weight_saved_dir, "model_head_best.pth.tar")
 model_head.load_state_dict(torch.load(model_head_weight_path,  map_location='cuda:'+str(gpus_list[0])))
 
-# model_saliency_weight_path = os.path.join(weight_saved_dir, "model_saliency_best.pth.tar")
-model_saliency_weight_path = os.path.join(os.path.join(cfg.exp_set.save_folder,cfg.data.name, '2021_0708_lr_e3_gamma_1_stack_3_mid_frame_ver2', "model_saliency_best.pth.tar"))
+model_saliency_weight_path = os.path.join(weight_saved_dir, "model_saliency_best.pth.tar")
 if os.path.exists(model_saliency_weight_path):
     model_saliency.load_state_dict(torch.load(model_saliency_weight_path,  map_location='cuda:'+str(gpus_list[0])))
 

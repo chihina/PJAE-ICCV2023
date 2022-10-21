@@ -130,7 +130,8 @@ class HourglassNet(nn.Module):
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, inp):
-        rgb_img = inp['rgb_img_wo_norm']
+        rgb_img = inp['rgb_img']
+        rgb_img_wo_norm = inp['rgb_img_wo_norm']
 
         x = self.pre(rgb_img)
         combined_hm_preds = []
@@ -145,8 +146,8 @@ class HourglassNet(nn.Module):
         
         # only return plob map (excluding size and offset)
         saliency_img = torch.stack(combined_hm_preds, 1)[:, -1, 0, :, :][:, None, :, :]
-        # _, _, height, width = saliency_img.shape
-        # saliency_img = F.interpolate(saliency_img, (height*4, width*4), mode='bilinear')
+        _, _, ori_height, ori_width = rgb_img.shape
+        saliency_img = F.interpolate(saliency_img, (ori_height, ori_width), mode='bilinear')
 
         # pack return values
         data = {}
