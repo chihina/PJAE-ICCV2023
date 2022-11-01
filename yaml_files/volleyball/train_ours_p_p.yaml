@@ -10,14 +10,15 @@ exp_set:
   save_folder: saved_weights
   wandb_log : True
 
-  wandb_name: volleyball-dual-people_field_middle_heavy
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_independ_fusion_wo_p_s
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_independ_fusion_wo_p_s
 
   batch_size: 8
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 3
-  gpu_finish : 3
+  gpu_start : 4
+  gpu_finish : 4
 
   resize_height : 320
   resize_width : 640
@@ -131,8 +132,7 @@ model_params:
   people_feat_dim : 16
   # use_people_people_trans: False
   use_people_people_trans: True
-  # people_people_trans_enc_num : 2
-  people_people_trans_enc_num : 4
+  people_people_trans_enc_num : 2
   mha_num_heads_people_people : 2
 
   # rgb-person transformer
@@ -147,7 +147,7 @@ model_params:
   # p_p_estimator_type : deconv_deep
   # p_p_estimator_type : field_shallow
   p_p_estimator_type : field_middle
-  # p_p_estimator_type : field_deep  
+  # p_p_estimator_type : field_deep
 
   # rgb_cnn_extractor_type : rgb_patch
   # rgb_patch_size : 8

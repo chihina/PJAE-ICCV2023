@@ -10,39 +10,32 @@ exp_set:
   save_folder: saved_weights
   wandb_log : True
 
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_wo_action
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_wo_gaze
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_wo_position
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_early_fusion
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_p_s_only
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion_mult_1
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion_mult_4
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion_mult_8
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion_mult_16
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion_wo_action
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion_wo_gaze
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion_wo_position
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion_wo_action_wo_gaze
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion_wo_action_wo_position
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion_wo_gaze_wo_position
 
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_wo_action
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_wo_gaze
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_wo_position
-
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_early_fusion
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_early_fusion_wo_action
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_early_fusion_wo_gaze
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_early_fusion_wo_position
-
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_mid_fusion
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_mid_fusion_wo_action
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_mid_fusion_wo_gaze
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_mid_fusion_wo_position
-
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_average_fusion
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_average_fusion_wo_action
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_average_fusion_wo_gaze
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_average_fusion_wo_position
-
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_p_s_only
-
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_average_fusion_pre_p_s
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_average_fusion_pre_p_s_wo_action
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_average_fusion_pre_p_s_wo_gaze
-  wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_average_fusion_pre_p_s_wo_position
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion_enc_1
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion_enc_3
+  wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion_enc_4
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion_multi_1
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion_multi_4
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion_multi_8
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion_multi_16
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion_wo_action
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion_wo_gaze
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion_wo_position
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion_wo_action_wo_gaze
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion_wo_action_wo_position
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion_wo_gaze_wo_position
 
   # batch_size: 8
   batch_size: 4
@@ -68,8 +61,8 @@ exp_params:
   use_person_person_jo_att_loss : True
   person_person_jo_att_loss_weight : 1
 
-  # use_person_scene_att_loss : False
-  use_person_scene_att_loss : True
+  use_person_scene_att_loss : False
+  # use_person_scene_att_loss : True
   person_scene_att_loss_weight : 1
 
   use_person_scene_jo_att_loss : False
@@ -108,7 +101,8 @@ exp_params:
   # lr : 0.1
   
   # gt gaussian
-  gaussian_sigma: 20
+  # gaussian_sigma: 20
+  gaussian_sigma: 10
 
   # learning schedule
   nEpochs : 500
@@ -129,9 +123,9 @@ exp_params:
   # use_pretrained_saliency_extractor: False
   use_pretrained_saliency_extractor: True
   # pretrained_saliency_extractor_name: pretrained_scene_extractor_davt
-  pretrained_saliency_extractor_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_p_s_only
-  freeze_saliency_extractor: False
-  # freeze_saliency_extractor: True
+  pretrained_saliency_extractor_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_p_s_only
+  # freeze_saliency_extractor: False
+  freeze_saliency_extractor: True
 
   use_pretrained_joint_attention_estimator: False
   # use_pretrained_joint_attention_estimator: True
@@ -143,8 +137,8 @@ model_params:
   model_type: ja_transformer_dual
 
   # Position
-  use_position : False
-  # use_position : True
+  # use_position : False
+  use_position : True
 
   # Gaze
   # use_gaze : False
@@ -164,10 +158,18 @@ model_params:
 
   # person-person transformer
   people_feat_dim : 16
+  # people_feat_dim : 32
   # use_people_people_trans: False
   use_people_people_trans: True
-  people_people_trans_enc_num : 2
+  # people_people_trans_enc_num : 1
+  # people_people_trans_enc_num : 2
+  # people_people_trans_enc_num : 3
+  people_people_trans_enc_num : 4
+  # mha_num_heads_people_people : 1
   mha_num_heads_people_people : 2
+  # mha_num_heads_people_people : 4
+  # mha_num_heads_people_people : 8
+  # mha_num_heads_people_people : 16
   # p_p_estimator_type : fc_shallow
   # p_p_estimator_type : fc_middle
   # p_p_estimator_type : fc_deep

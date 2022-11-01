@@ -191,7 +191,7 @@ for dir_name in save_image_dir_list:
 print("===> Starting demo processing")
 stop_iteration = 20
 if mode == 'test':
-    stop_iteration = 20
+    stop_iteration = 80
 for iteration, batch in enumerate(test_data_loader,1):
     if iteration > stop_iteration:
         break
@@ -329,9 +329,8 @@ for iteration, batch in enumerate(test_data_loader,1):
             save_image(ang_att_map[person_idx], os.path.join(save_image_dir_dic['person_scene_ang_att'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_person_scene_ang_att.png'))
 
     # save attention of transformers (people and people attention)
-    key_no_padding_num = torch.sum((torch.sum(head_feature, dim=-1) != 0)).numpy()
+    key_no_padding_num = torch.sum((torch.sum(head_feature, dim=-1) != 0)).numpy()+1
     df_person = [person_idx for person_idx in range(key_no_padding_num)]
-    df_person_all = [person_idx for person_idx in range(trans_att_people_people.shape[-1])]
     people_people_trans_enc_num = cfg.model_params.people_people_trans_enc_num
     for i in range(people_people_trans_enc_num):
         plt.figure(figsize=(8, 6))
@@ -352,6 +351,11 @@ for iteration, batch in enumerate(test_data_loader,1):
     person_scene_joint_attention_heatmap = norm_heatmap(person_scene_joint_attention_heatmap).astype(np.uint8)
     final_joint_attention_heatmap = norm_heatmap(final_joint_attention_heatmap).astype(np.uint8)
 
+    # get estimated joint attention coordinates
+    pred_y_mid_p_p, pred_x_mid_p_p = np.unravel_index(np.argmax(person_person_joint_attention_heatmap), person_person_joint_attention_heatmap.shape)
+    pred_y_mid_p_s, pred_x_mid_p_s = np.unravel_index(np.argmax(person_scene_joint_attention_heatmap), person_scene_joint_attention_heatmap.shape)
+    pred_y_mid_final, pred_x_mid_final = np.unravel_index(np.argmax(final_joint_attention_heatmap), final_joint_attention_heatmap.shape)
+
     if cfg.exp_params.vis_dist_error:
         gt_x_min, gt_y_min, gt_x_max, gt_y_max = map(float, gt_box[0])
         gt_x_min, gt_x_max = map(lambda x:x*cfg.exp_set.resize_width, [gt_x_min, gt_x_max])
@@ -371,6 +375,14 @@ for iteration, batch in enumerate(test_data_loader,1):
     final_joint_attention_heatmap = cv2.addWeighted(img, 0.5, final_joint_attention_heatmap, 0.5, 0)
     whole_image_gaze = cv2.addWeighted(img, 1.0, img, 0.0, 0)
     whole_image_action = cv2.addWeighted(img, 1.0, img, 0.0, 0)
+
+    # plot estimated and groung-truth joint attentions
+    cv2.circle(person_person_joint_attention_heatmap, (pred_x_mid_p_p, pred_y_mid_p_p), 10, (0, 165, 255), thickness=-1)
+    cv2.circle(person_person_joint_attention_heatmap, (int(gt_x_mid), int(gt_y_mid)), 10, (0, 255, 0), thickness=-1)
+    cv2.circle(person_scene_joint_attention_heatmap, (pred_x_mid_p_s, pred_y_mid_p_s), 10, (0, 165, 255), thickness=-1)
+    cv2.circle(person_scene_joint_attention_heatmap, (int(gt_x_mid), int(gt_y_mid)), 10, (0, 255, 0), thickness=-1)
+    cv2.circle(final_joint_attention_heatmap, (pred_x_mid_final, pred_y_mid_final), 10, (0, 165, 255), thickness=-1)
+    cv2.circle(final_joint_attention_heatmap, (int(gt_x_mid), int(gt_y_mid)), 10, (0, 255, 0), thickness=-1)
 
     # save an attention estimation as a superimposed image
     key_no_padding_num = torch.sum((torch.sum(head_feature, dim=-1) != 0)).numpy()

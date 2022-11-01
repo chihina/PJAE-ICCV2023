@@ -303,7 +303,7 @@ metrics_dict['auc'] = roc_auc_score(co_att_gt_array, co_att_pred_array)
 metrics_dict['hresh'] = thresh_best
 
 # save detection rate
-det_rate_list = [f'Det (Thr={det_thr})' for det_thr in range(0, 110, 10)]
+det_rate_list = [f'Det (Thr={det_thr})' for det_thr in range(0, 210, 10)]
 for det_rate_idx, det_rate_type in enumerate(det_rate_list, 1):
     det_rate = l2_dist_array[:, 2]<(det_rate_idx*10)
     det_rate_mean = np.mean(det_rate) * 100

@@ -5,7 +5,8 @@ data:
 exp_set:
   save_folder: saved_weights
   # wandb_name: videoattentiontarget-hgt
-  wandb_name: videoattentiontarget-hgt-high
+  # wandb_name: videoattentiontarget-hgt-high
+  wandb_name: videoattentiontarget-hgt-1101
 
   wandb_log : True
 
@@ -13,8 +14,8 @@ exp_set:
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 5
-  gpu_finish : 5
+  gpu_start : 6
+  gpu_finish : 6
 
   # resize_height: 320
   resize_height: 224

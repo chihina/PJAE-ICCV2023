@@ -553,6 +553,23 @@ metrics_dict['f1 final'] = f1_score(co_att_gt_array, co_att_pred_array_final)
 metrics_dict['auc final'] = roc_auc_score(co_att_gt_array, co_att_pred_array_final)
 metrics_dict['thresh final'] = thresh_best_final
 
+# save detection rate
+det_rate_list = [f'Det p-p (Thr={det_thr})' for det_thr in range(0, 210, 10)]
+for det_rate_idx, det_rate_type in enumerate(det_rate_list, 1):
+    det_rate = l2_dist_array[:, 2]<(det_rate_idx*10)
+    det_rate_mean = np.mean(det_rate) * 100
+    metrics_dict[det_rate_type] = det_rate_mean
+det_rate_list = [f'Det p-s (Thr={det_thr})' for det_thr in range(0, 210, 10)]
+for det_rate_idx, det_rate_type in enumerate(det_rate_list, 1):
+    det_rate = l2_dist_array[:, 5]<(det_rate_idx*10)
+    det_rate_mean = np.mean(det_rate) * 100
+    metrics_dict[det_rate_type] = det_rate_mean
+det_rate_list = [f'Det final (Thr={det_thr})' for det_thr in range(0, 210, 10)]
+for det_rate_idx, det_rate_type in enumerate(det_rate_list, 1):
+    det_rate = l2_dist_array[:, 8]<(det_rate_idx*10)
+    det_rate_mean = np.mean(det_rate) * 100
+    metrics_dict[det_rate_type] = det_rate_mean
+
 # save metrics into json files
 save_results_path = os.path.join(save_results_dir, 'eval_results.json')
 with open(save_results_path, 'w') as f:

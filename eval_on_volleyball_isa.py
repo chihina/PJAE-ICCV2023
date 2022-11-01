@@ -33,6 +33,21 @@ def data_type_id_generator(cfg):
     data_type_id = f'bbox_{cfg.exp_params.bbox_types}_gaze_{cfg.exp_params.gaze_types}_act_{cfg.exp_params.action_types}_blur_{cfg.exp_params.use_blured_img}'
     return data_type_id
 
+def get_edge_boxes(im):
+    model = os.path.join('saved_weights', 'videocoatt', 'model.yml.gz')
+    edge_detection = cv2.ximgproc.createStructuredEdgeDetection(model)
+    im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+    edges = edge_detection.detectEdges(np.float32(im) / 255.0)
+
+    orimap = edge_detection.computeOrientation(edges)
+    edges = edge_detection.edgesNms(edges, orimap)
+
+    edge_boxes = cv2.ximgproc.createEdgeBoxes()
+    edge_boxes.setMaxBoxes(20)
+    boxes = edge_boxes.getBoundingBoxes(edges, orimap)
+
+    return boxes
+
 print("===> Getting configuration")
 parser = argparse.ArgumentParser(description="parameters for training")
 parser.add_argument("config", type=str, help="configuration yaml file path")
@@ -172,8 +187,10 @@ for iteration, batch in enumerate(test_data_loader):
     img_path = out['rgb_path'][0]
 
     # calc a center of gt bbox
-    img = Image.open(batch['rgb_path'][0])
-    original_width, original_height = img.size
+    # img = Image.open(batch['rgb_path'][0])
+    # original_width, original_height = img.size
+    img = cv2.imread(batch['rgb_path'][0])
+    original_height, original_width, _ = img.shape
     resize_height_old = cfg.exp_set.resize_height
     resize_width_old = cfg.exp_set.resize_width
     cfg.exp_set.resize_height = original_height
@@ -186,8 +203,21 @@ for iteration, batch in enumerate(test_data_loader):
     # calc a centers of pred bboxes
     final_joint_attention_heatmap = final_joint_attention_heatmap[None, None, :, :]
     final_joint_attention_heatmap = F.interpolate(final_joint_attention_heatmap, (cfg.exp_set.resize_height, cfg.exp_set.resize_width), mode='bilinear')
-    final_joint_attention_heatmap = final_joint_attention_heatmap[0, 0, :, :]
+    final_joint_attention_heatmap = final_joint_attention_heatmap[0, 0, :, :].numpy()
     pred_y_mid_final, pred_x_mid_final = np.unravel_index(np.argmax(final_joint_attention_heatmap), final_joint_attention_heatmap.shape)
+
+    # get region proposals
+    # edge_boxes = get_edge_boxes(img)
+    # edge_boxes_score = np.zeros((len(edge_boxes[0]), 4+1))
+    # for idx in range(len(edge_boxes[0])):
+    #     (x, y, w, h), conf = edge_boxes[0][idx], edge_boxes[1][idx]
+    #     edge_boxes_score[idx, :4] = np.array([x, y, x+w, y+h])
+    #     atn_score = np.mean(final_joint_attention_heatmap[y:y+h, x:x+w])
+    #     edge_boxes_score[idx, 4] = atn_score
+    # score_max_idx = np.argmax(edge_boxes_score[:, 4])
+    # pred_bbox = edge_boxes_score[score_max_idx, :4]
+    # x_min_pred, y_min_pred, x_max_pred, y_max_pred = map(int, pred_bbox)
+    # pred_y_mid_final, pred_x_mid_final = (x_min_pred+x_max_pred)//2, (y_min_pred+y_max_pred)//2
 
     # calc metrics
     l2_dist_x_final, l2_dist_y_final = np.power(np.power(pred_x_mid_final-peak_x_mid_gt, 2), 0.5), np.power(np.power(pred_y_mid_final-peak_y_mid_gt, 2), 0.5)

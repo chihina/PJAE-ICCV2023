@@ -10,30 +10,34 @@ saved_result_dir = os.path.join('results', 'volleyball')
 analyze_name_list_dic = {}
 
 analyze_name_list = []
-# analyze_name_list.append('2021_0708_lr_e3_gamma_1_stack_3_mid_frame_ver2')
-# analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_p_s_only')
-# analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT')
-# analyze_name_list_dic['bbox_GT_gaze_GT_act_GT_blur_False'] = analyze_name_list
+analyze_name_list.append('2021_0708_lr_e3_gamma_1_stack_3_mid_frame_ver2')
+analyze_name_list.append('volleyball-isa_bbox_GT_gaze_GT_act_GT')
+analyze_name_list.append('volleyball-isa_bbox_PRED_gaze_PRED_act_PRED')
+analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_independ_fusion_wo_p_p')
+analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_independ_fusion_wo_p_p')
+analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion')
+analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion')
+analyze_name_list_dic['bbox_GT_gaze_GT_act_GT_blur_False'] = analyze_name_list
 
 analyze_name_list = []
 analyze_name_list.append('2021_0708_lr_e3_gamma_1_stack_3_mid_frame_ver2')
 analyze_name_list.append('volleyball-isa_bbox_GT_gaze_GT_act_GT')
 analyze_name_list.append('volleyball-isa_bbox_PRED_gaze_PRED_act_PRED')
-analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_p_s_only')
-analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_p_s_only')
-analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT')
-analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED')
+analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_independ_fusion_wo_p_p')
+analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_independ_fusion_wo_p_p')
+analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion')
+analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion')
 analyze_name_list_dic['bbox_PRED_gaze_PRED_act_PRED_blur_False'] = analyze_name_list
 
 # define model names
 model_name_list = []
-model_name_list.append('ball detection')
-model_name_list.append('ISA (Train gt)')
-model_name_list.append('ISA (Train pred)')
-model_name_list.append('DAVT (Train gt)')
-model_name_list.append('DAVT (Train pred)')
-model_name_list.append('Ours (Train gt)')
-model_name_list.append('Ours (Train pred)')
+model_name_list.append('Ball detection')
+model_name_list.append('ISA (Trained on ground-truth attributes)')
+model_name_list.append('ISA (Trained on predicted attributes)')
+model_name_list.append('DAVT (Trained on grond-truth attributes)')
+model_name_list.append('DAVT (Trained on predicted attributes)')
+model_name_list.append('Ours (Trained on grond-truth attributes)')
+model_name_list.append('Ours (Trained on predicted attributes)')
 
 for test_data_type, analyze_name_list in analyze_name_list_dic.items():
     print(f'==={test_data_type}===')

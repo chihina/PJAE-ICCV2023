@@ -15,8 +15,8 @@ exp_set:
   num_workers: 1
   seed_num: 777
   gpu_mode : True
-  gpu_start : 1
-  gpu_finish : 1
+  gpu_start : 5
+  gpu_finish : 5
 
   resize_height : 320
   resize_width : 640
@@ -144,8 +144,8 @@ model_params:
   # p_p_estimator_type : deconv_middle
   # p_p_estimator_type : deconv_deep
   # p_p_estimator_type : field_shallow
-  # p_p_estimator_type : field_middle
-  p_p_estimator_type : field_deep  
+  p_p_estimator_type : field_middle
+  # p_p_estimator_type : field_deep  
 
   # rgb_cnn_extractor_type : rgb_patch
   # rgb_patch_size : 8
@@ -156,9 +156,9 @@ model_params:
   # rgb_cnn_extractor_stage_idx : 3
   rgb_cnn_extractor_stage_idx : 4
 
-  # p_s_estimator_type : davt
+  p_s_estimator_type : davt
   # p_s_estimator_type : transformer
-  p_s_estimator_type : cnn
+  # p_s_estimator_type : cnn
   p_s_estimator_cnn_pretrain : False
   # p_s_estimator_cnn_pretrain : True
   use_p_s_estimator_att_inside : False

@@ -190,7 +190,7 @@ for dir_name in save_image_dir_list:
 print("===> Starting demo processing")
 stop_iteration = 20
 if mode == 'test':
-    stop_iteration = 20
+    stop_iteration = 60
 for iteration, batch in enumerate(test_data_loader,1):
     if iteration > stop_iteration:
         break
@@ -313,6 +313,9 @@ for iteration, batch in enumerate(test_data_loader,1):
     img_heatmap_norm = img_heatmap_norm.astype(np.uint8)
     attention_fan_pool = attention_fan_pool.astype(np.uint8)
     saliency_map = saliency_map.astype(np.uint8)
+    
+    # get estimated joint attention coordinates
+    y_mid_pred, x_mid_pred = np.unravel_index(np.argmax(img_heatmap_norm), img_heatmap_norm.shape)
 
     img_heatmap_norm = cv2.applyColorMap(img_heatmap_norm, cv2.COLORMAP_JET)
     attention_fan_pool = cv2.applyColorMap(attention_fan_pool, cv2.COLORMAP_JET)
@@ -327,18 +330,17 @@ for iteration, batch in enumerate(test_data_loader,1):
         save_image(img_gt[person_idx], os.path.join(save_image_dir_dic['gt_map'], data_type_id, f'{data_id}', f'{mode}_{data_id}_{person_idx}_gt.png'))
 
     # get region proposals
-    edge_boxes = get_edge_boxes(img)
-    edge_boxes_score = np.zeros((len(edge_boxes[0]), 4+1))
-    for idx in range(len(edge_boxes[0])):
-        (x, y, w, h), conf = edge_boxes[0][idx], edge_boxes[1][idx]
-        edge_boxes_score[idx, :4] = np.array([x, y, x+w, y+h])
-        atn_score = np.mean(img_heatmap[y:y+h, x:x+w])
-        edge_boxes_score[idx, 4] = atn_score
-
-    score_max_idx = np.argmax(edge_boxes_score[:, 4])
-    pred_bbox = edge_boxes_score[score_max_idx, :4]
-    x_min_pred, y_min_pred, x_max_pred, y_max_pred = map(int, pred_bbox)
-    x_mid_pred, y_mid_pred = (x_min_pred+x_max_pred)//2, (y_min_pred+y_max_pred)//2
+    # edge_boxes = get_edge_boxes(img)
+    # edge_boxes_score = np.zeros((len(edge_boxes[0]), 4+1))
+    # for idx in range(len(edge_boxes[0])):
+    #     (x, y, w, h), conf = edge_boxes[0][idx], edge_boxes[1][idx]
+    #     edge_boxes_score[idx, :4] = np.array([x, y, x+w, y+h])
+    #     atn_score = np.mean(img_heatmap[y:y+h, x:x+w])
+    #     edge_boxes_score[idx, 4] = atn_score
+    # score_max_idx = np.argmax(edge_boxes_score[:, 4])
+    # pred_bbox = edge_boxes_score[score_max_idx, :4]
+    # x_min_pred, y_min_pred, x_max_pred, y_max_pred = map(int, pred_bbox)
+    # x_mid_pred, y_mid_pred = (x_min_pred+x_max_pred)//2, (y_min_pred+y_max_pred)//2
 
     # calc distances for each co att box
     gt_box = gt_box.numpy()
@@ -348,14 +350,16 @@ for iteration, batch in enumerate(test_data_loader,1):
         x_min_gt, x_max_gt = map(lambda x: int(x*original_width), [x_min_gt, x_max_gt])
         y_min_gt, y_max_gt = map(lambda x: int(x*original_height), [y_min_gt, y_max_gt])
         x_mid_gt, y_mid_gt = (x_min_gt+x_max_gt)//2, (y_min_gt+y_max_gt)//2
-
     l2_dist = ((x_mid_gt-x_mid_pred)**2+(y_mid_gt-y_mid_pred)**2)**0.5
-    print(l2_dist)
+    # print(l2_dist)
 
+    # plot estimated and groung-truth joint attentions
+    cv2.circle(superimposed_image, (x_mid_pred, y_mid_pred), 10, (0, 165, 255), thickness=-1)
+    cv2.circle(superimposed_image, (int(x_mid_gt), int(y_mid_gt)), 10, (0, 255, 0), thickness=-1)
     # cv2.circle(superimposed_image, (x_mid_pred, y_mid_pred), 10, (128, 0, 128), thickness=-1)
     # cv2.circle(superimposed_image, (x_mid_gt, y_mid_gt), 10, (0, 255, 0), thickness=-1)
-    cv2.rectangle(superimposed_image, (x_min_pred, y_min_pred), (x_max_pred, y_max_pred), (128, 0, 128), thickness=1)
-    cv2.rectangle(superimposed_image, (x_min_gt, y_min_gt), (x_max_gt, y_max_gt), (0, 255, 0), thickness=1)
+    # cv2.rectangle(superimposed_image, (x_min_pred, y_min_pred), (x_max_pred, y_max_pred), (128, 0, 128), thickness=1)
+    # cv2.rectangle(superimposed_image, (x_min_gt, y_min_gt), (x_max_gt, y_max_gt), (0, 255, 0), thickness=1)
 
     cv2.imwrite(os.path.join(save_image_dir_dic['joint_attention_superimposed'], data_type_id, f'{mode}_{data_id}_superimposed.png'), superimposed_image)
     cv2.imwrite(os.path.join(save_image_dir_dic['attention_fan_pool_superimposed'], data_type_id, f'{mode}_{data_id}_superimposed.png'), superimposed_fan)
