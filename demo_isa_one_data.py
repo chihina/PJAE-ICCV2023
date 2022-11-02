@@ -187,10 +187,13 @@ for dir_name in save_image_dir_list:
     if not os.path.exists(save_image_dir_dic[dir_name]):
         os.makedirs(save_image_dir_dic[dir_name])
 
-# selected_vid_id = 21
-# selected_seq_id = 41815
-selected_vid_id = 9
-selected_seq_id = 57425
+# selected_vid_id, selected_seq_id = 21, 41815
+# selected_vid_id, selected_seq_id = 20, 49685
+# selected_vid_id, selected_seq_id = 29, 30520
+# selected_vid_id, selected_seq_id = 44, 20235
+# selected_vid_id, selected_seq_id = 21, 65805
+# selected_vid_id, selected_seq_id = 11, 22200
+selected_vid_id, selected_seq_id = 25, 39150
 selected_data_id = f'{selected_vid_id}_{selected_seq_id}_{selected_seq_id}'
 for iteration, batch in enumerate(test_data_loader,1):
 

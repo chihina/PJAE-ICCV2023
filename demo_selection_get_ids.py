@@ -14,8 +14,9 @@ df['davt-ours'] = df['davt']-df['ours']
 print(df)
 
 # get data ids by distance conditions
-sampled_data = df[(df['isa-ours']>30) & (df['davt-ours']>30)]
-# print(sampled_data['ours'])
-# print(sampled_data['isa'])
-# print(sampled_data['davt'])
+dist_thr = 130
+sampled_data = df[(df['isa-ours']>dist_thr) & (df['davt-ours']>dist_thr)]
+print(sampled_data['ours'])
+print(sampled_data['isa'])
+print(sampled_data['davt'])
 print(sampled_data.index)

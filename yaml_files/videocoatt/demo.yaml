@@ -11,7 +11,7 @@ exp_set:
   # model_name: videoattentiontarget-hgt-high
   # model_name: gazefollow-dual-cnn-w_pre
   # model_name: videocoatt-isa
-  model_name: videoattentiontarget-dual-cnn-w_pre-w_att_in
+  # model_name: videoattentiontarget-dual-cnn-w_pre-w_att_in
 
   # model_name: videocoatt-p_p_field_deep_p_s_gaze_follow_freeze
   # model_name: videocoatt-p_p_field_deep_p_s_davt_freeze
