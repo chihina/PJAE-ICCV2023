@@ -1,6 +1,4 @@
 # deep learning
-from builtins import iter
-from select import select
 import torch
 import torch.nn.functional as F
 from torch.autograd import Variable
@@ -22,10 +20,10 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
-import sys
-import json
-from PIL import Image
 import glob
+import sys
+from PIL import Image
+import json
 
 from sklearn.cluster import MeanShift
 from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score, roc_auc_score

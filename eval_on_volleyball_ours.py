@@ -67,7 +67,6 @@ if 'bbox_PRED_gaze_PRED_act_PRED' in model_name:
     model_saliency_weight_path = os.path.join(os.path.join(cfg.exp_set.save_folder,cfg.data.name, 'volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_p_s_only'), "model_saliency_best.pth.tar")
 else:
     model_saliency_weight_path = os.path.join(os.path.join(cfg.exp_set.save_folder,cfg.data.name, 'volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_p_s_only'), "model_saliency_best.pth.tar")
-# model_saliency_weight_path = os.path.join(weight_saved_dir, "model_saliency_best.pth.tar")
 model_saliency.load_state_dict(torch.load(model_saliency_weight_path,  map_location='cuda:'+str(gpus_list[0])))
 
 model_attention_weight_path = os.path.join(weight_saved_dir, "model_gaussian_best.pth.tar")
@@ -159,6 +158,7 @@ for iteration, batch in enumerate(test_data_loader):
         out_scene_feat = model_saliency(batch)
         batch = {**batch, **out_scene_feat}
 
+        # joint attention estimation
         out_attention = model_attention(batch)
         out = {**out_head, **out_attention, **batch}
 

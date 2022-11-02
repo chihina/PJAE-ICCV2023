@@ -71,19 +71,34 @@ def action_idx_to_name(action_idx):
 
     return ACTIONS[action_idx]
 
-print("===> Getting configuration")
-parser = argparse.ArgumentParser(description="parameters for training")
-parser.add_argument("config", type=str, help="configuration yaml file path")
-args = parser.parse_args()
-cfg_arg = Dict(yaml.safe_load(open(args.config)))
+model_name_dic = {}
+model_name_dic['volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_p_s_only'] = 'person_scene_joint_attention_heatmap'
+# model_name_dic['volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion'] = 'person_person_joint_attention_heatmap'
+# model_name_dic['volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion'] = 'person_scene_joint_attention_heatmap'
+model_name_dic['volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion'] = 'final_joint_attention_heatmap'
+model_name_dic['volleyball-isa_bbox_GT_gaze_GT_act_GT'] = 'img_pred'
 
-# model_name_list = ['volleyball-isa_bbox_GT_gaze_GT_act_GT']
-model_name_list = ['volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_p_s_only']
-for selected_model_name in model_name_list:
+eval_results_list = []
+for selected_model_name, use_heatmap in model_name_dic.items():
+    data_id_list = []
+    eval_results_model = []
+
+    print("===> Getting configuration")
+    parser = argparse.ArgumentParser(description="parameters for training")
+    parser.add_argument("config", type=str, help="configuration yaml file path")
+    args = parser.parse_args()
+    cfg_arg = Dict(yaml.safe_load(open(args.config)))
+
+    print("===> Making directories to save results")
+    save_results_dir = os.path.join('results', cfg_arg.data.name, cfg_arg.exp_set.model_name)
+    if not os.path.exists(save_results_dir):
+        os.makedirs(save_results_dir)
+
     print(os.path.join(cfg_arg.exp_set.save_folder, cfg_arg.data.name, selected_model_name, 'train*.yaml'))
     saved_yaml_file_path = glob.glob(os.path.join(cfg_arg.exp_set.save_folder, cfg_arg.data.name, selected_model_name, 'train*.yaml'))[0]
     cfg = Dict(yaml.safe_load(open(saved_yaml_file_path)))
     cfg.update(cfg_arg)
+    print(cfg)
 
     print("===> Building model")
     model_head, model_attention, model_saliency, cfg = model_generator(cfg)
@@ -104,9 +119,11 @@ for selected_model_name in model_name_list:
     model_head_weight_path = os.path.join(weight_saved_dir, "model_head_best.pth.tar")
     model_head.load_state_dict(torch.load(model_head_weight_path,  map_location='cuda:'+str(gpus_list[0])))
 
-    model_saliency_weight_path = os.path.join(weight_saved_dir, "model_saliency_best.pth.tar")
-    if os.path.exists(model_saliency_weight_path):
-        model_saliency.load_state_dict(torch.load(model_saliency_weight_path,  map_location='cuda:'+str(gpus_list[0])))
+    if 'bbox_GT_gaze_GT_act_GT' in selected_model_name and 'dual-mid' in selected_model_name:
+        model_saliency_weight_path = os.path.join(os.path.join(cfg.exp_set.save_folder,cfg.data.name, 'volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_p_s_only'), "model_saliency_best.pth.tar")
+    else:
+        model_saliency_weight_path = os.path.join(weight_saved_dir, "model_saliency_best.pth.tar")
+    model_saliency.load_state_dict(torch.load(model_saliency_weight_path,  map_location='cuda:'+str(gpus_list[0])))
 
     model_attention_weight_path = os.path.join(weight_saved_dir, "model_gaussian_best.pth.tar")
     model_attention.load_state_dict(torch.load(model_attention_weight_path,  map_location='cuda:'+str(gpus_list[0])))
@@ -129,13 +146,9 @@ for selected_model_name in model_name_list:
                                     pin_memory=True)
     print('{} demo samples found'.format(len(test_set)))
 
-    print("===> Making directories to save results")
-    save_results_dir = os.path.join('results', cfg.data.name, cfg_arg.exp_set.model_name)
-    if not os.path.exists(save_results_dir):
-        os.makedirs(save_results_dir)
 
     print("===> Starting demo processing")
-    stop_iteration = 20
+    stop_iteration = 10000
     for iteration, batch in enumerate(test_data_loader,1):
         if iteration > stop_iteration:
             break
@@ -177,19 +190,18 @@ for selected_model_name in model_name_list:
 
             # head pose estimation
             out_head = model_head(batch)
-            head_vector = out_head['head_vector']
             batch['head_img_extract'] = out_head['head_img_extract']
 
-            if cfg.exp_params.use_gt_gaze:
+            if cfg.exp_params.gaze_types == 'GT':
                 batch['head_vector'] = batch['head_vector_gt']
             else:
                 batch['head_vector'] = out_head['head_vector']
 
             # change position inputs
             if cfg.model_params.use_gaze:
-                batch['input_gaze'] = head_vector.clone() 
+                batch['input_gaze'] = batch['head_vector'].clone() 
             else:
-                batch['input_gaze'] = head_vector.clone() * 0
+                batch['input_gaze'] = batch['head_vector'].clone() * 0
 
             # scene feature extraction
             out_scene_feat = model_saliency(batch)
@@ -199,48 +211,47 @@ for selected_model_name in model_name_list:
             out_attention = model_attention(batch)
             out = {**out_head, **out_scene_feat, **out_attention, **batch}
 
-        gt_box = out['gt_box'].to('cpu').detach()[0]
+        # get an image path
         img_path = out['rgb_path'][0]
-        person_person_joint_attention_heatmap = out['person_person_joint_attention_heatmap'].to('cpu').detach()[0].numpy()
-        person_scene_joint_attention_heatmap = out['person_scene_joint_attention_heatmap'].to('cpu').detach()[0].numpy()
-        final_joint_attention_heatmap = out['final_joint_attention_heatmap'].to('cpu').detach()[0].numpy()
-
-        # redefine image size
-        img = Image.open(batch['rgb_path'][0])
+        img = Image.open(img_path)
         original_width, original_height = img.size
-        cfg.exp_set.resize_height = original_height
-        cfg.exp_set.resize_width = original_width
+
+        # get gt boxes
+        gt_box = out['gt_box'].to('cpu').detach()[0]
+        gt_x_min, gt_y_min, gt_x_max, gt_y_max = map(float, gt_box[0])
+        gt_x_min, gt_x_max = map(lambda x:x*original_width, [gt_x_min, gt_x_max])
+        gt_y_min, gt_y_max = map(lambda y:y*original_height, [gt_y_min, gt_y_max])
+        gt_x_mid, gt_y_mid = (gt_x_min+gt_x_max)/2, (gt_y_min+gt_y_max)/2
 
         # define data id
-        data_type_id = ''
         data_id = data_id_generator(img_path, cfg)
-        print(f'Iter:{iteration}, {data_id}, {data_type_id}')
-
-        # save joint attention estimation as a superimposed image
-        img = cv2.resize(img, (cfg.exp_set.resize_width, cfg.exp_set.resize_height))
-        # person_person_joint_attention_heatmap = cv2.imread(os.path.join(save_image_dir_dic['person_person_jo_att'], data_type_id, f'{mode}_{data_id}_person_person_jo_att.png'), cv2.IMREAD_GRAYSCALE)
-        # person_scene_joint_attention_heatmap = cv2.imread(os.path.join(save_image_dir_dic['person_scene_jo_att'], data_type_id, f'{mode}_{data_id}_person_scene_jo_att.png'), cv2.IMREAD_GRAYSCALE)
-        # final_joint_attention_heatmap = cv2.imread(os.path.join(save_image_dir_dic['final_jo_att'], data_type_id, f'{mode}_{data_id}_final_jo_att.png'), cv2.IMREAD_GRAYSCALE)
-
-
-        person_person_joint_attention_heatmap = cv2.resize(person_person_joint_attention_heatmap, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_NEAREST)
-        person_scene_joint_attention_heatmap = cv2.resize(person_scene_joint_attention_heatmap, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_NEAREST)
-        final_joint_attention_heatmap = cv2.resize(final_joint_attention_heatmap, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_NEAREST)
-        person_person_joint_attention_heatmap = norm_heatmap(person_person_joint_attention_heatmap).astype(np.uint8)
-        person_scene_joint_attention_heatmap = norm_heatmap(person_scene_joint_attention_heatmap).astype(np.uint8)
-        final_joint_attention_heatmap = norm_heatmap(final_joint_attention_heatmap).astype(np.uint8)
+        data_id_list.append(data_id)
+        print(f'Iter:{iteration}/{len(test_set)}, {data_id}')
 
         # get estimated joint attention coordinates
-        pred_y_mid_p_p, pred_x_mid_p_p = np.unravel_index(np.argmax(person_person_joint_attention_heatmap), person_person_joint_attention_heatmap.shape)
-        pred_y_mid_p_s, pred_x_mid_p_s = np.unravel_index(np.argmax(person_scene_joint_attention_heatmap), person_scene_joint_attention_heatmap.shape)
-        pred_y_mid_final, pred_x_mid_final = np.unravel_index(np.argmax(final_joint_attention_heatmap), final_joint_attention_heatmap.shape)
+        if use_heatmap == 'img_pred':
+            joint_attention_heatmap = out[use_heatmap].to('cpu').detach().numpy()[0]
+        else:
+            joint_attention_heatmap = out[use_heatmap].to('cpu').detach().numpy()[0,0]
+        
+        # joint_attention_heatmap = F.interpolate(out[use_heatmap], (original_height, original_width), mode='bilinear')
+        # joint_attention_heatmap = joint_attention_heatmap[0, 0].to('cpu').detach().numpy()
+        
+        joint_attention_heatmap = cv2.resize(joint_attention_heatmap, (original_width, original_height), interpolation=cv2.INTER_LINEAR)
+        pred_y_mid, pred_x_mid = np.unravel_index(np.argmax(joint_attention_heatmap), joint_attention_heatmap.shape)
 
-        gt_x_min, gt_y_min, gt_x_max, gt_y_max = map(float, gt_box[0])
-        gt_x_min, gt_x_max = map(lambda x:x*cfg.exp_set.resize_width, [gt_x_min, gt_x_max])
-        gt_y_min, gt_y_max = map(lambda y:y*cfg.exp_set.resize_height, [gt_y_min, gt_y_max])
-        gt_x_mid, gt_y_mid = (gt_x_min+gt_x_max)/2, (gt_y_min+gt_y_max)/2
+        # calc l2 dist
         l2_dist_x = ((gt_x_mid-pred_x_mid)**2)**0.5
         l2_dist_y = ((gt_y_mid-pred_y_mid)**2)**0.5
         l2_dist_euc = (l2_dist_x**2+l2_dist_y**2)**0.5
+        eval_results_model.append(l2_dist_euc)
+        print(l2_dist_euc)
 
-        sys.exit()
+    eval_results_list.append(eval_results_model)
+
+# save results as a csv file
+eval_results_array = np.array(eval_results_list)
+eval_results_array = eval_results_array.transpose()
+df_eval_results = pd.DataFrame(eval_results_array, data_id_list, model_name_dic.keys())
+save_csv_file_path = os.path.join(save_results_dir, f'selection.csv')
+df_eval_results.to_csv(save_csv_file_path)

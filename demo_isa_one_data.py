@@ -187,13 +187,20 @@ for dir_name in save_image_dir_list:
     if not os.path.exists(save_image_dir_dic[dir_name]):
         os.makedirs(save_image_dir_dic[dir_name])
 
-print("===> Starting demo processing")
-stop_iteration = 20
-if mode == 'test':
-    stop_iteration = 80
+# selected_vid_id = 21
+# selected_seq_id = 41815
+selected_vid_id = 9
+selected_seq_id = 57425
+selected_data_id = f'{selected_vid_id}_{selected_seq_id}_{selected_seq_id}'
 for iteration, batch in enumerate(test_data_loader,1):
-    if iteration > stop_iteration:
-        break
+
+    # define data id
+    img_path = batch['rgb_path'][0]
+    data_id = data_id_generator(img_path, cfg)
+    print(f'Iter:{iteration}, {data_id}')
+
+    if selected_data_id != data_id:
+        continue
 
     # init heatmaps
     num_people = batch['head_img'].shape[1]
@@ -257,7 +264,6 @@ for iteration, batch in enumerate(test_data_loader,1):
         out = {**out_head, **out_attention, **batch}
 
     img_gt = out['img_gt'].to('cpu').detach()[0]
-
     img_pred = out['img_pred'].to('cpu').detach()[0]
     angle_dist = out['angle_dist'].to('cpu').detach()[0]
     angle_dist_pool = out['angle_dist_pool'].to('cpu').detach()[0]
@@ -364,3 +370,6 @@ for iteration, batch in enumerate(test_data_loader,1):
     cv2.imwrite(os.path.join(save_image_dir_dic['joint_attention_superimposed'], data_type_id, f'{mode}_{data_id}_superimposed.png'), superimposed_image)
     cv2.imwrite(os.path.join(save_image_dir_dic['attention_fan_pool_superimposed'], data_type_id, f'{mode}_{data_id}_superimposed.png'), superimposed_fan)
     cv2.imwrite(os.path.join(save_image_dir_dic['saliency_map_superimposed'], data_type_id, f'{mode}_{data_id}_superimposed.png'), superimposed_sal)
+
+    if selected_data_id == data_id:
+        break

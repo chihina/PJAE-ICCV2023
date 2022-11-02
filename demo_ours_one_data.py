@@ -189,12 +189,21 @@ for dir_name in save_image_dir_list:
         os.makedirs(save_image_dir_dic[dir_name])
 
 print("===> Starting demo processing")
-stop_iteration = 20
-if mode == 'test':
-    stop_iteration = 80
+# selected_vid_id = 21
+# selected_seq_id = 41815
+selected_vid_id = 9
+selected_seq_id = 57425
+selected_data_id = f'{selected_vid_id}_{selected_seq_id}_{selected_seq_id}'
 for iteration, batch in enumerate(test_data_loader,1):
-    if iteration > stop_iteration:
-        break
+
+    # define data id
+    img_path = batch['rgb_path'][0]
+    data_type_id = ''
+    data_id = data_id_generator(img_path, cfg)
+    print(f'Iter:{iteration}, {data_id}')
+
+    if selected_data_id != data_id:
+        continue
 
     # init heatmaps
     num_people = batch['head_img'].shape[1]
@@ -270,7 +279,6 @@ for iteration, batch in enumerate(test_data_loader,1):
     trans_att_people_people = out['trans_att_people_people'].to('cpu').detach()[0].numpy()
     gt_box = out['gt_box'].to('cpu').detach()[0]
     att_inside_flag = out['att_inside_flag'].to('cpu').detach()[0]
-    img_path = out['rgb_path'][0]
 
     person_person_attention_heatmap = out['person_person_attention_heatmap'].to('cpu').detach()[0]
     person_person_joint_attention_heatmap = out['person_person_joint_attention_heatmap'].to('cpu').detach()[0]
@@ -286,11 +294,6 @@ for iteration, batch in enumerate(test_data_loader,1):
     original_height, original_width, _ = img.shape
     cfg.exp_set.resize_height = original_height
     cfg.exp_set.resize_width = original_width
-
-    # define data id
-    data_type_id = ''
-    data_id = data_id_generator(img_path, cfg)
-    print(f'Iter:{iteration}, {data_id}, {data_type_id}')
 
     # expand directories
     single_image_dir_list = ['person_person_jo_att', 'person_person_jo_att_superimposed',
@@ -355,16 +358,15 @@ for iteration, batch in enumerate(test_data_loader,1):
     pred_y_mid_p_s, pred_x_mid_p_s = np.unravel_index(np.argmax(person_scene_joint_attention_heatmap), person_scene_joint_attention_heatmap.shape)
     pred_y_mid_final, pred_x_mid_final = np.unravel_index(np.argmax(final_joint_attention_heatmap), final_joint_attention_heatmap.shape)
 
-    if cfg.exp_params.vis_dist_error:
-        gt_x_min, gt_y_min, gt_x_max, gt_y_max = map(float, gt_box[0])
-        gt_x_min, gt_x_max = map(lambda x:x*cfg.exp_set.resize_width, [gt_x_min, gt_x_max])
-        gt_y_min, gt_y_max = map(lambda y:y*cfg.exp_set.resize_height, [gt_y_min, gt_y_max])
-        gt_x_mid, gt_y_mid = (gt_x_min+gt_x_max)/2, (gt_y_min+gt_y_max)/2
-        pred_y_mid, pred_x_mid = np.unravel_index(np.argmax(person_person_joint_attention_heatmap), person_person_joint_attention_heatmap.shape)
-        l2_dist_x = ((gt_x_mid-pred_x_mid)**2)**0.5
-        l2_dist_y = ((gt_y_mid-pred_y_mid)**2)**0.5
-        l2_dist_euc = (l2_dist_x**2+l2_dist_y**2)**0.5
-        # print(l2_dist_euc)
+    # get gt joint attention coordinates
+    gt_x_min, gt_y_min, gt_x_max, gt_y_max = map(float, gt_box[0])
+    gt_x_min, gt_x_max = map(lambda x:x*cfg.exp_set.resize_width, [gt_x_min, gt_x_max])
+    gt_y_min, gt_y_max = map(lambda y:y*cfg.exp_set.resize_height, [gt_y_min, gt_y_max])
+    gt_x_mid, gt_y_mid = (gt_x_min+gt_x_max)/2, (gt_y_min+gt_y_max)/2
+    pred_y_mid, pred_x_mid = np.unravel_index(np.argmax(person_person_joint_attention_heatmap), person_person_joint_attention_heatmap.shape)
+    l2_dist_x = ((gt_x_mid-pred_x_mid)**2)**0.5
+    l2_dist_y = ((gt_y_mid-pred_y_mid)**2)**0.5
+    l2_dist_euc = (l2_dist_x**2+l2_dist_y**2)**0.5
 
     person_person_joint_attention_heatmap = cv2.applyColorMap(person_person_joint_attention_heatmap, cv2.COLORMAP_JET)
     person_scene_joint_attention_heatmap = cv2.applyColorMap(person_scene_joint_attention_heatmap, cv2.COLORMAP_JET)
@@ -456,3 +458,6 @@ for iteration, batch in enumerate(test_data_loader,1):
     cv2.imwrite(os.path.join(save_image_dir_dic['final_jo_att_superimposed'], data_type_id, f'{mode}_{data_id}_final_jo_att_superimposed.png'), final_joint_attention_heatmap)
     cv2.imwrite(os.path.join(save_image_dir_dic['whole_image_gaze'], data_type_id, f'{mode}_{data_id}_final_jo_att_superimposed.png'), whole_image_gaze)
     cv2.imwrite(os.path.join(save_image_dir_dic['whole_image_action'], data_type_id, f'{mode}_{data_id}_final_jo_att_superimposed.png'), whole_image_action)
+
+    if selected_data_id == data_id:
+        break
