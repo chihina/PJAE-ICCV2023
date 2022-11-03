@@ -8,8 +8,10 @@ exp_set:
   # model_name: videocoatt-head_pose_estimator
 
   # model_name: videoattentiontarget-hgt
-  model_name: videoattentiontarget-hgt-high
+  # model_name: videoattentiontarget-hgt-high
+  # model_name: videoattentiontarget-hgt-1101
   # model_name: videocoatt-isa
+  model_name: videocoatt-isa-mse-1103
   # model_name: videoattentiontarget-dual-cnn-w_pre-w_att_in
   # model_name: videoattentiontarget-dual-cnn-w_pre-wo_att_in
 
@@ -29,8 +31,8 @@ exp_set:
 
   seed_num : 777
   gpu_mode : True
-  gpu_start : 6
-  gpu_finish : 6
+  gpu_start : 0
+  gpu_finish : 0
   num_workers : 1
   batch_size : 1
   wandb_name : test

@@ -6,17 +6,18 @@ exp_set:
   save_folder : saved_weights
   # model_name: videoattentiontarget-head_pose_estimator
   # model_name: videoattentiontarget-concat_independent
+
   # model_name: videoattentiontarget-hgt
   # model_name: videoattentiontarget-hgt-high
+  model_name: videoattentiontarget-hgt-1101
 
-  model_name: videoattentiontarget-dual-cnn-w_pre
+  # model_name: videoattentiontarget-dual-cnn-w_pre
   # model_name: videoattentiontarget-dual-trans-w_pre
-
 
   seed_num : 777
   gpu_mode : True
-  gpu_start : 7
-  gpu_finish : 7
+  gpu_start : 1
+  gpu_finish : 1
   num_workers : 1
   batch_size : 1
   wandb_name : demo

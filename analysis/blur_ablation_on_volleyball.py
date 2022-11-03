@@ -1,19 +1,19 @@
 import json
 import os
-import sys
 import pandas as pd
 import numpy as np
-
+import sys
 
 saved_result_dir = os.path.join('results', 'volleyball')
 
 # define analyze model type
-analyze_name = 'volleyball-dual-mid_p_p_field_middle_p_s_davt_pre_p_p_pre_p_s'
+# analyze_name = 'volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion'
+analyze_name = 'volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion'
 
 # define test data type
 test_data_type_list = []
-test_data_type_list.append('bbox_GT_gaze_GT_act_GT_blur_False')
-test_data_type_list.append('bbox_GT_gaze_GT_act_GT_blur_True')
+# test_data_type_list.append('bbox_GT_gaze_GT_act_GT_blur_False')
+# test_data_type_list.append('bbox_GT_gaze_GT_act_GT_blur_True')
 test_data_type_list.append('bbox_PRED_gaze_PRED_act_PRED_blur_False')
 test_data_type_list.append('bbox_PRED_gaze_PRED_act_PRED_blur_True')
 

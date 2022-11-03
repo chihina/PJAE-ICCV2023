@@ -5,15 +5,16 @@ data:
 
 exp_set:
   save_folder: saved_weights
-  wandb_name: videocoatt-isa
+  # wandb_name: videocoatt-isa
+  wandb_name: videocoatt-isa-mse-1103
   wandb_log : True
 
   batch_size: 16
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 3
-  gpu_finish : 3
+  gpu_start : 6
+  gpu_finish : 6
 
   # resize_height: 320
   resize_height: 28
@@ -38,8 +39,8 @@ exp_params:
   position_aug_std: 0.05
 
   # loss function
-  # loss : mse
-  loss : bce
+  loss : mse
+  # loss : bce
 
   # learning rate
   lr : 0.0001

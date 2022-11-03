@@ -8,7 +8,8 @@ import glob
 saved_result_dir = os.path.join('results', 'videocoatt')
 
 analyze_name_list = []
-analyze_name_list.append('videocoatt-isa')
+# analyze_name_list.append('videocoatt-isa')
+analyze_name_list.append('videocoatt-isa-mse-1103')
 analyze_name_list.append('videocoatt-p_p_field_deep_p_s_davt_freeze')
 analyze_name_list.append('videoattentiontarget-hgt-high')
 analyze_name_list.append('videocoatt-p_p_field_deep_p_s_davt_simple_average')
@@ -33,7 +34,7 @@ for model_name, analyze_name in zip(model_name_list, analyze_name_list):
         eval_results_dic_update['Dist(x)'] = eval_results_dic['l2_dist_x']
         eval_results_dic_update['Dist(y)'] = eval_results_dic['l2_dist_y']
         eval_results_dic_update['Dist(euc)'] = eval_results_dic['l2_dist_euc']
-        for i in range(10):
+        for i in range(20):
             thr = i*10
             eval_results_dic_update[f'Det(Thr={thr})'] = eval_results_dic[f'Det (Thr={thr})']
         eval_results_dic_update['Accuracy'] = eval_results_dic['accuracy']
@@ -45,7 +46,7 @@ for model_name, analyze_name in zip(model_name_list, analyze_name_list):
         eval_results_dic_update['Dist(x)'] = eval_results_dic['l2_dist_x_p_s']
         eval_results_dic_update['Dist(y)'] = eval_results_dic['l2_dist_y_p_s']
         eval_results_dic_update['Dist(euc)'] = eval_results_dic['l2_dist_euc_p_s']
-        for i in range(10):
+        for i in range(20):
             thr = i*10
             eval_results_dic_update[f'Det(Thr={thr})'] = eval_results_dic[f'Det p-s (Thr={thr})']
         eval_results_dic_update['Accuracy'] = eval_results_dic['accuracy p-s']
@@ -57,7 +58,7 @@ for model_name, analyze_name in zip(model_name_list, analyze_name_list):
         eval_results_dic_update['Dist(x)'] = eval_results_dic['l2_dist_x_final']
         eval_results_dic_update['Dist(y)'] = eval_results_dic['l2_dist_y_final']
         eval_results_dic_update['Dist(euc)'] = eval_results_dic['l2_dist_euc_final']
-        for i in range(10):
+        for i in range(20):
             thr = i*10
             eval_results_dic_update[f'Det(Thr={thr})'] = eval_results_dic[f'Det final (Thr={thr})']
         eval_results_dic_update['Accuracy'] = eval_results_dic['accuracy final']

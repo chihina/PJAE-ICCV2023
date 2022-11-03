@@ -9,7 +9,8 @@ saved_result_dir = os.path.join('results', 'volleyball')
 
 # define analyze model type
 analyze_name_list = []
-analyze_name_list.append('volleyball-dual-people')
+analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT')
+analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED')
 
 # define ablate type
 analyze_name_ablation_list = []
