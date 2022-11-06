@@ -16,8 +16,8 @@ exp_set:
   num_workers: 2
   seed_num: 777
   gpu_mode : True
-  gpu_start : 7
-  gpu_finish : 7
+  gpu_start : 4
+  gpu_finish : 4
 
   resize_height : 320
   resize_width : 640
@@ -49,14 +49,14 @@ exp_params:
   use_frame_type: mid
   # use_frame_type: all
 
-  bbox_types: GT
-  # bbox_types: PRED
+  # bbox_types: GT
+  bbox_types: PRED
 
-  gaze_types: GT
-  # gaze_types: PRED
+  # gaze_types: GT
+  gaze_types: PRED
   
-  action_types: GT
-  # action_types: PRED
+  # action_types: GT
+  action_types: PRED
 
   # position augmentation
   use_position_aug: False
@@ -94,15 +94,18 @@ exp_params:
 
   # use_pretrained_saliency_extractor: False
   use_pretrained_saliency_extractor: True
-  pretrained_saliency_extractor_name: pretrained_scene_extractor_davt
-  freeze_saliency_extractor: False
-  # freeze_saliency_extractor: True
+  # pretrained_saliency_extractor_name: pretrained_scene_extractor_davt
+  # pretrained_saliency_extractor_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_p_s_only
+  pretrained_saliency_extractor_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_p_s_only
+  # freeze_saliency_extractor: False
+  freeze_saliency_extractor: True
 
-  use_pretrained_joint_attention_estimator: False
-  # use_pretrained_joint_attention_estimator: True
-  # pretrained_joint_attention_estimator_name: volleyball-dual-people_field_middle
-  freeze_joint_attention_estimator: False
-  # freeze_joint_attention_estimator: True
+  # use_pretrained_joint_attention_estimator: False
+  use_pretrained_joint_attention_estimator: True
+  # pretrained_joint_attention_estimator_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT
+  pretrained_joint_attention_estimator_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED
+  # freeze_joint_attention_estimator: False
+  freeze_joint_attention_estimator: True
 
 model_params:
   model_type: ja_transformer_dual
@@ -168,5 +171,5 @@ model_params:
   # fusion_net_type : early
   # fusion_net_type : mid
   # fusion_net_type : late
-  # fusion_net_type : scalar_weight
-  fusion_net_type : simple_average
+  fusion_net_type : scalar_weight
+  # fusion_net_type : simple_average

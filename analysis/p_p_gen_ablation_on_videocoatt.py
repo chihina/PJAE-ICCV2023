@@ -43,5 +43,5 @@ for test_data_type in test_data_type_list:
 
         eval_results_array = np.array(eval_results_list)
         df_eval_results = pd.DataFrame(eval_results_array, model_name_list, eval_metrics_list)
-        save_csv_file_path = os.path.join(saved_result_dir, f'p_p_gen_ablation_{test_data_type}.csv')
+        save_csv_file_path = os.path.join(saved_result_dir, f'p_p_gen_ablation_videocoatt_{test_data_type}.csv')
         df_eval_results.to_csv(save_csv_file_path)

@@ -17,15 +17,60 @@ exp_set:
   # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_p_s_only
   # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_p_s_only
 
+  # === fusion ===
+  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion_scalar_weight
+  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion_scalar_weight_endtoend
+  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion_scalar_weight_endtoend_fine
+  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion_mid
+
+  # === fusion ===
+  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion_scalar_weight
+  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion_scalar_weight_endtoend
+  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion_scalar_weight_endtoend_fine
+  model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion_scalar_weight_endtoend_ps_fix
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion_mid
+
+  seed_num : 777
+  gpu_mode : True
+  gpu_start : 2
+  gpu_finish : 2
+  num_workers : 1
+  batch_size : 1
+  wandb_name : test
+
+  mode: test
+  
+exp_params:
+  use_frame_type: mid
+  # use_frame_type: all
+
+  # bbox_types: GT
+  bbox_types: PRED
+  
+  # action_types: GT
+  action_types: PRED
+  
+  # gaze_types: GT
+  gaze_types: PRED
+
+  # use_action: True
+  # use_position: True
+  # use_gaze: True
+
+  use_blured_img: False
+  # use_blured_img: True
+
   # [base model GT]
   # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion
 
   # === fusion ===
   # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion_scalar_weight
+  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion_scalar_weight_endtoend
+  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion_scalar_weight_endtoend_fine
   # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion_mid
 
   # === multi-heads ===
-  model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion_multi_1
+  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion_multi_1
   # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion_multi_4
   # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion_multi_8
   # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion_multi_16
@@ -38,11 +83,22 @@ exp_set:
   # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion_wo_action_wo_position
   # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion_wo_gaze_wo_position
 
+  # === w/o branch (b) ===
+  # model_name: volleyball-dual-mid_p_p_fc_shallow_bbox_GT_gaze_GT_act_GT
+  # model_name: volleyball-dual-mid_p_p_fc_middle_bbox_GT_gaze_GT_act_GT
+  # model_name: volleyball-dual-mid_p_p_fc_deep_bbox_GT_gaze_GT_act_GT
+  # model_name: volleyball-dual-mid_p_p_deconv_shallow_bbox_GT_gaze_GT_act_GT
+  # model_name: volleyball-dual-mid_p_p_deconv_middle_bbox_GT_gaze_GT_act_GT
+  # model_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT
+  # model_name: volleyball-dual-mid_p_p_field_deep_bbox_GT_gaze_GT_act_GT
+
   # [base model PRED]
   # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion
 
   # === fusion ===
   # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion_scalar_weight
+  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion_scalar_weight_endtoend
+  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion_scalar_weight_endtoend_fine
   # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion_mid
 
   # === trans enc ===
@@ -64,32 +120,11 @@ exp_set:
   # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion_wo_action_wo_position
   # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion_wo_gaze_wo_position
 
-  seed_num : 777
-  gpu_mode : True
-  gpu_start : 0
-  gpu_finish : 0
-  num_workers : 1
-  batch_size : 1
-  wandb_name : test
-
-  mode: test
-  
-exp_params:
-  use_frame_type: mid
-  # use_frame_type: all
-
-  bbox_types: GT
-  # bbox_types: PRED
-  
-  action_types: GT
-  # action_types: PRED
-  
-  gaze_types: GT
-  # gaze_types: PRED
-
-  # use_action: True
-  # use_position: True
-  # use_gaze: True
-
-  use_blured_img: False
-  # use_blured_img: True
+  # === w/o branch (b) ===
+  # model_name: volleyball-dual-mid_p_p_fc_shallow_bbox_PRED_gaze_PRED_act_PRED
+  # model_name: volleyball-dual-mid_p_p_fc_middle_bbox_PRED_gaze_PRED_act_PRED
+  # model_name: volleyball-dual-mid_p_p_fc_deep_bbox_PRED_gaze_PRED_act_PRED
+  # model_name: volleyball-dual-mid_p_p_deconv_shallow_bbox_PRED_gaze_PRED_act_PRED
+  # model_name: volleyball-dual-mid_p_p_deconv_middle_bbox_PRED_gaze_PRED_act_PRED
+  # model_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED
+  # model_name: volleyball-dual-mid_p_p_field_deep_bbox_PRED_gaze_PRED_act_PRED

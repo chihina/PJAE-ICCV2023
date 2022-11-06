@@ -270,19 +270,9 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
         elif self.fusion_net_type == 'simple_average':
             pass
         elif self.fusion_net_type == 'scalar_weight':
-            self.person_person_preconv = nn.Sequential(
-                nn.Identity(),
-            )
-            self.person_scene_preconv = nn.Sequential(
-                nn.Identity(),
-            )
-            self.final_joint_atention_heatmap = nn.Sequential(
-                nn.Conv2d(in_channels=2, out_channels=1, kernel_size=1),
-                final_activation_layer,
-            )
+            self.final_fusion_weight = nn.Parameter(torch.rand(2))
         else:
             print('please use correct fusion net type')
-            # sys.exit()
             self.person_person_preconv = nn.Sequential(
                 nn.Conv2d(in_channels=1, out_channels=4, kernel_size=3, stride=1, padding=1),
                 nn.ReLU(),
@@ -435,6 +425,15 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
         # final joint attention estimation
         if self.fusion_net_type == 'simple_average':
             final_joint_attention_heatmap = (person_person_joint_attention_heatmap+person_scene_joint_attention_heatmap) / 2            
+        elif self.fusion_net_type == 'scalar_weight':
+            final_fusion_weight = self.final_fusion_weight
+            # final_fusion_weight_sum = torch.sum(final_fusion_weight)
+            # final_fusion_weight = final_fusion_weight / final_fusion_weight_sum
+            final_fusion_weight_p_p = final_fusion_weight[0]
+            final_fusion_weight_p_s = final_fusion_weight[1]
+            final_joint_attention_heatmap = (final_fusion_weight_p_p*person_person_joint_attention_heatmap)+(final_fusion_weight_p_s*person_scene_joint_attention_heatmap)
+            # final_joint_attention_heatmap = (person_person_joint_attention_heatmap+person_scene_joint_attention_heatmap)/2
+            print(f'p-p:{final_fusion_weight_p_p.item():.2f}, p-s:{final_fusion_weight_p_s.item():.2f}')
         else:
             person_person_joint_attention_heatmap_preconv = self.person_person_preconv(person_person_joint_attention_heatmap)
             person_scene_joint_attention_heatmap_preconv = self.person_scene_preconv(person_scene_joint_attention_heatmap)
@@ -558,6 +557,10 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
         loss_p_p_jo_att = use_person_person_jo_att_coef * loss_p_p_jo_att
         # print('loss_p_p_att', loss_p_p_att)
         # print('loss_p_p_jo_att', loss_p_p_jo_att)
+        print('JA', f'{torch.min(person_person_joint_attention_heatmap).item():.2f} {torch.max(person_person_joint_attention_heatmap).item():.2f}')
+        print('AT', f'{torch.min(person_scene_joint_attention_heatmap).item():.2f} {torch.max(person_scene_joint_attention_heatmap).item():.2f}')
+        print('F', f'{torch.min(final_joint_attention_heatmap).item():.2f} {torch.max(final_joint_attention_heatmap).item():.2f}')
+        print('GT', f'{torch.min(img_gt_joint_attention).item():.2f} {torch.max(img_gt_joint_attention).item():.2f}')
 
         # calculate person-scene path loss
         person_scene_attention_heatmap = F.interpolate(person_scene_attention_heatmap, (self.resize_height, self.resize_width), mode='bilinear')

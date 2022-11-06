@@ -14,7 +14,10 @@ exp_set:
   # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion
 
   # === fusion ===
-  wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion_scalar_weight
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion_scalar_weight
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion_scalar_weight_update
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion_scalar_weight_endtoend
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion_scalar_weight_endtoend_fine
   # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion_mid
 
   # === multi-heads ===
@@ -36,6 +39,10 @@ exp_set:
 
   # === fusion ===
   # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion_scalar_weight
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion_scalar_weight_endtoend
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion_scalar_weight_endtoend_fine
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion_scalar_weight_endtoend_ps_fix
+  wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion_scalar_weight_endtoend_pp_ps_fix
   # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion_mid
 
   # === trans enc ===
@@ -63,8 +70,8 @@ exp_set:
   # seed_num: 777
   seed_num: 888
   gpu_mode : True
-  gpu_start : 0
-  gpu_finish : 0
+  gpu_start : 3
+  gpu_finish : 3
 
   resize_height : 320
   resize_width : 640
@@ -81,8 +88,8 @@ exp_params:
   use_person_person_jo_att_loss : True
   person_person_jo_att_loss_weight : 1
 
-  use_person_scene_att_loss : False
-  # use_person_scene_att_loss : True
+  # use_person_scene_att_loss : False
+  use_person_scene_att_loss : True
   person_scene_att_loss_weight : 1
 
   use_person_scene_jo_att_loss : False
@@ -96,14 +103,14 @@ exp_params:
   use_frame_type: mid
   # use_frame_type: all
 
-  bbox_types: GT
-  # bbox_types: PRED
+  # bbox_types: GT
+  bbox_types: PRED
 
-  gaze_types: GT
-  # gaze_types: PRED
+  # gaze_types: GT
+  gaze_types: PRED
   
-  action_types: GT
-  # action_types: PRED
+  # action_types: GT
+  action_types: PRED
   
   # position augmentation
   use_position_aug: False
@@ -121,8 +128,9 @@ exp_params:
   # lr : 0.1
   
   # gt gaussian
-  # gaussian_sigma: 20
-  gaussian_sigma: 10
+  gaussian_sigma: 40
+  # gaussian_sigma: 10
+  # gaussian_sigma: 5
 
   # learning schedule
   nEpochs : 500
@@ -143,15 +151,17 @@ exp_params:
   # use_pretrained_saliency_extractor: False
   use_pretrained_saliency_extractor: True
   # pretrained_saliency_extractor_name: pretrained_scene_extractor_davt
-  pretrained_saliency_extractor_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_p_s_only
+  # pretrained_saliency_extractor_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_p_s_only
+  pretrained_saliency_extractor_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_p_s_only
   # freeze_saliency_extractor: False
   freeze_saliency_extractor: True
 
-  use_pretrained_joint_attention_estimator: False
-  # use_pretrained_joint_attention_estimator: True
-  # pretrained_joint_attention_estimator_name: volleyball-dual-people_field_middle
-  freeze_joint_attention_estimator: False
-  # freeze_joint_attention_estimator: True
+  # use_pretrained_joint_attention_estimator: False
+  use_pretrained_joint_attention_estimator: True
+  # pretrained_joint_attention_estimator_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT
+  pretrained_joint_attention_estimator_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED
+  # freeze_joint_attention_estimator: False
+  freeze_joint_attention_estimator: True
 
 model_params:
   model_type: ja_transformer_dual
@@ -182,14 +192,15 @@ model_params:
   # use_people_people_trans: False
   use_people_people_trans: True
   # people_people_trans_enc_num : 1
-  # people_people_trans_enc_num : 2
+  people_people_trans_enc_num : 2
   # people_people_trans_enc_num : 3
-  people_people_trans_enc_num : 4
+  # people_people_trans_enc_num : 4
   # mha_num_heads_people_people : 1
   mha_num_heads_people_people : 2
   # mha_num_heads_people_people : 4
   # mha_num_heads_people_people : 8
   # mha_num_heads_people_people : 16
+  
   # p_p_estimator_type : fc_shallow
   # p_p_estimator_type : fc_middle
   # p_p_estimator_type : fc_deep

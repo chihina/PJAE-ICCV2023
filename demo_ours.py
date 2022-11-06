@@ -254,7 +254,7 @@ for iteration, batch in enumerate(test_data_loader,1):
         out_attention = model_attention(batch)
         # loss_set_head = model_head.calc_loss(batch, out_head)
         loss_set_saliency = model_saliency.calc_loss(batch, out_attention, cfg)
-        # loss_set_attention = model_attention.calc_loss(batch, out_attention, cfg)
+        loss_set_attention = model_attention.calc_loss(batch, out_attention, cfg)
 
         out = {**out_head, **out_scene_feat, **out_attention, **batch}
 

@@ -40,6 +40,8 @@ def process_epoch(epoch, data_set, mode):
         model_saliency.train()
         if cfg.exp_params.freeze_head_pose_estimator:
             model_head.eval()
+        if cfg.exp_params.freeze_joint_attention_estimator:
+            model_attention.eval()
         if cfg.exp_params.freeze_saliency_extractor:
             model_saliency.eval()
     else:
@@ -51,9 +53,10 @@ def process_epoch(epoch, data_set, mode):
         # init graph
         if not cfg.exp_params.freeze_head_pose_estimator:
             optimizer_head.zero_grad()
+        if not cfg.exp_params.freeze_joint_attention_estimator:
+            optimizer_attention.zero_grad()
         if not cfg.exp_params.freeze_saliency_extractor:
             optimizer_saliency.zero_grad()
-        optimizer_attention.zero_grad()
 
         # init heatmaps
         cfg.exp_set.batch_size, num_people = batch['head_img'].shape[0:2]
@@ -130,9 +133,10 @@ def process_epoch(epoch, data_set, mode):
 
             if not cfg.exp_params.freeze_head_pose_estimator:
                 optimizer_head.step()
+            if not cfg.exp_params.freeze_joint_attention_estimator:
+                optimizer_attention.step()
             if not cfg.exp_params.freeze_saliency_extractor:
                 optimizer_saliency.step()
-            optimizer_attention.step()
 
         for loss_name, loss_val in loss_set.items():
             if iteration == 1:
@@ -250,6 +254,8 @@ if cfg.exp_params.use_pretrained_joint_attention_estimator:
     model_name = cfg.exp_params.pretrained_joint_attention_estimator_name
     model_weight_path = os.path.join(cfg.exp_params.pretrained_models_dir, cfg.data.name, model_name, "model_gaussian_best.pth.tar")
     fixed_model_state_dict = load_multi_gpu_models(torch.load(model_weight_path,  map_location='cuda:'+str(gpus_list[0])))
+    # add fusion weight parameters
+    fixed_model_state_dict['final_fusion_weight'] = nn.Parameter(torch.zeros(2)).cuda(gpus_list[0])
     model_attention.load_state_dict(fixed_model_state_dict)
 
 # scheduling learning rate 
