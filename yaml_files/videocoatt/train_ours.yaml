@@ -8,19 +8,20 @@ exp_set:
   wandb_log : True
 
   # wandb_name: videocoatt-p_p_field_deep_p_s_davt_simple_average
-  wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight
+  # wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fine
+  wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix
   # wandb_name: videocoatt-p_p_field_deep_p_s_cnn_gaze_follow_w_pre_simple_average
   # wandb_name: videocoatt-p_p_field_deep_p_s_cnn_vidatt_target_w_pre_wo_att_in_simple_average
 
   # batch_size: 16
-  batch_size: 8
-  # batch_size: 4
+  # batch_size: 8
+  batch_size: 4
   # batch_size: 2
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 1
-  gpu_finish : 1
+  gpu_start : 4
+  gpu_finish : 4
 
   resize_height: 320
   resize_width: 480
@@ -37,8 +38,8 @@ exp_params:
   use_person_person_jo_att_loss : True
   person_person_jo_att_loss_weight : 1
 
-  use_person_scene_att_loss : False
-  # use_person_scene_att_loss : True
+  # use_person_scene_att_loss : False
+  use_person_scene_att_loss : True
   person_scene_att_loss_weight : 1
 
   use_person_scene_jo_att_loss : False
@@ -65,7 +66,8 @@ exp_params:
   # loss : bce
 
   # learning rate
-  lr : 0.0001
+  lr : 0.00001
+  # lr : 0.001
 
   # gt gaussian
   gaussian_sigma: 10
@@ -102,11 +104,12 @@ exp_params:
   # freeze_saliency_extractor: False
   freeze_saliency_extractor: True
 
-  use_pretrained_joint_attention_estimator: False
-  # use_pretrained_head_pose_estimator: True
-  pretrained_joint_attention_estimator_name: pretrain_head_estimator
-  freeze_joint_attention_estimator: False
-  # freeze_joint_attention_estimator: True
+  # use_pretrained_joint_attention_estimator: False
+  use_pretrained_joint_attention_estimator: True
+  # pretrained_joint_attention_estimator_name: pretrain_head_estimator
+  pretrained_joint_attention_estimator_name: videocoatt-dual-people_field_middle
+  # freeze_joint_attention_estimator: False
+  freeze_joint_attention_estimator: True
 
 model_params:
   model_type: ja_transformer_dual
@@ -144,8 +147,13 @@ model_params:
   # p_p_estimator_type : deconv_middle
   # p_p_estimator_type : deconv_deep
   # p_p_estimator_type : field_shallow
-  # p_p_estimator_type : field_middle
-  p_p_estimator_type : field_deep  
+  p_p_estimator_type : field_middle
+  # p_p_estimator_type : field_deep  
+
+  # p_p_aggregation_type : ind_only
+  p_p_aggregation_type : token_only
+  # p_p_aggregation_type : ind_and_token_ind_based
+  # p_p_aggregation_type : ind_and_token_token_based
 
   # rgb-person transformer
   rgb_feat_dim : 256

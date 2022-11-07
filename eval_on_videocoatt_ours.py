@@ -82,7 +82,7 @@ cfg.update(cfg_arg)
 print(cfg)
 
 print("===> Building model")
-model_head, model_attention, model_saliency, cfg = model_generator(cfg)
+model_head, model_attention, model_saliency, model_fusion, cfg = model_generator(cfg)
 
 print("===> Building gpu configuration")
 cuda = cfg.exp_set.gpu_mode
@@ -101,22 +101,21 @@ weight_saved_dir = os.path.join(cfg.exp_set.save_folder,cfg.data.name, model_nam
 model_head_weight_path = os.path.join(weight_saved_dir, "model_head_best.pth.tar")
 model_saliency_weight_path = os.path.join(weight_saved_dir, "model_saliency_best.pth.tar")
 model_attention_weight_path = os.path.join(weight_saved_dir, "model_gaussian_best.pth.tar")
+model_fusion_weight_path = os.path.join(weight_saved_dir, "model_fusion_best.pth.tar")
 model_head.load_state_dict(torch.load(model_head_weight_path,  map_location='cuda:'+str(gpus_list[0])))
 model_saliency.load_state_dict(torch.load(model_saliency_weight_path,  map_location='cuda:'+str(gpus_list[0])))
 model_attention.load_state_dict(torch.load(model_attention_weight_path,  map_location='cuda:'+str(gpus_list[0])))
+model_fusion.load_state_dict(torch.load(model_fusion_weight_path,  map_location='cuda:'+str(gpus_list[0])))
+
 if cuda:
     model_head = model_head.cuda(gpus_list[0])
     model_saliency = model_saliency.cuda(gpus_list[0])
     model_attention = model_attention.cuda(gpus_list[0])
+    model_fusion = model_fusion.cuda(gpus_list[0])
     model_head.eval()
     model_saliency.eval()
     model_attention.eval()
-
-# for weight_key, weight_val in model_attention.state_dict().items():
-#     print(weight_key)
-#     if 'final' in weight_key:
-#         print(weight_key, weight_val)
-# sys.exit()
+    model_fusion.eval()
 
 print("===> Loading dataset")
 mode = cfg.exp_set.mode
@@ -212,8 +211,13 @@ for iteration, batch in enumerate(test_data_loader):
         out_scene_feat = model_saliency(batch)
         batch = {**batch, **out_scene_feat}
 
+        # joint attention estimation
         out_attention = model_attention(batch)
-        out = {**out_head, **out_attention, **batch}
+        batch = {**out_head, **out_attention, **batch}
+
+        # fusion network
+        out_fusion = model_fusion(batch)
+        out = {**batch, **out_fusion}
 
     img_gt = out['img_gt'].to('cpu').detach()[0]
     head_feature = out['head_feature'].to('cpu').detach()[0].numpy()
@@ -391,8 +395,13 @@ for iteration, batch in enumerate(test_data_loader):
         out_scene_feat = model_saliency(batch)
         batch = {**batch, **out_scene_feat}
 
+        # joint attention estimation
         out_attention = model_attention(batch)
-        out = {**out_head, **out_attention, **batch}
+        batch = {**out_head, **out_attention, **batch}
+
+        # fusion network
+        out_fusion = model_fusion(batch)
+        out = {**batch, **out_fusion}
 
     img_gt = out['img_gt'].to('cpu').detach()[0]
     head_feature = out['head_feature'].to('cpu').detach()[0].numpy()

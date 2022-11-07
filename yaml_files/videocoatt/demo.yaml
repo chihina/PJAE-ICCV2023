@@ -11,20 +11,22 @@ exp_set:
   # model_name: videoattentiontarget-hgt-high
   # model_name: gazefollow-dual-cnn-w_pre
   # model_name: videocoatt-isa
-  model_name: videocoatt-isa-mse-1103
+  # model_name: videocoatt-isa-mse-1103
   # model_name: videoattentiontarget-dual-cnn-w_pre-w_att_in
 
   # model_name: videocoatt-p_p_field_deep_p_s_gaze_follow_freeze
   # model_name: videocoatt-p_p_field_deep_p_s_davt_freeze
   # model_name: videocoatt-p_p_field_deep_p_s_trans_gaze_follow_freeze
-
   # model_name: videocoatt-p_p_field_deep_p_s_cnn_gaze_follow_w_pre_simple_average
   # model_name: videocoatt-p_p_field_deep_p_s_davt_simple_average
+  # model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fine
+
+  model_name: videocoatt-dual-people_field_middle
 
   seed_num : 777
   gpu_mode : True
-  gpu_start : 0
-  gpu_finish : 0
+  gpu_start : 3
+  gpu_finish : 3
   num_workers : 1
   batch_size : 1
   wandb_name : demo
@@ -43,3 +45,6 @@ exp_params:
 
   use_frame_type: mid
   # use_frame_type: all
+
+  # vis_dist_error: False
+  vis_dist_error: True

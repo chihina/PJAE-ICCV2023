@@ -137,6 +137,7 @@ model_params:
   rgb_feat_dim : 256
   rgb_people_trans_enc_num : 1
   mha_num_heads_rgb_people : 1
+
   # p_p_estimator_type : fc_shallow
   # p_p_estimator_type : fc_middle
   # p_p_estimator_type : fc_deep
@@ -146,6 +147,11 @@ model_params:
   # p_p_estimator_type : field_shallow
   p_p_estimator_type : field_middle
   # p_p_estimator_type : field_deep  
+
+  # p_p_aggregation_type : ind_only
+  # p_p_aggregation_type : token_only
+  # p_p_aggregation_type : ind_and_token_ind_based
+  p_p_aggregation_type : ind_and_token_token_based
 
   # rgb_cnn_extractor_type : rgb_patch
   # rgb_patch_size : 8

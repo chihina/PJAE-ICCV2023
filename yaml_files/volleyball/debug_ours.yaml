@@ -97,15 +97,15 @@ exp_params:
   # pretrained_saliency_extractor_name: pretrained_scene_extractor_davt
   # pretrained_saliency_extractor_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_p_s_only
   pretrained_saliency_extractor_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_p_s_only
-  # freeze_saliency_extractor: False
-  freeze_saliency_extractor: True
+  freeze_saliency_extractor: False
+  # freeze_saliency_extractor: True
 
   # use_pretrained_joint_attention_estimator: False
   use_pretrained_joint_attention_estimator: True
   # pretrained_joint_attention_estimator_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT
   pretrained_joint_attention_estimator_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED
-  # freeze_joint_attention_estimator: False
-  freeze_joint_attention_estimator: True
+  freeze_joint_attention_estimator: False
+  # freeze_joint_attention_estimator: True
 
 model_params:
   model_type: ja_transformer_dual

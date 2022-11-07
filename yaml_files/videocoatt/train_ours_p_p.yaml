@@ -11,8 +11,8 @@ exp_set:
   # wandb_name: videocoatt-dual-people_fc_middle
   # wandb_name: videocoatt-dual-people_fc_deep
   # wandb_name: videocoatt-dual-people_deconv_shallow
-  wandb_name: videocoatt-dual-people_deconv_middle
-  # wandb_name: videocoatt-dual-people_field_middle
+  # wandb_name: videocoatt-dual-people_deconv_middle
+  wandb_name: videocoatt-dual-people_field_middle
   # wandb_name: videocoatt-dual-people_field_deep
 
   # batch_size: 16
@@ -21,8 +21,8 @@ exp_set:
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 3
-  gpu_finish : 3
+  gpu_start : 2
+  gpu_finish : 2
 
   resize_height: 320
   # resize_width: 480
@@ -105,7 +105,7 @@ exp_params:
   # freeze_saliency_extractor: True
 
   use_pretrained_joint_attention_estimator: False
-  # use_pretrained_head_pose_estimator: True
+  # use_pretrained_joint_attention_estimator: True
   pretrained_joint_attention_estimator_name: pretrain_head_estimator
   freeze_joint_attention_estimator: False
   # freeze_joint_attention_estimator: True
@@ -143,11 +143,16 @@ model_params:
   # p_p_estimator_type : fc_middle
   # p_p_estimator_type : fc_deep
   # p_p_estimator_type : deconv_shallow
-  p_p_estimator_type : deconv_middle
+  # p_p_estimator_type : deconv_middle
   # p_p_estimator_type : deconv_deep
   # p_p_estimator_type : field_shallow
-  # p_p_estimator_type : field_middle
+  p_p_estimator_type : field_middle
   # p_p_estimator_type : field_deep  
+
+  # p_p_aggregation_type : ind_only
+  p_p_aggregation_type : token_only
+  # p_p_aggregation_type : ind_and_token_ind_based
+  # p_p_aggregation_type : ind_and_token_token_based
 
   # rgb-person transformer
   rgb_feat_dim : 256
@@ -163,9 +168,9 @@ model_params:
   # rgb_cnn_extractor_stage_idx : 3
   rgb_cnn_extractor_stage_idx : 4
 
-  # p_s_estimator_type : davt
+  p_s_estimator_type : davt
   # p_s_estimator_type : transformer
-  p_s_estimator_type : cnn
+  # p_s_estimator_type : cnn
   p_s_estimator_cnn_pretrain : False
   # p_s_estimator_cnn_pretrain : True
   # use_p_s_estimator_att_inside : False

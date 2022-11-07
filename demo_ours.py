@@ -125,7 +125,7 @@ cfg.update(cfg_arg)
 print(cfg)
 
 print("===> Building model")
-model_head, model_attention, model_saliency, cfg = model_generator(cfg)
+model_head, model_attention, model_saliency, model_fusion, cfg = model_generator(cfg)
 
 print("===> Building gpu configuration")
 cuda = cfg.exp_set.gpu_mode
@@ -151,13 +151,17 @@ if os.path.exists(model_saliency_weight_path):
 model_attention_weight_path = os.path.join(weight_saved_dir, "model_gaussian_best.pth.tar")
 model_attention.load_state_dict(torch.load(model_attention_weight_path,  map_location='cuda:'+str(gpus_list[0])))
 
+model_fusion_weight_path = os.path.join(weight_saved_dir, "model_fusion_best.pth.tar")
+model_fusion.load_state_dict(torch.load(model_fusion_weight_path,  map_location='cuda:'+str(gpus_list[0])))
+
 if cuda:
     model_head = model_head.cuda(gpus_list[0])
     model_saliency = model_saliency.cuda(gpus_list[0])
     model_attention = model_attention.cuda(gpus_list[0])
+    model_fusion = model_fusion.cuda(gpus_list[0])
     model_head.eval()
     model_saliency.eval()
-    model_attention.eval()
+    model_fusion.eval()
 
 print("===> Loading dataset")
 mode = cfg.exp_set.mode
@@ -252,9 +256,15 @@ for iteration, batch in enumerate(test_data_loader,1):
 
         # joint attention estimation
         out_attention = model_attention(batch)
+        batch = {**batch, **out_attention}
+
+        # fusion network
+        out_fusion = model_fusion(batch)
+        batch = {**batch, **out_fusion}
+
         # loss_set_head = model_head.calc_loss(batch, out_head)
-        loss_set_saliency = model_saliency.calc_loss(batch, out_attention, cfg)
-        loss_set_attention = model_attention.calc_loss(batch, out_attention, cfg)
+        # loss_set_saliency = model_saliency.calc_loss(batch, out_attention, cfg)
+        # loss_set_attention = model_attention.calc_loss(batch, out_attention, cfg)
 
         out = {**out_head, **out_scene_feat, **out_attention, **batch}
 
@@ -417,22 +427,23 @@ for iteration, batch in enumerate(test_data_loader,1):
         # cv2.arrowedLine(person_scene_joint_attention_heatmap, (head_x, head_y), (gaze_x, gaze_y), gaze_color, gaze_size)
         # cv2.arrowedLine(final_joint_attention_heatmap, (head_x, head_y), (gaze_x, gaze_y), gaze_color, gaze_size)
         cv2.arrowedLine(whole_image_gaze, (head_x, head_y), (gaze_x, gaze_y), gaze_color, gaze_size)
-        
-        # action prediction
-        action_idx = np.argmax(action_vector.numpy())
-        action_idx = action_idx_to_name(action_idx)
-        action_color = (255, 255, 255)
-        action_size = 2
-        action_shift = 20
 
-        # cv2.putText(person_person_joint_attention_heatmap, text=f'{action_idx}', org=(head_x, head_y-action_shift), color=action_color,
-        #             fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1.0, thickness=action_size, lineType=cv2.LINE_4)
-        # cv2.putText(person_scene_joint_attention_heatmap, text=f'{action_idx}', org=(head_x, head_y-action_shift), color=action_color,
-        #             fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1.0, thickness=action_size, lineType=cv2.LINE_4)
-        # cv2.putText(final_joint_attention_heatmap, text=f'{action_idx}', org=(head_x, head_y-action_shift), color=action_color,
-        #             fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1.0, thickness=action_size, lineType=cv2.LINE_4)
-        cv2.putText(whole_image_action, text=f'{action_idx}', org=(head_x, head_y-action_shift), color=action_color,
-                    fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1.0, thickness=action_size, lineType=cv2.LINE_4)
+        if cfg.data.name == 'volleyball':
+            # action prediction
+            action_idx = np.argmax(action_vector.numpy())
+            action_idx = action_idx_to_name(action_idx)
+            action_color = (255, 255, 255)
+            action_size = 2
+            action_shift = 20
+
+            # cv2.putText(person_person_joint_attention_heatmap, text=f'{action_idx}', org=(head_x, head_y-action_shift), color=action_color,
+            #             fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1.0, thickness=action_size, lineType=cv2.LINE_4)
+            # cv2.putText(person_scene_joint_attention_heatmap, text=f'{action_idx}', org=(head_x, head_y-action_shift), color=action_color,
+            #             fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1.0, thickness=action_size, lineType=cv2.LINE_4)
+            # cv2.putText(final_joint_attention_heatmap, text=f'{action_idx}', org=(head_x, head_y-action_shift), color=action_color,
+            #             fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1.0, thickness=action_size, lineType=cv2.LINE_4)
+            cv2.putText(whole_image_action, text=f'{action_idx}', org=(head_x, head_y-action_shift), color=action_color,
+                        fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1.0, thickness=action_size, lineType=cv2.LINE_4)
 
         cv2.circle(person_person_att, (gt_mid_x, gt_mid_y), 10, (0, 255, 0), thickness=-1)
         cv2.circle(person_scene_att, (gt_mid_x, gt_mid_y), 10, (0, 255, 0), thickness=-1)

@@ -18,6 +18,10 @@ exp_set:
   # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT
   # wandb_name: volleyball-dual-mid_p_p_field_deep_bbox_GT_gaze_GT_act_GT
 
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT_wo_position
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT_wo_gaze
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT_wo_action
+
   # wandb_name: volleyball-dual-mid_p_p_fc_shallow_bbox_PRED_gaze_PRED_act_PRED
   # wandb_name: volleyball-dual-mid_p_p_fc_middle_bbox_PRED_gaze_PRED_act_PRED
   # wandb_name: volleyball-dual-mid_p_p_fc_deep_bbox_PRED_gaze_PRED_act_PRED
@@ -26,8 +30,18 @@ exp_set:
   # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED
   # wandb_name: volleyball-dual-mid_p_p_field_deep_bbox_PRED_gaze_PRED_act_PRED
 
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_mse
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_bce
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_wo_position
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_wo_gaze
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_wo_action
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_wo_gaze_wo_position
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_wo_action_wo_gaze
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_wo_action_wo_position
+
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_ind_only
+  wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_token_only
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_ind_and_token_ind_based
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_ind_and_token_token_based
 
   # batch_size: 8
   batch_size: 4
@@ -35,8 +49,8 @@ exp_set:
   # seed_num: 777
   seed_num: 888
   gpu_mode : True
-  gpu_start : 7
-  gpu_finish : 7
+  gpu_start : 1
+  gpu_finish : 1
 
   resize_height : 320
   resize_width : 640
@@ -83,8 +97,8 @@ exp_params:
   position_aug_std: 0.05
 
   # loss function
-  # loss : mse
-  loss : bce
+  loss : mse
+  # loss : bce
 
   # learning rate
   # lr : 0.0001
@@ -93,9 +107,9 @@ exp_params:
   # lr : 0.1
   
   # gt gaussian
-  gaussian_sigma: 40
+  # gaussian_sigma: 40
   # gaussian_sigma: 20
-  # gaussian_sigma: 10
+  gaussian_sigma: 10
 
   # learning schedule
   nEpochs : 500
@@ -170,6 +184,11 @@ model_params:
   # p_p_estimator_type : deconv_middle
   p_p_estimator_type : field_middle
   # p_p_estimator_type : field_deep
+
+  # p_p_aggregation_type : ind_only
+  p_p_aggregation_type : token_only
+  # p_p_aggregation_type : ind_and_token_ind_based
+  # p_p_aggregation_type : ind_and_token_token_based
 
   # rgb-person transformer
   rgb_feat_dim : 256
