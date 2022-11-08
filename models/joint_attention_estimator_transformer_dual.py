@@ -46,6 +46,7 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
         self.people_people_trans_enc_num = cfg.model_params.people_people_trans_enc_num
         self.mha_num_heads_people_people = cfg.model_params.mha_num_heads_people_people
         self.p_p_estimator_type = cfg.model_params.p_p_estimator_type
+        self.p_p_aggregation_type = cfg.model_params.p_p_aggregation_type
 
         # fusion network type
         self.fusion_net_type = cfg.model_params.fusion_net_type
@@ -221,84 +222,17 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
             print('please use correct p_p estimator type')
             sys.exit()
 
-        # if self.fusion_net_type == 'early':
-        #     self.person_person_preconv = nn.Sequential(
-        #         nn.Identity(),
-        #     )
-        #     self.person_scene_preconv = nn.Sequential(
-        #         nn.Identity(),
-        #     )
-        #     self.final_joint_atention_heatmap = nn.Sequential(
-        #         nn.Conv2d(in_channels=2, out_channels=8, kernel_size=5, stride=2, padding=2),
-        #         nn.ReLU(),
-        #         nn.Conv2d(in_channels=8, out_channels=8, kernel_size=5, stride=2, padding=2),
-        #         nn.ReLU(),
-        #         nn.ConvTranspose2d(8, 8, 4, 2, 1, bias=False),
-        #         nn.ReLU(),
-        #         nn.ConvTranspose2d(8, 8, 4, 2, 1, bias=False),
-        #         nn.ReLU(),
-        #         nn.Conv2d(in_channels=8, out_channels=1, kernel_size=1),
-        #         final_activation_layer,
-        #     )
-        # elif self.fusion_net_type == 'mid':
-        #     self.person_person_preconv = nn.Sequential(
-        #         nn.Conv2d(in_channels=1, out_channels=4, kernel_size=5, stride=1, padding=2),
-        #         nn.ReLU(),
-        #         nn.Conv2d(in_channels=4, out_channels=8, kernel_size=5, stride=1, padding=2),
-        #         nn.ReLU(),
-        #         nn.Conv2d(in_channels=8, out_channels=8, kernel_size=5, stride=1, padding=2),
-        #         nn.ReLU(),
-        #     )
-        #     self.person_scene_preconv = nn.Sequential(
-        #         nn.Conv2d(in_channels=1, out_channels=4, kernel_size=5, stride=1, padding=2),
-        #         nn.ReLU(),
-        #         nn.Conv2d(in_channels=4, out_channels=8, kernel_size=5, stride=1, padding=2),
-        #         nn.ReLU(),
-        #         nn.Conv2d(in_channels=8, out_channels=8, kernel_size=5, stride=1, padding=2),
-        #         nn.ReLU(),
-        #     )
-        #     self.final_joint_atention_heatmap = nn.Sequential(
-        #         nn.Conv2d(in_channels=16, out_channels=8, kernel_size=5, stride=1, padding=2),
-        #         nn.ReLU(),
-        #         nn.Conv2d(in_channels=8, out_channels=8, kernel_size=5, stride=1, padding=2),
-        #         nn.ReLU(),
-        #         nn.Conv2d(in_channels=8, out_channels=1, kernel_size=1),
-        #         final_activation_layer,
-        #     )
-        # elif self.fusion_net_type == 'late':
-        #     pass
-        # elif self.fusion_net_type == 'simple_average':
-        #     pass
-        # elif self.fusion_net_type == 'scalar_weight':
-        #     self.final_fusion_weight = nn.Parameter(torch.rand(2))
-        # else:
-        #     print('please use correct fusion net type')
-        #     self.person_person_preconv = nn.Sequential(
-        #         nn.Conv2d(in_channels=1, out_channels=4, kernel_size=3, stride=1, padding=1),
-        #         nn.ReLU(),
-        #         nn.Conv2d(in_channels=4, out_channels=8, kernel_size=3, stride=1, padding=1),
-        #         nn.ReLU(),
-        #         nn.Conv2d(in_channels=8, out_channels=8, kernel_size=3, stride=1, padding=1),
-        #         nn.ReLU(),
-        #     )
-        #     self.person_scene_preconv = nn.Sequential(
-        #         nn.Conv2d(in_channels=1, out_channels=4, kernel_size=3, stride=1, padding=1),
-        #         nn.ReLU(),
-        #         nn.Conv2d(in_channels=4, out_channels=8, kernel_size=3, stride=1, padding=1),
-        #         nn.ReLU(),
-        #         nn.Conv2d(in_channels=8, out_channels=8, kernel_size=3, stride=1, padding=1),
-        #         nn.ReLU(),
-        #     )
-        #     self.final_joint_atention_heatmap = nn.Sequential(
-        #         nn.Conv2d(in_channels=16, out_channels=8, kernel_size=3, stride=1, padding=1),
-        #         nn.ReLU(),
-        #         nn.Conv2d(in_channels=8, out_channels=8, kernel_size=3, stride=1, padding=1),
-        #         nn.ReLU(),
-        #         nn.Conv2d(in_channels=8, out_channels=8, kernel_size=3, stride=1, padding=1),
-        #         nn.ReLU(),
-        #         nn.Conv2d(in_channels=8, out_channels=1, kernel_size=1),
-        #         final_activation_layer,
-        #     )
+        if self.p_p_aggregation_type == 'ind_only':
+            pass
+        elif self.p_p_aggregation_type == 'token_only':
+            pass
+        elif self.p_p_aggregation_type == 'ind_and_token_ind_based':
+            pass
+        elif self.p_p_aggregation_type == 'ind_and_token_token_based':
+            pass
+        else:
+            print('please use correct p_p aggregation type')
+            sys.exit()
 
     def forward(self, inp):
 
@@ -309,6 +243,7 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
         xy_axis_map = inp['xy_axis_map']
         head_xy_map = inp['head_xy_map']
         gaze_xy_map = inp['gaze_xy_map']
+        att_inside_flag = inp['att_inside_flag']
 
         # torch.autograd.set_detect_anomaly(True)
         
@@ -367,7 +302,21 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
             trans_att_people_people = torch.zeros(self.batch_size, self.people_people_trans_enc_num, people_num, people_num)
 
         # attention estimation of person-to-person path
-        attention_token = head_info_params_emb[:, :-1, :]
+        if self.p_p_aggregation_type == 'ind_only':
+            attention_token = head_info_params_emb[:, :-1, :]
+        elif self.p_p_aggregation_type == 'token_only':
+            attention_token = head_info_params_emb[:, :-1, :]
+        elif self.p_p_aggregation_type == 'ind_and_token_ind_based':
+            attention_token = head_info_params_emb[:, :-1, :]
+            ja_embedding_relation = head_info_params_emb[:, -1, :][:, None, :]
+            attention_token = attention_token + head_info_params_emb[:, -1, :][:, None, :]
+        elif self.p_p_aggregation_type == 'ind_and_token_ind_based':
+            attention_token = head_info_params_emb[:, :-1, :]
+        elif self.p_p_aggregation_type == 'ind_and_token_token_based':
+            attention_token = head_info_params_emb[:, :-1, :]
+        else:
+            sys.exit()
+
         if 'fc' in self.p_p_estimator_type:
             attention_token_input = attention_token.view(self.batch_size, people_num, self.people_feat_dim)
         elif 'deconv' in self.p_p_estimator_type:
@@ -382,7 +331,7 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
             x_axis_map = F.interpolate(x_axis_map, (self.hm_height_middle, self.hm_width_middle), mode='bilinear')
             y_axis_map = F.interpolate(y_axis_map, (self.hm_height_middle, self.hm_width_middle), mode='bilinear')
             x_axis_map = x_axis_map.view(self.batch_size, people_num, self.hm_height_middle*self.hm_width_middle, 1)
-            y_axis_map = y_axis_map.view(self.batch_size, people_num, self.hm_height_middle*self.hm_width_middle,1 )
+            y_axis_map = y_axis_map.view(self.batch_size, people_num, self.hm_height_middle*self.hm_width_middle, 1)
             attention_token_input = torch.cat([attention_token_expand, x_axis_map, y_axis_map], dim=-1)
         person_person_attention_heatmap = self.person_person_attention_heatmap(attention_token_input)
         person_person_attention_heatmap = person_person_attention_heatmap.view(self.batch_size, people_num, self.hm_height_middle, self.hm_width_middle)
@@ -404,11 +353,29 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
             x_axis_map = F.interpolate(x_axis_map, (self.hm_height_middle, self.hm_width_middle), mode='bilinear')
             y_axis_map = F.interpolate(y_axis_map, (self.hm_height_middle, self.hm_width_middle), mode='bilinear')
             x_axis_map = x_axis_map.view(self.batch_size, 1, self.hm_height_middle*self.hm_width_middle, 1)
-            y_axis_map = y_axis_map.view(self.batch_size, 1, self.hm_height_middle*self.hm_width_middle,1 )
+            y_axis_map = y_axis_map.view(self.batch_size, 1, self.hm_height_middle*self.hm_width_middle, 1)
             ja_embedding_relation_input = torch.cat([ja_embedding_relation_expand, x_axis_map, y_axis_map], dim=-1)
         person_person_joint_attention_heatmap = self.person_person_attention_heatmap(ja_embedding_relation_input)
         person_person_joint_attention_heatmap = person_person_joint_attention_heatmap.view(self.batch_size, 1, self.hm_height_middle, self.hm_width_middle)
         person_person_joint_attention_heatmap = F.interpolate(person_person_joint_attention_heatmap, (self.hm_height, self.hm_width), mode='bilinear')
+
+        # final p_p heatmap aggregation
+        if self.p_p_aggregation_type == 'ind_only':
+            person_person_attention_heatmap = person_person_attention_heatmap * att_inside_flag[:, :, None, None]
+            person_person_joint_attention_heatmap = torch.sum(person_person_attention_heatmap, dim=1)
+            person_person_joint_attention_heatmap = person_person_joint_attention_heatmap / torch.sum(att_inside_flag, dim=1)[:, None, None]
+            person_person_joint_attention_heatmap = person_person_joint_attention_heatmap[:, None, :, :]
+        elif self.p_p_aggregation_type == 'token_only':
+            pass
+        elif self.p_p_aggregation_type == 'ind_and_token_ind_based':
+            person_person_attention_heatmap = person_person_attention_heatmap * att_inside_flag[:, :, None, None]
+            person_person_joint_attention_heatmap = torch.sum(person_person_attention_heatmap, dim=1)
+            person_person_joint_attention_heatmap = person_person_joint_attention_heatmap / torch.sum(att_inside_flag, dim=1)[:, None, None]
+            person_person_joint_attention_heatmap = person_person_joint_attention_heatmap[:, None, :, :]
+        elif self.p_p_aggregation_type == 'ind_and_token_token_based':
+            pass
+        else:
+            sys.exit()
 
         # attention estimation of person-to-scene path
         person_scene_attention_heatmap = inp['person_scene_attention_heatmap']
@@ -421,24 +388,6 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
         no_pad_idx_cnt = torch.sum((torch.sum(head_feature, dim=2) != 0), dim=1)
         person_scene_joint_attention_heatmap = person_scene_joint_attention_heatmap / no_pad_idx_cnt[:, None, None]
         person_scene_joint_attention_heatmap = person_scene_joint_attention_heatmap[:, None, :, :]
-
-        # final joint attention estimation
-        # if self.fusion_net_type == 'simple_average':
-        #     final_joint_attention_heatmap = (person_person_joint_attention_heatmap+person_scene_joint_attention_heatmap) / 2            
-        # elif self.fusion_net_type == 'scalar_weight':
-        #     final_fusion_weight = self.final_fusion_weight
-        #     # final_fusion_weight_sum = torch.sum(final_fusion_weight)
-        #     # final_fusion_weight = final_fusion_weight / final_fusion_weight_sum
-        #     final_fusion_weight_p_p = final_fusion_weight[0]
-        #     final_fusion_weight_p_s = final_fusion_weight[1]
-        #     final_joint_attention_heatmap = (final_fusion_weight_p_p*person_person_joint_attention_heatmap)+(final_fusion_weight_p_s*person_scene_joint_attention_heatmap)
-        #     # final_joint_attention_heatmap = (person_person_joint_attention_heatmap+person_scene_joint_attention_heatmap)/2
-        #     print(f'p-p:{final_fusion_weight_p_p.item():.2f}, p-s:{final_fusion_weight_p_s.item():.2f}')
-        # else:
-        #     person_person_joint_attention_heatmap_preconv = self.person_person_preconv(person_person_joint_attention_heatmap)
-        #     person_scene_joint_attention_heatmap_preconv = self.person_scene_preconv(person_scene_joint_attention_heatmap)
-        #     dual_heatmap = torch.cat([person_person_joint_attention_heatmap_preconv, person_scene_joint_attention_heatmap_preconv], dim=1)
-        #     final_joint_attention_heatmap = self.final_joint_atention_heatmap(dual_heatmap)
 
         # generate head xy map
         head_xy_map = head_xy_map * head_feature[:, :, :2, None, None]
@@ -474,7 +423,6 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
         data['person_person_joint_attention_heatmap'] = person_person_joint_attention_heatmap
         data['person_scene_attention_heatmap'] = person_scene_attention_heatmap
         data['person_scene_joint_attention_heatmap'] = person_scene_joint_attention_heatmap
-        # data['final_joint_attention_heatmap'] = final_joint_attention_heatmap
 
         data['angle_dist'] = angle_dist
         data['distance_dist'] = distance_dist
@@ -496,7 +444,6 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
         person_person_joint_attention_heatmap = out['person_person_joint_attention_heatmap']
         person_scene_attention_heatmap = out['person_scene_attention_heatmap']
         person_scene_joint_attention_heatmap = out['person_scene_joint_attention_heatmap']
-        # final_joint_attention_heatmap = out['final_joint_attention_heatmap']
 
         self.use_person_person_att_loss = cfg.exp_params.use_person_person_att_loss
         self.person_person_att_loss_weight = cfg.exp_params.person_person_att_loss_weight
@@ -588,6 +535,5 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
         loss_set['loss_p_p_jo_att'] = loss_p_p_jo_att
         loss_set['loss_p_s_att'] = loss_p_s_att
         loss_set['loss_p_s_jo_att'] = loss_p_s_jo_att
-        # loss_set['loss_final_jo_att'] = loss_final_jo_att
 
         return loss_set

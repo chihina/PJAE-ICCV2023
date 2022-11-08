@@ -13,15 +13,18 @@ analyze_name_list.append('videocoatt-p_p_field_deep_p_s')
 
 # define ablate type
 analyze_name_ablation_list = []
-analyze_name_ablation_list.append('davt_simple_average')
-analyze_name_ablation_list.append('davt_scalar_weight')
-analyze_name_ablation_list.append('davt_freeze')
+analyze_name_ablation_list = []
+analyze_name_ablation_list.append('_davt_simple_average')
+analyze_name_ablation_list.append('_davt_scalar_weight_fix')
+analyze_name_ablation_list.append('_davt_scalar_weight_fine')
+# analyze_name_ablation_list.append('_davt_freeze')
 
 # define model names
 model_name_list = []
 model_name_list.append('Mean average')
-model_name_list.append('Weighted average')
-model_name_list.append('CNN fusion')
+model_name_list.append('Weighted average (fix)')
+model_name_list.append('Weighted average (fine)')
+# model_name_list.append('CNN fusion')
 
 # define test data type
 test_data_type_list = []

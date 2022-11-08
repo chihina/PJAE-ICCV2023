@@ -83,8 +83,8 @@ exp_params:
   # use_pretrained_head_pose_estimator: False
   use_pretrained_head_pose_estimator: True
   # pretrained_head_pose_estimator_name: videocoatt-head_pose_estimator
-  # pretrained_head_pose_estimator_name: gazefollow-dual-cnn
-  pretrained_head_pose_estimator_name: videoattentiontarget-dual-cnn_wo_pre_w_att_ins
+  pretrained_head_pose_estimator_name: gazefollow-dual-cnn-w_pre
+  # pretrained_head_pose_estimator_name: videoattentiontarget-dual-cnn_wo_pre_w_att_ins
   # freeze_head_pose_estimator: False
   freeze_head_pose_estimator: True
 

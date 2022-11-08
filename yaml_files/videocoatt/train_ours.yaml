@@ -9,9 +9,19 @@ exp_set:
 
   # wandb_name: videocoatt-p_p_field_deep_p_s_davt_simple_average
   # wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fine
-  wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix
+  # wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix
   # wandb_name: videocoatt-p_p_field_deep_p_s_cnn_gaze_follow_w_pre_simple_average
   # wandb_name: videocoatt-p_p_field_deep_p_s_cnn_vidatt_target_w_pre_wo_att_in_simple_average
+
+  # wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fine_ind_only
+  # wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fine_token_only
+  # wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fine_ind_and_token_ind_based
+  # wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fine_ind_and_token_token_based
+
+  # wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_ind_only
+  # wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only
+  # wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_ind_and_token_ind_based
+  wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_ind_and_token_token_based
 
   # batch_size: 16
   # batch_size: 8
@@ -20,8 +30,8 @@ exp_set:
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 4
-  gpu_finish : 4
+  gpu_start : 5
+  gpu_finish : 5
 
   resize_height: 320
   resize_width: 480
@@ -107,7 +117,11 @@ exp_params:
   # use_pretrained_joint_attention_estimator: False
   use_pretrained_joint_attention_estimator: True
   # pretrained_joint_attention_estimator_name: pretrain_head_estimator
-  pretrained_joint_attention_estimator_name: videocoatt-dual-people_field_middle
+  # pretrained_joint_attention_estimator_name: videocoatt-dual-people_field_middle
+  # pretrained_joint_attention_estimator_name: videocoatt-dual-people_field_middle_ind_only
+  # pretrained_joint_attention_estimator_name: videocoatt-dual-people_field_middle_token_only
+  # pretrained_joint_attention_estimator_name: videocoatt-dual-people_field_middle_ind_and_token_ind_based
+  pretrained_joint_attention_estimator_name: videocoatt-dual-people_field_middle_ind_and_token_token_based
   # freeze_joint_attention_estimator: False
   freeze_joint_attention_estimator: True
 
@@ -151,9 +165,9 @@ model_params:
   # p_p_estimator_type : field_deep  
 
   # p_p_aggregation_type : ind_only
-  p_p_aggregation_type : token_only
+  # p_p_aggregation_type : token_only
   # p_p_aggregation_type : ind_and_token_ind_based
-  # p_p_aggregation_type : ind_and_token_token_based
+  p_p_aggregation_type : ind_and_token_token_based
 
   # rgb-person transformer
   rgb_feat_dim : 256

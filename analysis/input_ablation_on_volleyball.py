@@ -15,36 +15,37 @@ analyze_name_list = []
 # analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion')
 # analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion')
 
-analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion_scalar_weight_fine')
+analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion_scalar_weight_fine')
+# analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion_scalar_weight_fine')
 
 # define ablate type
 analyze_name_ablation_list = []
-analyze_name_ablation_list.append('_wo_position')
-analyze_name_ablation_list.append('_wo_gaze')
-analyze_name_ablation_list.append('_wo_action')
-analyze_name_ablation_list.append('_wo_gaze_wo_position')
-analyze_name_ablation_list.append('_wo_action_wo_position')
-analyze_name_ablation_list.append('_wo_action_wo_gaze')
-# analyze_name_ablation_list.append('_wo_p_p')
-# analyze_name_ablation_list.append('_wo_p_s')
+# analyze_name_ablation_list.append('_wo_position')
+# analyze_name_ablation_list.append('_wo_gaze')
+# analyze_name_ablation_list.append('_wo_action')
+# analyze_name_ablation_list.append('_wo_gaze_wo_position')
+# analyze_name_ablation_list.append('_wo_action_wo_position')
+# analyze_name_ablation_list.append('_wo_action_wo_gaze')
+analyze_name_ablation_list.append('_wo_p_p')
+analyze_name_ablation_list.append('_wo_p_s')
 analyze_name_ablation_list.append('')
 
 # define model name
 model_name_list = []
-model_name_list.append('Ours w/o p')
-model_name_list.append('Ours w/o g')
-model_name_list.append('Ours w/o a')
-model_name_list.append('Ours w/o g and p')
-model_name_list.append('Ours w/o a and p')
-model_name_list.append('Ours w/o a and g')
-# model_name_list.append('Ours w/o branch (a)')
-# model_name_list.append('Ours w/o branch (b)')
+# model_name_list.append('Ours w/o p')
+# model_name_list.append('Ours w/o g')
+# model_name_list.append('Ours w/o a')
+# model_name_list.append('Ours w/o g and p')
+# model_name_list.append('Ours w/o a and p')
+# model_name_list.append('Ours w/o a and g')
+model_name_list.append('Ours w/o branch (a)')
+model_name_list.append('Ours w/o branch (b)')
 model_name_list.append('Ours')
 
 # define test data type
 test_data_type_list = []
-# test_data_type_list.append('bbox_GT_gaze_GT_act_GT_blur_False')
-test_data_type_list.append('bbox_PRED_gaze_PRED_act_PRED_blur_False')
+test_data_type_list.append('bbox_GT_gaze_GT_act_GT_blur_False')
+# test_data_type_list.append('bbox_PRED_gaze_PRED_act_PRED_blur_False')
 for test_data_type in test_data_type_list:
     print(f'==={test_data_type}===')
     for analyze_name in analyze_name_list:

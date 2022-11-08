@@ -5,29 +5,30 @@ import pandas as pd
 import numpy as np
 
 
-saved_result_dir = os.path.join('results', 'volleyball')
+saved_result_dir = os.path.join('results', 'videocoatt')
 
 # define analyze model type
 analyze_name_list = []
-# analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion')
-analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED')
+analyze_name_list.append('videocoatt-dual-people_field_middle')
 
 # define ablate type
 analyze_name_ablation_list = []
-analyze_name_ablation_list.append('')
-analyze_name_ablation_list.append('_scalar_weight_fine')
-analyze_name_ablation_list.append('_mid')
+analyze_name_ablation_list.append('_ind_only')
+analyze_name_ablation_list.append('_token_only')
+# analyze_name_ablation_list.append('')
+analyze_name_ablation_list.append('_ind_and_token_ind_based')
+analyze_name_ablation_list.append('_ind_and_token_token_based')
 
 # define model names
 model_name_list = []
-model_name_list.append('Mean average')
-model_name_list.append('Weighted average')
-model_name_list.append('CNN fusion')
+model_name_list.append('Ind only')
+model_name_list.append('Token only')
+model_name_list.append('Ind and Token (ind-based)')
+model_name_list.append('Ind and Token (token-based)')
 
 # define test data type
 test_data_type_list = []
-# test_data_type_list.append('bbox_GT_gaze_GT_act_GT_blur_False')
-test_data_type_list.append('bbox_PRED_gaze_PRED_act_PRED_blur_False')
+test_data_type_list.append('test_gt_gaze_False_head_conf_0.6')
 for test_data_type in test_data_type_list:
     print(f'==={test_data_type}===')
     for analyze_name in analyze_name_list:
@@ -43,5 +44,5 @@ for test_data_type in test_data_type_list:
 
         eval_results_array = np.array(eval_results_list)
         df_eval_results = pd.DataFrame(eval_results_array, model_name_list, eval_metrics_list)
-        save_csv_file_path = os.path.join(saved_result_dir, f'fusion_ablation_volleyball_{test_data_type}.csv')
+        save_csv_file_path = os.path.join(saved_result_dir, f'p_p_agg_ablation_videocoatt_{test_data_type}.csv')
         df_eval_results.to_csv(save_csv_file_path)

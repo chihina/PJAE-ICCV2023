@@ -16,8 +16,8 @@ exp_set:
   num_workers: 2
   seed_num: 777
   gpu_mode : True
-  gpu_start : 4
-  gpu_finish : 4
+  gpu_start : 6
+  gpu_finish : 6
 
   resize_height : 320
   resize_width : 640
@@ -68,13 +68,16 @@ exp_params:
   # loss : bce
 
   # learning rate
+  lr : 0.00001
   # lr : 0.0001
-  lr : 0.001
+  # lr : 0.001
   # lr : 0.01
   # lr : 0.1
   
   # gt gaussian
-  gaussian_sigma: 20
+  # gaussian_sigma: 40
+  gaussian_sigma: 10
+  # gaussian_sigma: 5
 
   # learning schedule
   nEpochs : 500
@@ -103,7 +106,10 @@ exp_params:
   # use_pretrained_joint_attention_estimator: False
   use_pretrained_joint_attention_estimator: True
   # pretrained_joint_attention_estimator_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT
-  pretrained_joint_attention_estimator_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED
+  pretrained_joint_attention_estimator_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_ind_only
+  # pretrained_joint_attention_estimator_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_token_only
+  # pretrained_joint_attention_estimator_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_ind_and_token_ind_based
+  # pretrained_joint_attention_estimator_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_ind_and_token_token_based
   freeze_joint_attention_estimator: False
   # freeze_joint_attention_estimator: True
 
@@ -119,8 +125,8 @@ model_params:
   use_gaze : True
 
   # Action
-  # use_action : False
-  use_action : True
+  use_action : False
+  # use_action : True
 
   # Person embedding
   # head_embedding_type : liner
@@ -132,10 +138,19 @@ model_params:
 
   # person-person transformer
   people_feat_dim : 16
+  # people_feat_dim : 32
   # use_people_people_trans: False
   use_people_people_trans: True
+  # people_people_trans_enc_num : 1
   people_people_trans_enc_num : 2
+  # people_people_trans_enc_num : 3
+  # people_people_trans_enc_num : 4
+  # mha_num_heads_people_people : 1
   mha_num_heads_people_people : 2
+  # mha_num_heads_people_people : 4
+  # mha_num_heads_people_people : 8
+  # mha_num_heads_people_people : 16
+  
   # p_p_estimator_type : fc_shallow
   # p_p_estimator_type : fc_middle
   # p_p_estimator_type : fc_deep
@@ -145,6 +160,11 @@ model_params:
   # p_p_estimator_type : field_shallow
   p_p_estimator_type : field_middle
   # p_p_estimator_type : field_deep
+
+  p_p_aggregation_type : ind_only
+  # p_p_aggregation_type : token_only
+  # p_p_aggregation_type : ind_and_token_ind_based
+  # p_p_aggregation_type : ind_and_token_token_based
 
   # rgb-person transformer
   rgb_feat_dim : 256
