@@ -39,17 +39,17 @@ exp_set:
   # model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fine_ind_only
   # model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fine_token_only
   # model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fine_ind_and_token_ind_based
-  # model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fine_ind_and_token_token_based
+  model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fine_ind_and_token_token_based
 
   # model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_ind_only
   # model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only
   # model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_ind_and_token_ind_based
-  model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_ind_and_token_token_based
+  # model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_ind_and_token_token_based
 
   seed_num : 777
   gpu_mode : True
-  gpu_start : 5
-  gpu_finish : 5
+  gpu_start : 6
+  gpu_finish : 6
   num_workers : 1
   batch_size : 1
   wandb_name : test

@@ -18,7 +18,15 @@ exp_set:
   # wandb_name: videocoatt-dual-people_field_middle_ind_only
   # wandb_name: videocoatt-dual-people_field_middle_token_only
   # wandb_name: videocoatt-dual-people_field_middle_ind_and_token_ind_based
-  wandb_name: videocoatt-dual-people_field_middle_ind_and_token_token_based
+  # wandb_name: videocoatt-dual-people_field_middle_ind_and_token_token_based
+
+  # wandb_name: videocoatt-dual-people_field_middle_token_only_mha_1
+  # wandb_name: videocoatt-dual-people_field_middle_token_only_mha_4
+  # wandb_name: videocoatt-dual-people_field_middle_token_only_mha_8
+  # wandb_name: videocoatt-dual-people_field_middle_token_only_mha_16
+
+  # wandb_name: videocoatt-dual-people_field_middle_token_only_enc_1
+  wandb_name: videocoatt-dual-people_field_middle_token_only_enc_3
 
   # batch_size: 16
   batch_size: 8
@@ -26,8 +34,8 @@ exp_set:
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 7
-  gpu_finish : 7
+  gpu_start : 5
+  gpu_finish : 5
 
   resize_height: 320
   resize_width: 480
@@ -36,8 +44,8 @@ exp_set:
   resize_head_width: 224
 
 exp_params:
-  # use_person_person_att_loss : False
-  use_person_person_att_loss : True
+  use_person_person_att_loss : False
+  # use_person_person_att_loss : True
   person_person_att_loss_weight : 1
 
   # use_person_person_jo_att_loss : False
@@ -143,8 +151,17 @@ model_params:
   people_feat_dim : 16
   # use_people_people_trans: False
   use_people_people_trans: True
-  people_people_trans_enc_num : 2
+
+  # people_people_trans_enc_num : 1
+  # people_people_trans_enc_num : 2
+  people_people_trans_enc_num : 3
+
+  # mha_num_heads_people_people : 1
   mha_num_heads_people_people : 2
+  # mha_num_heads_people_people : 4
+  # mha_num_heads_people_people : 8
+  # mha_num_heads_people_people : 16
+
   # p_p_estimator_type : fc_shallow
   # p_p_estimator_type : fc_middle
   # p_p_estimator_type : fc_deep
@@ -156,9 +173,9 @@ model_params:
   # p_p_estimator_type : field_deep  
 
   # p_p_aggregation_type : ind_only
-  # p_p_aggregation_type : token_only
+  p_p_aggregation_type : token_only
   # p_p_aggregation_type : ind_and_token_ind_based
-  p_p_aggregation_type : ind_and_token_token_based
+  # p_p_aggregation_type : ind_and_token_token_based
 
   # rgb-person transformer
   rgb_feat_dim : 256

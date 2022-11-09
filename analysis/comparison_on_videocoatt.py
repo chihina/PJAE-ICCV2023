@@ -12,7 +12,8 @@ analyze_name_list = []
 analyze_name_list.append('videocoatt-isa-mse-1103')
 analyze_name_list.append('videocoatt-p_p_field_deep_p_s_davt_freeze')
 analyze_name_list.append('videoattentiontarget-hgt-high')
-analyze_name_list.append('videocoatt-p_p_field_deep_p_s_davt_simple_average')
+analyze_name_list.append('videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix')
+# analyze_name_list.append('videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only')
 
 # define model names
 model_name_list = []

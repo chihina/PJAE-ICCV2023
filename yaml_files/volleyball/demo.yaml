@@ -26,7 +26,8 @@ exp_set:
   # model_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_mse
   # model_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_bce
 
-  model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion_scalar_weight_fine
+  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion_scalar_weight_fine
+  model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_cnn_fusion_fine_token_only
 
   seed_num : 777
   gpu_mode : True

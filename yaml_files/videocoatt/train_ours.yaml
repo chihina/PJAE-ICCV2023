@@ -21,7 +21,10 @@ exp_set:
   # wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_ind_only
   # wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only
   # wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_ind_and_token_ind_based
-  wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_ind_and_token_token_based
+  # wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_ind_and_token_token_based
+
+  # wandb_name: videocoatt-p_p_field_deep_p_s_davt_average_fix_token_only
+  # wandb_name: videocoatt-p_p_field_deep_p_s_davt_cnn_fix_token_only
 
   # batch_size: 16
   # batch_size: 8
@@ -30,8 +33,8 @@ exp_set:
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 5
-  gpu_finish : 5
+  gpu_start : 1
+  gpu_finish : 1
 
   resize_height: 320
   resize_width: 480
@@ -39,7 +42,6 @@ exp_set:
   resize_head_width: 224
 
 exp_params:
-
   use_person_person_att_loss : False
   # use_person_person_att_loss : True
   person_person_att_loss_weight : 1
@@ -117,11 +119,10 @@ exp_params:
   # use_pretrained_joint_attention_estimator: False
   use_pretrained_joint_attention_estimator: True
   # pretrained_joint_attention_estimator_name: pretrain_head_estimator
-  # pretrained_joint_attention_estimator_name: videocoatt-dual-people_field_middle
   # pretrained_joint_attention_estimator_name: videocoatt-dual-people_field_middle_ind_only
-  # pretrained_joint_attention_estimator_name: videocoatt-dual-people_field_middle_token_only
+  pretrained_joint_attention_estimator_name: videocoatt-dual-people_field_middle_token_only
   # pretrained_joint_attention_estimator_name: videocoatt-dual-people_field_middle_ind_and_token_ind_based
-  pretrained_joint_attention_estimator_name: videocoatt-dual-people_field_middle_ind_and_token_token_based
+  # pretrained_joint_attention_estimator_name: videocoatt-dual-people_field_middle_ind_and_token_token_based
   # freeze_joint_attention_estimator: False
   freeze_joint_attention_estimator: True
 
@@ -165,9 +166,9 @@ model_params:
   # p_p_estimator_type : field_deep  
 
   # p_p_aggregation_type : ind_only
-  # p_p_aggregation_type : token_only
+  p_p_aggregation_type : token_only
   # p_p_aggregation_type : ind_and_token_ind_based
-  p_p_aggregation_type : ind_and_token_token_based
+  # p_p_aggregation_type : ind_and_token_token_based
 
   # rgb-person transformer
   rgb_feat_dim : 256
@@ -192,7 +193,7 @@ model_params:
   # use_p_s_estimator_att_inside : True
 
   # fusion_net_type : early
-  # fusion_net_type : mid
+  fusion_net_type : mid
   # fusion_net_type : late
   # fusion_net_type : simple_average
-  fusion_net_type : scalar_weight
+  # fusion_net_type : scalar_weight

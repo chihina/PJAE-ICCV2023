@@ -14,9 +14,9 @@ analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRE
 
 # define ablate type
 analyze_name_ablation_list = []
-analyze_name_ablation_list.append('')
-analyze_name_ablation_list.append('_scalar_weight_fine')
-analyze_name_ablation_list.append('_mid')
+analyze_name_ablation_list.append('average')
+analyze_name_ablation_list.append('weight')
+analyze_name_ablation_list.append('cnn')
 
 # define model names
 model_name_list = []
@@ -34,7 +34,7 @@ for test_data_type in test_data_type_list:
         eval_results_list = []
         for ablation_name in analyze_name_ablation_list:
 
-            model_name = f'{analyze_name}{ablation_name}'        
+            model_name = f'{analyze_name}_{ablation_name}_fusion_fine_token_only'        
             json_file_path = os.path.join(saved_result_dir, model_name, 'eval_results', test_data_type, 'eval_results.json')
             with open(json_file_path, 'r') as f:
                 eval_results_dic = json.load(f)

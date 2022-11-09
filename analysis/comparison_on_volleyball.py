@@ -15,19 +15,19 @@ analyze_name_list.append('volleyball-isa_bbox_GT_gaze_GT_act_GT')
 analyze_name_list.append('volleyball-isa_bbox_PRED_gaze_PRED_act_PRED')
 analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion_wo_p_p')
 analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion_wo_p_p')
-analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion')
-analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion')
+analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_weight_fusion_fine_token_only')
+analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_weight_fusion_fine_token_only')
 analyze_name_list_dic['bbox_GT_gaze_GT_act_GT_blur_False'] = analyze_name_list
 
-analyze_name_list = []
-analyze_name_list.append('2021_0708_lr_e3_gamma_1_stack_3_mid_frame_ver2')
-analyze_name_list.append('volleyball-isa_bbox_GT_gaze_GT_act_GT')
-analyze_name_list.append('volleyball-isa_bbox_PRED_gaze_PRED_act_PRED')
-analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion_wo_p_p')
-analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion_wo_p_p')
-analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion')
-analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion')
-analyze_name_list_dic['bbox_PRED_gaze_PRED_act_PRED_blur_False'] = analyze_name_list
+# analyze_name_list = []
+# analyze_name_list.append('2021_0708_lr_e3_gamma_1_stack_3_mid_frame_ver2')
+# analyze_name_list.append('volleyball-isa_bbox_GT_gaze_GT_act_GT')
+# analyze_name_list.append('volleyball-isa_bbox_PRED_gaze_PRED_act_PRED')
+# analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion_wo_p_p')
+# analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion_wo_p_p')
+# analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion_scalar_weight_fine')
+# analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_weight_fusion_fine_token_only')
+# analyze_name_list_dic['bbox_PRED_gaze_PRED_act_PRED_blur_False'] = analyze_name_list
 
 # define model names
 model_name_list = []

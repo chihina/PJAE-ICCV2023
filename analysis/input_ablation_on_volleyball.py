@@ -15,14 +15,14 @@ analyze_name_list = []
 # analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion')
 # analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion')
 
-analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion_scalar_weight_fine')
-# analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion_scalar_weight_fine')
+analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_weight_fusion_fine_token_only')
+# analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_weight_fusion_fine_token_only')
 
 # define ablate type
 analyze_name_ablation_list = []
 # analyze_name_ablation_list.append('_wo_position')
 # analyze_name_ablation_list.append('_wo_gaze')
-# analyze_name_ablation_list.append('_wo_action')
+analyze_name_ablation_list.append('_wo_action')
 # analyze_name_ablation_list.append('_wo_gaze_wo_position')
 # analyze_name_ablation_list.append('_wo_action_wo_position')
 # analyze_name_ablation_list.append('_wo_action_wo_gaze')
@@ -34,7 +34,7 @@ analyze_name_ablation_list.append('')
 model_name_list = []
 # model_name_list.append('Ours w/o p')
 # model_name_list.append('Ours w/o g')
-# model_name_list.append('Ours w/o a')
+model_name_list.append('Ours w/o a')
 # model_name_list.append('Ours w/o g and p')
 # model_name_list.append('Ours w/o a and p')
 # model_name_list.append('Ours w/o a and g')

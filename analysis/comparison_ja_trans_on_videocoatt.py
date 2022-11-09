@@ -10,8 +10,8 @@ saved_result_dir = os.path.join('results', 'videocoatt')
 # define analyze model type
 analyze_name_list = []
 # analyze_name_list.append('videocoatt-dual-people_field_middle')
-analyze_name_list.append('videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fine')
-# analyze_name_list.append('videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix')
+# analyze_name_list.append('videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fine')
+analyze_name_list.append('videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix')
 
 # define ablate type
 analyze_name_ablation_list = []
