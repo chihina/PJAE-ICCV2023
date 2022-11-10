@@ -6,15 +6,21 @@ data:
 exp_set:
   save_folder: saved_weights
   # wandb_name: videocoatt-isa
-  wandb_name: videocoatt-isa-mse-1103
+  # wandb_name: videocoatt-isa-mse-1103
+  # wandb_name: videocoatt-isa-mse-1103_w_dets_head
+  # wandb_name: videocoatt-isa-mse-1103_wo_dets_head
+  
+  # wandb_name: videocoatt-isa_bbox_GT_gaze_GT
+  wandb_name: videocoatt-isa_bbox_PRED_gaze_PRED
+
   wandb_log : True
 
   batch_size: 16
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 6
-  gpu_finish : 6
+  gpu_start : 4
+  gpu_finish : 4
 
   # resize_height: 320
   resize_height: 28
@@ -56,8 +62,8 @@ exp_params:
   scheduler_iter : 1100000
 
   det_heads_model : dets_txt_nk_faster_rcnn_20220421
-  train_det_heads : False
-  # train_det_heads : True
+  # train_det_heads : False
+  train_det_heads : True
   train_heads_conf : 0.6
   test_heads_conf : 0.6
 

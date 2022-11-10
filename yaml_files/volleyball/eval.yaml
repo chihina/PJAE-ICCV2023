@@ -17,52 +17,13 @@ exp_set:
   # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_p_s_only
   # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_p_s_only
 
-  # === p-p aggregation (a) only ===
-  # model_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_ind_only
-  # model_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_token_only
-  # model_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_ind_and_token_ind_based
-  # model_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_ind_and_token_token_based
-
-  # === p-p aggregation (c) ===
-  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_weight_fusion_fine_ind_only
+  model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_weight_fusion_fine_token_only
   # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_weight_fusion_fine_token_only
-  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_weight_fusion_fine_ind_and_token_ind_based
-  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_weight_fusion_fine_ind_and_token_token_based
-  # === p-p aggregation (c) ===
-  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_weight_fusion_fix_ind_only
-  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_weight_fusion_fix_token_only
-  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_weight_fusion_fix_ind_and_token_ind_based
-  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_weight_fusion_fix_ind_and_token_token_based
-
-  # === fusion ===
-  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_weight_fusion_fine_token_only
-  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_average_fusion_fine_token_only
-  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_cnn_fusion_fine_token_only
-
-  # === ablation ===
-  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_weight_fusion_fine_token_only
-  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_weight_fusion_fine_token_only_update
-  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_weight_fusion_fine_token_only_wo_position
-  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_weight_fusion_fine_token_only_wo_gaze
-  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_weight_fusion_fine_token_only_wo_action
-  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_weight_fusion_fine_token_only_wo_gaze_wo_position
-  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_weight_fusion_fine_token_only_wo_action_wo_gaze
-  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_weight_fusion_fine_token_only_wo_action_wo_position
-
-  # [GT]
-  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_weight_fusion_fine_token_only
-  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_weight_fusion_fine_token_only_wo_position
-  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_weight_fusion_fine_token_only_wo_gaze
-  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_weight_fusion_fine_token_only_wo_action
-
-  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_weight_fusion_fine_token_only
-  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_average_fusion_fine_token_only
-  # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_cnn_fusion_fine_token_only
 
   seed_num : 777
   gpu_mode : True
-  gpu_start : 0
-  gpu_finish : 0
+  gpu_start : 1
+  gpu_finish : 1
   num_workers : 1
   batch_size : 1
   wandb_name : test
@@ -73,18 +34,18 @@ exp_params:
   use_frame_type: mid
   # use_frame_type: all
 
-  # bbox_types: GT
-  bbox_types: PRED
+  bbox_types: GT
+  # bbox_types: PRED
   
-  # action_types: GT
-  action_types: PRED
+  action_types: GT
+  # action_types: PRED
   
-  # gaze_types: GT
-  gaze_types: PRED
+  gaze_types: GT
+  # gaze_types: PRED
 
   # use_action: True
   # use_position: True
   # use_gaze: True
 
-  use_blured_img: False
-  # use_blured_img: True
+  # use_blured_img: False
+  use_blured_img: True

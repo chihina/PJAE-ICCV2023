@@ -28,7 +28,9 @@ exp_set:
   # wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_mha_8
   # wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_mha_16
   # wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_enc_1
-  wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_enc_3
+  # wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_enc_3
+
+  wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_GT
 
   # batch_size: 16
   # batch_size: 8
@@ -37,8 +39,8 @@ exp_set:
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 6
-  gpu_finish : 6
+  gpu_start : 1
+  gpu_finish : 1
 
   resize_height: 320
   resize_width: 480
@@ -69,8 +71,8 @@ exp_params:
   use_frame_type: mid
   # use_frame_type: all
 
-  use_gt_gaze: False
-  # use_gt_gaze: True
+  # use_gt_gaze: False
+  use_gt_gaze: True
 
   # position augmentation
   use_position_aug: False
@@ -96,8 +98,8 @@ exp_params:
   scheduler_iter : 1100000
 
   det_heads_model : dets_txt_nk_faster_rcnn_20220421
-  # train_det_heads : False
-  train_det_heads : True
+  train_det_heads : False
+  # train_det_heads : True
   train_heads_conf : 0.6
   test_heads_conf : 0.6
 
@@ -123,12 +125,7 @@ exp_params:
   # use_pretrained_joint_attention_estimator: False
   use_pretrained_joint_attention_estimator: True
   # pretrained_joint_attention_estimator_name: pretrain_head_estimator
-  # pretrained_joint_attention_estimator_name: videocoatt-dual-people_field_middle_token_only_mha_1
-  # pretrained_joint_attention_estimator_name: videocoatt-dual-people_field_middle_token_only_mha_4
-  # pretrained_joint_attention_estimator_name: videocoatt-dual-people_field_middle_token_only_mha_8
-  # pretrained_joint_attention_estimator_name: videocoatt-dual-people_field_middle_token_only_mha_16
-  # pretrained_joint_attention_estimator_name: videocoatt-dual-people_field_middle_token_only_enc_1
-  pretrained_joint_attention_estimator_name: videocoatt-dual-people_field_middle_token_only_enc_3
+  pretrained_joint_attention_estimator_name: videocoatt-dual-people_field_middle_ind_only_bbox_GT_gaze_GT
   # freeze_joint_attention_estimator: False
   freeze_joint_attention_estimator: True
 
@@ -161,8 +158,8 @@ model_params:
   use_people_people_trans: True
 
   # people_people_trans_enc_num : 1
-  # people_people_trans_enc_num : 2
-  people_people_trans_enc_num : 3
+  people_people_trans_enc_num : 2
+  # people_people_trans_enc_num : 3
   
   # mha_num_heads_people_people : 1
   mha_num_heads_people_people : 2

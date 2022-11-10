@@ -8,6 +8,8 @@ import sys
 from PIL import Image
 import matplotlib
 matplotlib.use('Agg')
+import glob
+import pandas as pd
 
 class VideoAttentionTargetDataset(Dataset):
     def __init__(self, cfg, mode, transform=None, pre_transform=None):
@@ -24,6 +26,8 @@ class VideoAttentionTargetDataset(Dataset):
         self.resize_head_height = cfg.exp_set.resize_head_height
 
         # gt parameters
+        self.bbox_types = cfg.exp_params.bbox_types
+        self.bbox_iou_thresh = cfg.exp_params.bbox_iou_thresh
         self.gaussian_sigma = cfg.exp_params.gaussian_sigma
 
         # experiment parameters
@@ -172,11 +176,55 @@ class VideoAttentionTargetDataset(Dataset):
             data_people_num = len(self.feature_list[data_idx])
             self.max_num_people = max(self.max_num_people, data_people_num)
 
+    def get_detected_heads(self, img_dir_name, seq_name, img_width, img_height):
+        det_heads_dic = {}
+        det_file_path_list = glob.glob(os.path.join(self.dataset_dir, 'det_heads', img_dir_name, seq_name, '*'))
+        for det_file_path in det_file_path_list:
+            det_file_name = det_file_path.split('/')[-1].split('.')[0]
+            data_id = f'{img_dir_name}_{seq_name}_{det_file_name}'
+            det_heads_dic[data_id] = []
+            with open(det_file_path, 'r') as f:
+                lines = f.readlines()
+            for line in lines:
+                det_type, bbox = line.split()[0], line.split()[1:]
+                if det_type == '1':
+                    x_mid, y_mid, width, height = map(float, bbox)
+                    x_min, y_min, x_max, y_max = x_mid-width/2, y_mid-height/2, x_mid+width/2, y_mid+height/2
+                    x_min, x_max = map(lambda x:int(x*img_width), [x_min, x_max])
+                    y_min, y_max = map(lambda x:int(x*img_height), [y_min, y_max])
+                    det_heads_dic[data_id].append([x_min, y_min, x_max, y_max])
+
+        return det_heads_dic
+
+    def iou_np(self, a, b):
+
+        a_area = (a[2] - a[0] + 1) \
+                * (a[3] - a[1] + 1)
+        b_area = (b[:,2] - b[:,0] + 1) \
+                * (b[:,3] - b[:,1] + 1)
+        
+        abx_mn = np.maximum(a[0], b[:,0]) # xmin
+        aby_mn = np.maximum(a[1], b[:,1]) # ymin
+        abx_mx = np.minimum(a[2], b[:,2]) # xmax
+        aby_mx = np.minimum(a[3], b[:,3]) # ymax
+        w = np.maximum(0, abx_mx - abx_mn + 1)
+        h = np.maximum(0, aby_mx - aby_mn + 1)
+        intersect = w*h
+        
+        iou = intersect / (a_area + b_area - intersect)
+        return iou
+
     # read graph information
     def generate_dataset_list(self):
         for img_dir_name in sorted(os.listdir(os.path.join(self.dataset_dir, 'annotations', self.mode))):
             for seq_name in sorted(os.listdir(os.path.join(self.dataset_dir, 'annotations', self.mode, img_dir_name))):
                 seq_dic = {}
+                
+                if self.bbox_types == 'PRED':
+                    rgb_img_file_path = glob.glob(os.path.join(self.dataset_dir, 'images', img_dir_name, seq_name, '*'))[0]
+                    img_width, img_height = Image.open(rgb_img_file_path).size
+                    det_heads_dic = self.get_detected_heads(img_dir_name, seq_name, img_width, img_height)
+                
                 for person_ann_path in sorted(os.listdir(os.path.join(self.dataset_dir, 'annotations', self.mode, img_dir_name, seq_name))):
                     with open(os.path.join(self.dataset_dir, 'annotations', self.mode, img_dir_name, seq_name, person_ann_path)) as f:
                         lines = f.readlines()
@@ -190,6 +238,7 @@ class VideoAttentionTargetDataset(Dataset):
 
                         line = line.strip().split(',')
                         img_name = line[0]
+                        img_id = img_name.split('.')[0]
                         img_path = os.path.join(self.dataset_dir, 'images', img_dir_name, seq_name, img_name)
 
                         head_bbox = list(map(int, line[1:5]))
@@ -206,9 +255,21 @@ class VideoAttentionTargetDataset(Dataset):
                             seq_dic[img_path]['att_point'] = []
                             seq_dic[img_path]['att_inside'] = []
 
-                        seq_dic[img_path]['head_bbox'].append(head_bbox)
-                        seq_dic[img_path]['att_point'].append(att_point)
-                        seq_dic[img_path]['att_inside'].append(att_inside)
+                        # detected heads filtering using gt heads
+                        head_use_flag = True
+                        if self.bbox_types == 'PRED':
+                            det_heads = det_heads_dic[f'{img_dir_name}_{seq_name}_{img_id}']
+                            det_heads_bbox = np.array(det_heads)
+                            gt_head_bbox = np.array(head_bbox)
+
+                            iou_det_heads = self.iou_np(gt_head_bbox, det_heads_bbox)
+                            if np.max(iou_det_heads) < self.bbox_iou_thresh:
+                                head_use_flag = False
+
+                        if head_use_flag:                        
+                            seq_dic[img_path]['head_bbox'].append(head_bbox)
+                            seq_dic[img_path]['att_point'].append(att_point)
+                            seq_dic[img_path]['att_inside'].append(att_inside)
 
                 for img_path, img_item in seq_dic.items():
 

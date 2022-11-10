@@ -10,10 +10,9 @@ exp_set:
   # model_name: videoattentiontarget-hgt
   # model_name: videoattentiontarget-hgt-high
   # model_name: videoattentiontarget-hgt-1101
-  # model_name: videocoatt-isa
-  # model_name: videocoatt-isa-mse-1103
-  # model_name: videoattentiontarget-dual-cnn-w_pre-w_att_in
-  # model_name: videoattentiontarget-dual-cnn-w_pre-wo_att_in
+  # model_name: videocoatt-isa_bbox_GT_gaze_GT
+  # model_name: videocoatt-isa_bbox_PRED_gaze_PRED
+  # model_name: videocoatt-p_p_field_deep_p_s_davt_freeze
 
   # model_name: videocoatt-dual-people_fc_shallow
   # model_name: videocoatt-dual-people_fc_middle
@@ -24,7 +23,6 @@ exp_set:
   # model_name: videocoatt-dual-people_field_deep
 
   # model_name: videocoatt-p_p_field_deep_p_s_gaze_follow_freeze
-  # model_name: videocoatt-p_p_field_deep_p_s_davt_freeze
   # model_name: videocoatt-p_p_field_deep_p_s_cnn_gaze_follow_w_pre_simple_average
   # model_name: videocoatt-p_p_field_deep_p_s_davt_simple_average
   # model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight
@@ -39,17 +37,19 @@ exp_set:
   # model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fine_ind_only
   # model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fine_token_only
   # model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fine_ind_and_token_ind_based
-  model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fine_ind_and_token_token_based
+  # model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fine_ind_and_token_token_based
 
   # model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_ind_only
   # model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only
   # model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_ind_and_token_ind_based
   # model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_ind_and_token_token_based
 
+  model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_GT
+
   seed_num : 777
   gpu_mode : True
-  gpu_start : 6
-  gpu_finish : 6
+  gpu_start : 4
+  gpu_finish : 4
   num_workers : 1
   batch_size : 1
   wandb_name : test
@@ -59,14 +59,14 @@ exp_set:
   # mode : train
 
 exp_params:
-  test_heads_type : det
-  # test_heads_type : gt
+  # test_heads_type : det
+  test_heads_type : gt
   det_heads_model : dets_txt_nk_faster_rcnn_20220421
   test_heads_conf : 0.6
   # test_heads_conf : 0.8
 
-  test_gt_gaze : False
-  # test_gt_gaze : True
+  # test_gt_gaze : False
+  test_gt_gaze : True
 
   use_frame_type: mid
   # use_frame_type: all

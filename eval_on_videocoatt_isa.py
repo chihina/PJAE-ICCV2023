@@ -33,7 +33,8 @@ from dataset.dataset_selector import dataset_generator
 from models.model_selector import model_generator
 
 def data_type_id_generator(cfg):
-    data_type_id = f'{cfg.exp_set.mode}_gt_gaze_{cfg.exp_params.test_gt_gaze}_head_conf_{cfg.exp_params.test_heads_conf}'
+    # data_type_id = f'{cfg.exp_set.mode}_gt_gaze_{cfg.exp_params.test_gt_gaze}_head_conf_{cfg.exp_params.test_heads_conf}'
+    data_type_id = f'bbox_{cfg.exp_params.test_heads_type}_gaze_{cfg.exp_params.test_gt_gaze}'
     return data_type_id
 
 def each_data_type_id_generator(head_vector_gt, head_tensor, gt_box, cfg):
@@ -98,7 +99,7 @@ cfg.update(cfg_arg)
 print(cfg)
 
 print("===> Building model")
-model_head, model_attention, model_saliency, cfg = model_generator(cfg)
+model_head, model_attention, model_saliency, model_fusion, cfg = model_generator(cfg)
 
 print("===> Building gpu configuration")
 cuda = cfg.exp_set.gpu_mode

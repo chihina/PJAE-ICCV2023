@@ -33,7 +33,8 @@ from dataset.dataset_selector import dataset_generator
 from models.model_selector import model_generator
 
 def data_type_id_generator(cfg):
-    data_type_id = f'{cfg.exp_set.mode}_gt_gaze_{cfg.exp_params.test_gt_gaze}_head_conf_{cfg.exp_params.test_heads_conf}'
+    # data_type_id = f'{cfg.exp_set.mode}_gt_gaze_{cfg.exp_params.test_gt_gaze}_head_conf_{cfg.exp_params.test_heads_conf}'
+    data_type_id = f'bbox_{cfg.exp_params.test_heads_type}_gaze_{cfg.exp_params.test_gt_gaze}'
     return data_type_id
 
 def each_data_type_id_generator(head_vector_gt, head_tensor, gt_box, cfg):
@@ -102,10 +103,13 @@ model_head_weight_path = os.path.join(weight_saved_dir, "model_head_best.pth.tar
 model_saliency_weight_path = os.path.join(weight_saved_dir, "model_saliency_best.pth.tar")
 model_attention_weight_path = os.path.join(weight_saved_dir, "model_gaussian_best.pth.tar")
 model_fusion_weight_path = os.path.join(weight_saved_dir, "model_fusion_best.pth.tar")
+
 model_head.load_state_dict(torch.load(model_head_weight_path,  map_location='cuda:'+str(gpus_list[0])))
 model_saliency.load_state_dict(torch.load(model_saliency_weight_path,  map_location='cuda:'+str(gpus_list[0])))
-model_attention.load_state_dict(torch.load(model_attention_weight_path,  map_location='cuda:'+str(gpus_list[0])))
-model_fusion.load_state_dict(torch.load(model_fusion_weight_path,  map_location='cuda:'+str(gpus_list[0])))
+# model_attention.load_state_dict(torch.load(model_attention_weight_path,  map_location='cuda:'+str(gpus_list[0])))
+model_attention.load_state_dict(torch.load(model_attention_weight_path,  map_location='cuda:'+str(gpus_list[0])), strict=False)
+if os.path.exists(model_fusion_weight_path):
+    model_fusion.load_state_dict(torch.load(model_fusion_weight_path,  map_location='cuda:'+str(gpus_list[0])))
 
 if cuda:
     model_head = model_head.cuda(gpus_list[0])

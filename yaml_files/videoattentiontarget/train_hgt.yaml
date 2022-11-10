@@ -6,7 +6,10 @@ exp_set:
   save_folder: saved_weights
   # wandb_name: videoattentiontarget-hgt
   # wandb_name: videoattentiontarget-hgt-high
-  wandb_name: videoattentiontarget-hgt-1101
+  # wandb_name: videoattentiontarget-hgt-1101
+
+  # wandb_name: videoattentiontarget-hgt_bbox_GT
+  wandb_name: videoattentiontarget-hgt_bbox_PRED
 
   wandb_log : True
 
@@ -14,8 +17,8 @@ exp_set:
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 6
-  gpu_finish : 6
+  gpu_start : 2
+  gpu_finish : 2
 
   # resize_height: 320
   resize_height: 224
@@ -25,6 +28,10 @@ exp_set:
   resize_head_width: 64
 
 exp_params:
+  # bbox_types: GT
+  bbox_types: PRED
+  bbox_iou_thresh: 0.6
+
   # learning rate
   lr : 0.00001
 

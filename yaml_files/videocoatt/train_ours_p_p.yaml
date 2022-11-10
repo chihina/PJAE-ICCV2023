@@ -25,7 +25,10 @@ exp_set:
   # wandb_name: videocoatt-dual-people_field_middle_token_only_mha_8
   # wandb_name: videocoatt-dual-people_field_middle_token_only_mha_16
   # wandb_name: videocoatt-dual-people_field_middle_token_only_enc_1
-  wandb_name: videocoatt-dual-people_field_middle_token_only_enc_3
+  # wandb_name: videocoatt-dual-people_field_middle_token_only_enc_3
+
+  # wandb_name: videocoatt-dual-people_field_middle_ind_only_bbox_GT_gaze_GT
+  wandb_name: videocoatt-dual-people_field_middle_ind_only_bbox_PRED_gaze_PRED
 
   # batch_size: 16
   batch_size: 8
@@ -33,8 +36,8 @@ exp_set:
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 5
-  gpu_finish : 5
+  gpu_start : 1
+  gpu_finish : 1
 
   resize_height: 320
   resize_width: 480
