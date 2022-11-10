@@ -10,42 +10,13 @@ exp_set:
   save_folder: saved_weights
   wandb_log : True
 
-  # wandb_name: volleyball-dual-mid_p_p_fc_shallow_bbox_GT_gaze_GT_act_GT
-  # wandb_name: volleyball-dual-mid_p_p_fc_middle_bbox_GT_gaze_GT_act_GT
-  # wandb_name: volleyball-dual-mid_p_p_fc_deep_bbox_GT_gaze_GT_act_GT
-  # wandb_name: volleyball-dual-mid_p_p_deconv_shallow_bbox_GT_gaze_GT_act_GT
-  # wandb_name: volleyball-dual-mid_p_p_deconv_middle_bbox_GT_gaze_GT_act_GT
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT
-  # wandb_name: volleyball-dual-mid_p_p_field_deep_bbox_GT_gaze_GT_act_GT
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_token_only_mha_1
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_token_only_mha_4
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_token_only_mha_8
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_token_only_mha_16
 
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT_wo_position
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT_wo_gaze
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT_wo_action
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT_wo_gaze_wo_position
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT_wo_action_wo_gaze
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT_wo_action_wo_position
-
-  # wandb_name: volleyball-dual-mid_p_p_fc_shallow_bbox_PRED_gaze_PRED_act_PRED
-  # wandb_name: volleyball-dual-mid_p_p_fc_middle_bbox_PRED_gaze_PRED_act_PRED
-  # wandb_name: volleyball-dual-mid_p_p_fc_deep_bbox_PRED_gaze_PRED_act_PRED
-  # wandb_name: volleyball-dual-mid_p_p_deconv_shallow_bbox_PRED_gaze_PRED_act_PRED
-  # wandb_name: volleyball-dual-mid_p_p_deconv_middle_bbox_PRED_gaze_PRED_act_PRED
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED
-  # wandb_name: volleyball-dual-mid_p_p_field_deep_bbox_PRED_gaze_PRED_act_PRED
-
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_wo_position
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_wo_gaze
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_wo_action
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_wo_gaze_wo_position
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_wo_action_wo_gaze
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_wo_action_wo_position
-
-  # === comparison (a) ===
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_ind_only
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_token_only
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_ind_and_token_ind_based
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_ind_and_token_token_based
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_token_only_enc_1
+  wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_token_only_enc_3
 
   batch_size: 8
   # batch_size: 4
@@ -53,8 +24,8 @@ exp_set:
   # seed_num: 777
   seed_num: 888
   gpu_mode : True
-  gpu_start : 7
-  gpu_finish : 7
+  gpu_start : 5
+  gpu_finish : 5
 
   resize_height : 320
   resize_width : 640
@@ -86,14 +57,14 @@ exp_params:
   use_frame_type: mid
   # use_frame_type: all
 
-  bbox_types: GT
-  # bbox_types: PRED
+  # bbox_types: GT
+  bbox_types: PRED
 
-  gaze_types: GT
-  # gaze_types: PRED
+  # gaze_types: GT
+  gaze_types: PRED
   
-  action_types: GT
-  # action_types: PRED
+  # action_types: GT
+  action_types: PRED
   
   # position augmentation
   use_position_aug: False
@@ -147,8 +118,8 @@ model_params:
   model_type: ja_transformer_dual_only_people
 
   # Position
-  use_position : False
-  # use_position : True
+  # use_position : False
+  use_position : True
 
   # Gaze
   # use_gaze : False
@@ -171,10 +142,12 @@ model_params:
   # people_feat_dim : 32
   # use_people_people_trans: False
   use_people_people_trans: True
-    # people_people_trans_enc_num : 1
-  people_people_trans_enc_num : 2
-  # people_people_trans_enc_num : 3
+
+  # people_people_trans_enc_num : 1
+  # people_people_trans_enc_num : 2
+  people_people_trans_enc_num : 3
   # people_people_trans_enc_num : 4
+  
   # mha_num_heads_people_people : 1
   mha_num_heads_people_people : 2
   # mha_num_heads_people_people : 4

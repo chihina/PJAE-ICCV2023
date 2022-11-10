@@ -9,7 +9,7 @@ saved_result_dir = os.path.join('results', 'volleyball')
 
 # define analyze model type
 analyze_name_list = []
-# analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion')
+# analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT')
 analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED')
 
 # define ablate type
@@ -33,7 +33,7 @@ for test_data_type in test_data_type_list:
     for analyze_name in analyze_name_list:
         eval_results_list = []
         for ablation_name in analyze_name_ablation_list:
-
+            
             model_name = f'{analyze_name}_{ablation_name}_fusion_fine_token_only'        
             json_file_path = os.path.join(saved_result_dir, model_name, 'eval_results', test_data_type, 'eval_results.json')
             with open(json_file_path, 'r') as f:

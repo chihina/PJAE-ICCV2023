@@ -13,18 +13,22 @@ exp_set:
   # wandb_name: videocoatt-p_p_field_deep_p_s_cnn_gaze_follow_w_pre_simple_average
   # wandb_name: videocoatt-p_p_field_deep_p_s_cnn_vidatt_target_w_pre_wo_att_in_simple_average
 
-  # wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fine_ind_only
-  # wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fine_token_only
-  # wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fine_ind_and_token_ind_based
-  # wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fine_ind_and_token_token_based
-
+  # === fusion ===
+  # wandb_name: videocoatt-p_p_field_deep_p_s_davt_average_fix_token_only
+  # wandb_name: videocoatt-p_p_field_deep_p_s_davt_cnn_fix_token_only
+  
+  # === branch (a) ablation ===
   # wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_ind_only
   # wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only
   # wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_ind_and_token_ind_based
   # wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_ind_and_token_token_based
 
-  # wandb_name: videocoatt-p_p_field_deep_p_s_davt_average_fix_token_only
-  # wandb_name: videocoatt-p_p_field_deep_p_s_davt_cnn_fix_token_only
+  # wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_mha_1
+  # wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_mha_4
+  # wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_mha_8
+  # wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_mha_16
+  # wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_enc_1
+  wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_enc_3
 
   # batch_size: 16
   # batch_size: 8
@@ -33,8 +37,8 @@ exp_set:
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 1
-  gpu_finish : 1
+  gpu_start : 6
+  gpu_finish : 6
 
   resize_height: 320
   resize_width: 480
@@ -119,10 +123,12 @@ exp_params:
   # use_pretrained_joint_attention_estimator: False
   use_pretrained_joint_attention_estimator: True
   # pretrained_joint_attention_estimator_name: pretrain_head_estimator
-  # pretrained_joint_attention_estimator_name: videocoatt-dual-people_field_middle_ind_only
-  pretrained_joint_attention_estimator_name: videocoatt-dual-people_field_middle_token_only
-  # pretrained_joint_attention_estimator_name: videocoatt-dual-people_field_middle_ind_and_token_ind_based
-  # pretrained_joint_attention_estimator_name: videocoatt-dual-people_field_middle_ind_and_token_token_based
+  # pretrained_joint_attention_estimator_name: videocoatt-dual-people_field_middle_token_only_mha_1
+  # pretrained_joint_attention_estimator_name: videocoatt-dual-people_field_middle_token_only_mha_4
+  # pretrained_joint_attention_estimator_name: videocoatt-dual-people_field_middle_token_only_mha_8
+  # pretrained_joint_attention_estimator_name: videocoatt-dual-people_field_middle_token_only_mha_16
+  # pretrained_joint_attention_estimator_name: videocoatt-dual-people_field_middle_token_only_enc_1
+  pretrained_joint_attention_estimator_name: videocoatt-dual-people_field_middle_token_only_enc_3
   # freeze_joint_attention_estimator: False
   freeze_joint_attention_estimator: True
 
@@ -153,8 +159,17 @@ model_params:
   people_feat_dim : 16
   # use_people_people_trans: False
   use_people_people_trans: True
-  people_people_trans_enc_num : 2
+
+  # people_people_trans_enc_num : 1
+  # people_people_trans_enc_num : 2
+  people_people_trans_enc_num : 3
+  
+  # mha_num_heads_people_people : 1
   mha_num_heads_people_people : 2
+  # mha_num_heads_people_people : 4
+  # mha_num_heads_people_people : 8
+  # mha_num_heads_people_people : 16
+
   # p_p_estimator_type : fc_shallow
   # p_p_estimator_type : fc_middle
   # p_p_estimator_type : fc_deep
@@ -193,7 +208,7 @@ model_params:
   # use_p_s_estimator_att_inside : True
 
   # fusion_net_type : early
-  fusion_net_type : mid
+  # fusion_net_type : mid
   # fusion_net_type : late
   # fusion_net_type : simple_average
-  # fusion_net_type : scalar_weight
+  fusion_net_type : scalar_weight

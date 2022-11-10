@@ -24,7 +24,6 @@ exp_set:
   # wandb_name: videocoatt-dual-people_field_middle_token_only_mha_4
   # wandb_name: videocoatt-dual-people_field_middle_token_only_mha_8
   # wandb_name: videocoatt-dual-people_field_middle_token_only_mha_16
-
   # wandb_name: videocoatt-dual-people_field_middle_token_only_enc_1
   wandb_name: videocoatt-dual-people_field_middle_token_only_enc_3
 
@@ -153,8 +152,8 @@ model_params:
   use_people_people_trans: True
 
   # people_people_trans_enc_num : 1
-  # people_people_trans_enc_num : 2
-  people_people_trans_enc_num : 3
+  people_people_trans_enc_num : 2
+  # people_people_trans_enc_num : 3
 
   # mha_num_heads_people_people : 1
   mha_num_heads_people_people : 2
