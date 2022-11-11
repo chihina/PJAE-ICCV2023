@@ -243,12 +243,17 @@ class ModelSpatial(nn.Module):
         # pack output data
         out = {}
         # out['encoded_scene_davt'] = encoding
-        # out['encoding_inout'] = encoding_inout
+        out['encoding_inout'] = encoding_inout
         out['person_scene_attention_heatmap'] = x.view(batch_size, people_num, 64, 64)
 
         return out
 
     def calc_loss(self, inp, out, cfg):
+        att_inside_flag = inp['att_inside_flag']
+        encoding_inout = out['encoding_inout']
+        inout = 1 / (1 + torch.exp(-encoding_inout))
+        inout = (1 - inout) * 255
+
         loss_set = {}
         return loss_set
 

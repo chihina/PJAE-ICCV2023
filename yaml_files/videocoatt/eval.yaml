@@ -11,7 +11,9 @@ exp_set:
   # model_name: videoattentiontarget-hgt-high
   # model_name: videoattentiontarget-hgt-1101
   # model_name: videocoatt-isa_bbox_GT_gaze_GT
+  # model_name: videocoatt-isa_bbox_GT_gaze_GT_ver2
   # model_name: videocoatt-isa_bbox_PRED_gaze_PRED
+
   # model_name: videocoatt-p_p_field_deep_p_s_davt_freeze
 
   # model_name: videocoatt-dual-people_fc_shallow
@@ -44,12 +46,14 @@ exp_set:
   # model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_ind_and_token_ind_based
   # model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_ind_and_token_token_based
 
-  model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_GT
+  # model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_GT
+  # model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_GT_ver2
+  model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_GT_ver3
 
   seed_num : 777
   gpu_mode : True
-  gpu_start : 4
-  gpu_finish : 4
+  gpu_start : 1
+  gpu_finish : 1
   num_workers : 1
   batch_size : 1
   wandb_name : test

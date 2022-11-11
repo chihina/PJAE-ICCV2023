@@ -418,6 +418,7 @@ metrics_dict['precision'] = precision_score(co_att_gt_array, co_att_pred_array)
 metrics_dict['recall'] = recall_score(co_att_gt_array, co_att_pred_array)
 metrics_dict['f1'] = f1_score(co_att_gt_array, co_att_pred_array)
 metrics_dict['auc'] = roc_auc_score(co_att_gt_array, co_att_pred_array)
+metrics_dict['thresh_best'] = thresh_best
 
 # save detection rate
 det_rate_list = [f'Det (Thr={det_thr})' for det_thr in range(0, 210, 10)]

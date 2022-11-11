@@ -30,17 +30,21 @@ exp_set:
   # wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_enc_1
   # wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_enc_3
 
-  wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_GT
+  # wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_GT
+  # wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_GT_ver2
+  wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_GT_ver3
 
   # batch_size: 16
   # batch_size: 8
   batch_size: 4
   # batch_size: 2
   num_workers: 16
-  seed_num: 777
+  # seed_num: 777
+  # seed_num: 888
+  seed_num: 999
   gpu_mode : True
-  gpu_start : 1
-  gpu_finish : 1
+  gpu_start : 5
+  gpu_finish : 5
 
   resize_height: 320
   resize_width: 480
@@ -91,9 +95,11 @@ exp_params:
   gaussian_sigma: 10
 
   # learning schedule
-  nEpochs : 500
+  # nEpochs : 500
+  nEpochs : 20
   start_iter : 0
   snapshots : 100
+  # snapshots : 1
   scheduler_start : 1000
   scheduler_iter : 1100000
 

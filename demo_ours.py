@@ -152,7 +152,9 @@ model_attention_weight_path = os.path.join(weight_saved_dir, "model_gaussian_bes
 model_attention.load_state_dict(torch.load(model_attention_weight_path,  map_location='cuda:'+str(gpus_list[0])))
 
 model_fusion_weight_path = os.path.join(weight_saved_dir, "model_fusion_best.pth.tar")
-model_fusion.load_state_dict(torch.load(model_fusion_weight_path,  map_location='cuda:'+str(gpus_list[0])))
+if os.path.exists(model_fusion_weight_path):
+    model_fusion.load_state_dict(torch.load(model_fusion_weight_path,  map_location='cuda:'+str(gpus_list[0])))
+# model_fusion.load_state_dict(torch.load(model_fusion_weight_path,  map_location='cuda:'+str(gpus_list[0])))
 
 if cuda:
     model_head = model_head.cuda(gpus_list[0])
@@ -262,9 +264,9 @@ for iteration, batch in enumerate(test_data_loader,1):
         out_fusion = model_fusion(batch)
         batch = {**batch, **out_fusion}
 
-        # loss_set_head = model_head.calc_loss(batch, out_head)
-        # loss_set_saliency = model_saliency.calc_loss(batch, out_attention, cfg)
-        # loss_set_attention = model_attention.calc_loss(batch, out_attention, cfg)
+        # loss_set_head = model_head.calc_loss(batch, batch)
+        loss_set_saliency = model_saliency.calc_loss(batch, batch, cfg)
+        # loss_set_attention = model_attention.calc_loss(batch, batch, cfg)
 
         out = {**out_head, **out_scene_feat, **out_attention, **batch}
 
@@ -374,7 +376,7 @@ for iteration, batch in enumerate(test_data_loader,1):
         l2_dist_x = ((gt_x_mid-pred_x_mid)**2)**0.5
         l2_dist_y = ((gt_y_mid-pred_y_mid)**2)**0.5
         l2_dist_euc = (l2_dist_x**2+l2_dist_y**2)**0.5
-        # print(l2_dist_euc)
+        print(l2_dist_euc)
 
     person_person_joint_attention_heatmap = cv2.applyColorMap(person_person_joint_attention_heatmap, cv2.COLORMAP_JET)
     person_scene_joint_attention_heatmap = cv2.applyColorMap(person_scene_joint_attention_heatmap, cv2.COLORMAP_JET)

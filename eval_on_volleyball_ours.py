@@ -79,8 +79,10 @@ model_attention.load_state_dict(torch.load(model_attention_weight_path,  map_loc
 # model_attention.load_state_dict(torch.load(model_attention_weight_path,  map_location='cuda:'+str(gpus_list[0])), strict=False)
 
 model_fusion_weight_path = os.path.join(weight_saved_dir, "model_fusion_best.pth.tar")
-model_fusion.load_state_dict(torch.load(model_fusion_weight_path,  map_location='cuda:'+str(gpus_list[0])))
+# model_fusion.load_state_dict(torch.load(model_fusion_weight_path,  map_location='cuda:'+str(gpus_list[0])))
 # model_fusion.load_state_dict(torch.load(model_fusion_weight_path,  map_location='cuda:'+str(gpus_list[0])), strict=False)
+if os.path.exists(model_fusion_weight_path):
+    model_fusion.load_state_dict(torch.load(model_fusion_weight_path,  map_location='cuda:'+str(gpus_list[0])))
 
 if cuda:
     model_head = model_head.cuda(gpus_list[0])

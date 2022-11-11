@@ -77,11 +77,12 @@ exp_params:
   # pretrained models
   pretrained_models_dir: saved_weights
 
-  use_pretrained_head_pose_estimator: False
-  # use_pretrained_head_pose_estimator: True
+  # use_pretrained_head_pose_estimator: False
+  use_pretrained_head_pose_estimator: True
   pretrained_head_pose_estimator_name: videocoatt-head_pose_estimator
-  freeze_head_pose_estimator: False
-  # freeze_head_pose_estimator: True
+  pretrained_head_pose_estimator_name: gazefollow-dual-cnn-w_pre
+  # freeze_head_pose_estimator: False
+  freeze_head_pose_estimator: True
 
   use_pretrained_saliency_extractor: False
   # use_pretrained_saliency_extractor: True
@@ -90,7 +91,7 @@ exp_params:
   # freeze_saliency_extractor: True
 
   use_pretrained_joint_attention_estimator: False
-  # use_pretrained_head_pose_estimator: True
+  # use_pretrained_joint_attention_estimator: True
   pretrained_joint_attention_estimator_name: pretrain_head_estimator
   freeze_joint_attention_estimator: False
   # freeze_joint_attention_estimator: True
@@ -139,6 +140,11 @@ model_params:
   p_p_estimator_type : field_middle
   # p_p_estimator_type : field_deep
 
+  p_p_aggregation_type : ind_only
+  # p_p_aggregation_type : token_only
+  # p_p_aggregation_type : ind_and_token_ind_based
+  # p_p_aggregation_type : ind_and_token_token_based
+
   # rgb_cnn_extractor_type : rgb_patch
   # rgb_patch_size : 8
   # rgb_cnn_extractor_type : resnet18
@@ -148,10 +154,16 @@ model_params:
   # rgb_cnn_extractor_stage_idx : 3
   rgb_cnn_extractor_stage_idx : 4
 
-  # p_s_estimator_type : davt
-  p_s_estimator_type : transformer
+  p_s_estimator_type : davt
+  # p_s_estimator_type : transformer
   # p_s_estimator_type : cnn
   # p_s_estimator_cnn_pretrain : False
   p_s_estimator_cnn_pretrain : True
   use_p_s_estimator_att_inside : False
   # use_p_s_estimator_att_inside : True
+
+  # fusion_net_type : early
+  # fusion_net_type : mid
+  # fusion_net_type : late
+  # fusion_net_type : scalar_weight
+  fusion_net_type : simple_average

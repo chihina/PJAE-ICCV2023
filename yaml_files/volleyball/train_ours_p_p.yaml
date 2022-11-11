@@ -16,16 +16,18 @@ exp_set:
   # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_token_only_mha_16
 
   # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_token_only_enc_1
-  wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_token_only_enc_3
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_token_only_enc_3
+
+  wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT_token_only_w_gaze_noise
 
   batch_size: 8
   # batch_size: 4
   num_workers: 16
-  # seed_num: 777
-  seed_num: 888
+  seed_num: 777
+  # seed_num: 888
   gpu_mode : True
-  gpu_start : 5
-  gpu_finish : 5
+  gpu_start : 1
+  gpu_finish : 1
 
   resize_height : 320
   resize_width : 640
@@ -57,14 +59,16 @@ exp_params:
   use_frame_type: mid
   # use_frame_type: all
 
-  # bbox_types: GT
-  bbox_types: PRED
+  bbox_types: GT
+  # bbox_types: PRED
 
   # gaze_types: GT
   gaze_types: PRED
-  
-  # action_types: GT
-  action_types: PRED
+  use_gaze_noise: False
+  # use_gaze_noise: True
+
+  action_types: GT
+  # action_types: PRED
   
   # position augmentation
   use_position_aug: False
@@ -76,8 +80,8 @@ exp_params:
   # loss : bce
 
   # learning rate
-  lr : 0.0001
-  # lr : 0.001
+  # lr : 0.0001
+  lr : 0.001
   # lr : 0.01
   # lr : 0.1
   
@@ -126,8 +130,8 @@ model_params:
   use_gaze : True
 
   # Action
-  use_action : False
-  # use_action : True
+  # use_action : False
+  use_action : True
 
   # Person embedding
   # head_embedding_type : liner

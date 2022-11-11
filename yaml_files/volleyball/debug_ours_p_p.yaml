@@ -15,8 +15,8 @@ exp_set:
   num_workers: 1
   seed_num: 777
   gpu_mode : True
-  gpu_start : 5
-  gpu_finish : 5
+  gpu_start : 6
+  gpu_finish : 6
 
   resize_height : 320
   resize_width : 640
@@ -53,6 +53,8 @@ exp_params:
 
   gaze_types: GT
   # gaze_types: PRED
+  # use_gaze_noise: False
+  use_gaze_noise: True
   
   action_types: GT
   # action_types: PRED
@@ -67,13 +69,15 @@ exp_params:
   # loss : bce
 
   # learning rate
-  # lr : 0.0001
-  lr : 0.001
+  lr : 0.0001
+  # lr : 0.001
   # lr : 0.01
   # lr : 0.1
   
   # gt gaussian
-  gaussian_sigma: 20
+  # gaussian_sigma: 40
+  # gaussian_sigma: 20
+  gaussian_sigma: 10
 
   # learning schedule
   nEpochs : 500
@@ -128,30 +132,38 @@ model_params:
 
   # person-person transformer
   people_feat_dim : 16
+  # people_feat_dim : 32
   # use_people_people_trans: False
   use_people_people_trans: True
-  people_people_trans_enc_num : 2
-  mha_num_heads_people_people : 2
 
-  # rgb-person transformer
-  rgb_feat_dim : 256
-  rgb_people_trans_enc_num : 1
-  mha_num_heads_rgb_people : 1
+  # people_people_trans_enc_num : 1
+  # people_people_trans_enc_num : 2
+  people_people_trans_enc_num : 3
+  # people_people_trans_enc_num : 4
+  
+  # mha_num_heads_people_people : 1
+  mha_num_heads_people_people : 2
+  # mha_num_heads_people_people : 4
+  # mha_num_heads_people_people : 8
+  # mha_num_heads_people_people : 16
 
   # p_p_estimator_type : fc_shallow
   # p_p_estimator_type : fc_middle
   # p_p_estimator_type : fc_deep
   # p_p_estimator_type : deconv_shallow
   # p_p_estimator_type : deconv_middle
-  # p_p_estimator_type : deconv_deep
-  # p_p_estimator_type : field_shallow
   p_p_estimator_type : field_middle
   # p_p_estimator_type : field_deep  
 
   # p_p_aggregation_type : ind_only
-  # p_p_aggregation_type : token_only
+  p_p_aggregation_type : token_only
   # p_p_aggregation_type : ind_and_token_ind_based
-  p_p_aggregation_type : ind_and_token_token_based
+  # p_p_aggregation_type : ind_and_token_token_based
+
+  # rgb-person transformer
+  rgb_feat_dim : 256
+  rgb_people_trans_enc_num : 1
+  mha_num_heads_rgb_people : 1
 
   # rgb_cnn_extractor_type : rgb_patch
   # rgb_patch_size : 8

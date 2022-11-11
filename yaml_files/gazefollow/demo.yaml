@@ -4,9 +4,7 @@ data:
 
 exp_set:
   save_folder : saved_weights
-  # model_name: gazefollow-dual-cnn-w_pre
-  # model_name: gazefollow-dual-cnn_wo_pre
-  model_name: gazefollow-dual-trans-wo_pre
+  model_name: gazefollow-only_davt
 
   seed_num : 777
   gpu_mode : True
