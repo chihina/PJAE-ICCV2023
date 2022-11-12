@@ -39,19 +39,26 @@ python train.py yaml/volleyball/train_ours_p_p.yaml
 python train.py yaml/volleyball/train_ours.yaml
 ```
 The following folder contains the trained models.
-**volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_weight_fusion_fine_token_only
-**volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_weight_fusion_fine_token_only
+1. volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_weight_fusion_fine_token_only (Ex.1)
+2. volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_weight_fusion_fine_token_only (Ex.2)
 
 * DAVT
 ```
 python train.py yaml/volleyball/train_ours_p_p.yaml
 python train.py yaml/volleyball/train_ours.yaml
 ```
+The following folder contains the trained models.
+1. volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_psfix_fusion_wo_p_p (Ex.1)
+2. volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_psfix_fusion_wo_p_p (Ex.2)
 
 * ISA
 ```
 python train.py yaml/volleyball/train_ours_isa.yaml
 ```
+The following folder contains the trained models.
+1. volleyball-dual-isa_bbox_PRED_gaze_PRED_act_PRED (Ex.1)
+2. volleyball-dual-isa_bbox_GT_gaze_GT_act_GT (Ex.2)
+
 
 ### 2.2 VideoCoAtt dataset
 
