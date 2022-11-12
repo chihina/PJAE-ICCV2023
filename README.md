@@ -84,7 +84,7 @@ The following folder contains the trained models.
 
 ## 3. Evaluation
 ### 3.1 Volleyball dataset
-You can select the model which you would like to evaluate in the yaml files.
+You can choose the model which you would like to evaluate in the yaml files.
 
 * Ours and DAVT
 ```
@@ -109,7 +109,7 @@ python eval_on_videocoatt_isa.py yaml/videocoatt/eval.yaml
 ```
 
 ## 4. Demo
-You can select the model which you would like to evaluate in the yaml files.
+You can choose the model which you would like to evaluate in the yaml files.
 
 ### 4.1 Volleyball dataset
 ```
