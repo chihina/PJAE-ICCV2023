@@ -26,6 +26,8 @@ http://www.stat.ucla.edu/~lifengfan/shared_attention
 https://drive.google.com/drive/folders/1O55_wri92uv87g-2aDh8ll6dFVupmFaB?usp=share_link
 
 ## 2. Training
+You can change parameters of the model (e.g., multi-head numbers, transformer encoder numbers, and so on) by editing yaml files.
+
 ### 2.1 Volleyball dataset
 ```
 python train.py yaml/volleyball/train_ours_p_p.yaml
