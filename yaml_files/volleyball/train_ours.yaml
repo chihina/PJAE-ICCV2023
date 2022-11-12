@@ -13,14 +13,13 @@ exp_set:
   # [GT]
   # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_weight_fusion_fine_token_only
   # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_weight_fusion_fine_token_only_wo_position
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_weight_fusion_fine_token_only_wo_gaze
+  wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_weight_fusion_fine_token_only_wo_gaze
   # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_weight_fusion_fine_token_only_wo_action
-  wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_weight_fusion_fine_token_only_ver2
 
   # === fusion ===
   # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_average_fusion_fine_token_only
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_average_fusion_fine_token_only_ver2
   # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_cnn_fusion_fine_token_only
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_average_fusion_fix_token_only
 
   # [PRED]
   # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_weight_fusion_fine_ind_only
@@ -48,8 +47,8 @@ exp_set:
   seed_num: 777
   # seed_num: 888
   gpu_mode : True
-  gpu_start : 0
-  gpu_finish : 0
+  gpu_start : 6
+  gpu_finish : 6
 
   resize_height : 320
   resize_width : 640
@@ -100,9 +99,9 @@ exp_params:
   # loss : bce
 
   # learning rate
-  # lr : 0.00001
+  lr : 0.00001
   # lr : 0.0001
-  lr : 0.001
+  # lr : 0.001
   # lr : 0.01
   # lr : 0.1
   
@@ -139,7 +138,10 @@ exp_params:
 
   # use_pretrained_joint_attention_estimator: False
   use_pretrained_joint_attention_estimator: True
-  pretrained_joint_attention_estimator_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT
+  # pretrained_joint_attention_estimator_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT
+  # pretrained_joint_attention_estimator_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT_wo_position
+  pretrained_joint_attention_estimator_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT_wo_gaze
+  # pretrained_joint_attention_estimator_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT_wo_action
   freeze_joint_attention_estimator: False
   # freeze_joint_attention_estimator: True
 
@@ -151,8 +153,8 @@ model_params:
   use_position : True
 
   # Gaze
-  # use_gaze : False
-  use_gaze : True
+  use_gaze : False
+  # use_gaze : True
 
   # Action
   # use_action : False

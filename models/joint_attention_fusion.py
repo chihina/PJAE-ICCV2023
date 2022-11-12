@@ -97,6 +97,8 @@ class JointAttentionFusion(nn.Module):
             )
         elif self.fusion_net_type == 'late':
             pass
+        elif self.fusion_net_type == 'one_by_one_conv':
+            pass
         elif self.fusion_net_type == 'simple_average':
             self.final_fusion_weight = nn.Parameter(torch.rand(2))
         elif self.fusion_net_type == 'scalar_weight':

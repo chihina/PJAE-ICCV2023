@@ -104,19 +104,6 @@ model_saliency_weight_path = os.path.join(weight_saved_dir, "model_saliency_best
 model_attention_weight_path = os.path.join(weight_saved_dir, "model_gaussian_best.pth.tar")
 model_fusion_weight_path = os.path.join(weight_saved_dir, "model_fusion_best.pth.tar")
 
-# model_fusion_weight_path = os.path.join(weight_saved_dir, "model_fusion_epoch_1.pth")
-# model_fusion_weight_path = os.path.join(weight_saved_dir, "model_fusion_epoch_2.pth")
-# model_fusion_weight_path = os.path.join(weight_saved_dir, "model_fusion_epoch_3.pth")
-# model_fusion_weight_path = os.path.join(weight_saved_dir, "model_fusion_epoch_4.pth")
-# model_fusion_weight_path = os.path.join(weight_saved_dir, "model_fusion_epoch_5.pth")
-# model_fusion_weight_path = os.path.join(weight_saved_dir, "model_fusion_epoch_6.pth")
-# model_fusion_weight_path = os.path.join(weight_saved_dir, "model_fusion_epoch_7.pth")
-# model_fusion_weight_path = os.path.join(weight_saved_dir, "model_fusion_epoch_8.pth")
-# model_fusion_weight_path = os.path.join(weight_saved_dir, "model_fusion_epoch_9.pth")
-# model_fusion_weight_path = os.path.join(weight_saved_dir, "model_fusion_epoch_10.pth")
-# weight_prefix = model_fusion_weight_path.split('/')[-1].split('.pth')[0]
-# model_name = f'{model_name}_{weight_prefix}'
-
 model_head.load_state_dict(torch.load(model_head_weight_path,  map_location='cuda:'+str(gpus_list[0])))
 model_saliency.load_state_dict(torch.load(model_saliency_weight_path,  map_location='cuda:'+str(gpus_list[0])))
 model_attention.load_state_dict(torch.load(model_attention_weight_path,  map_location='cuda:'+str(gpus_list[0])), strict=False)

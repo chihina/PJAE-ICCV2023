@@ -33,16 +33,16 @@ model_name_list.append('field_deep')
 
 # define test data type
 test_data_type_list = []
-test_data_type_list.append('bbox_GT_gaze_GT_act_GT_blur_False')
-# test_data_type_list.append('bbox_PRED_gaze_PRED_act_PRED_blur_False')
+# test_data_type_list.append('bbox_GT_gaze_GT_act_GT_blur_False')
+test_data_type_list.append('bbox_PRED_gaze_PRED_act_PRED_blur_False')
 for test_data_type in test_data_type_list:
     print(f'==={test_data_type}===')
     for analyze_name in analyze_name_list:
         eval_results_list = []
         for ablation_name in analyze_name_ablation_list:
 
-            model_name = f'{analyze_name}_{ablation_name}_bbox_GT_gaze_GT_act_GT'        
-            # model_name = f'{analyze_name}_{ablation_name}_bbox_PRED_gaze_PRED_act_PRED'        
+            # model_name = f'{analyze_name}_{ablation_name}_bbox_GT_gaze_GT_act_GT'        
+            model_name = f'{analyze_name}_{ablation_name}_bbox_PRED_gaze_PRED_act_PRED'        
             json_file_path = os.path.join(saved_result_dir, model_name, 'eval_results', test_data_type, 'eval_results.json')
             with open(json_file_path, 'r') as f:
                 eval_results_dic = json.load(f)
