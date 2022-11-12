@@ -22,13 +22,23 @@ https://drive.google.com/drive/folders/1O55_wri92uv87g-2aDh8ll6dFVupmFaB?usp=sha
 * VideoCoAtt dataset (dataset)  
 http://www.stat.ucla.edu/~lifengfan/shared_attention
 
-* VideoCoAtt dataset (attributes) 
-as
+* VideoCoAtt dataset (attributes)  
+https://drive.google.com/drive/folders/1O55_wri92uv87g-2aDh8ll6dFVupmFaB?usp=share_link
+
 ## 2. Training
 
+### 2.1 Volleyball dataset
+
 ```
-python game.py 
+python train.py yaml/volleyball/train_ours.yaml
+python train.py yaml/volleyball/train_ours.yaml
+```
+
+### 2.2 VideoCoAtt dataset
+
+```
+python train.py yaml/volleyball/train_ours.yaml
+python train.py yaml/volleyball/train_ours.yaml
 ```
 
 ## 3. Evaluation
-You can choice order of hitting for human.  
