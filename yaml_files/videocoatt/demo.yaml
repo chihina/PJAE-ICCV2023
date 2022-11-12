@@ -38,7 +38,7 @@ exp_set:
 exp_params:
   test_heads_type : det
   # test_heads_type : gt
-  det_heads_model : dets_txt_nk_faster_rcnn_20220421
+  det_heads_model : det_heads
   test_heads_conf : 0.6
   use_gt_gaze : False
   # use_gt_gaze : True

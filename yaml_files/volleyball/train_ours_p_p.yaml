@@ -10,15 +10,7 @@ exp_set:
   save_folder: saved_weights
   wandb_log : True
 
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_token_only_mha_1
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_token_only_mha_4
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_token_only_mha_8
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_token_only_mha_16
-
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_token_only_enc_1
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_token_only_enc_3
-
-  wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT_token_only_w_gaze_noise
+  wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_token_only
 
   batch_size: 8
   # batch_size: 4
