@@ -27,6 +27,9 @@ https://drive.google.com/drive/folders/1O55_wri92uv87g-2aDh8ll6dFVupmFaB?usp=sha
 
 ## 2. Training
 You can change parameters of the model (e.g., multi-head numbers, transformer encoder numbers, and so on) by editing yaml files.
+Trained model are published in here (https://drive.google.com/drive/folders/1O55_wri92uv87g-2aDh8ll6dFVupmFaB?usp=share_link
+)
+
 
 ### 2.1 Volleyball dataset
 
@@ -35,6 +38,9 @@ You can change parameters of the model (e.g., multi-head numbers, transformer en
 python train.py yaml/volleyball/train_ours_p_p.yaml
 python train.py yaml/volleyball/train_ours.yaml
 ```
+The following folder contains the trained models.
+** volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_weight_fusion_fine_token_only
+** mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_weight_fusion_fine_token_only
 
 * DAVT
 ```
