@@ -48,8 +48,8 @@ python train.py yaml/volleyball/train_ours_p_p.yaml
 python train.py yaml/volleyball/train_ours.yaml
 ```
 The following folder contains the trained models.
-1. volleyball-dual-volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_p_s_only (Ex.1)
-2. volleyball-dual-volleyball-dual-volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_p_s_only (Ex.2)
+1. volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_p_s_only (Ex.1)
+2. volleyball-dual-volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_p_s_only (Ex.2)
 
 * ISA
 ```
@@ -68,8 +68,8 @@ python train.py yaml/videocoatt/train_ours_p_p.yaml
 python train.py yaml/videocoatt/train_ours.yaml
 ```
 The following folder contains the trained models.
-1. volleyball-dual-p_p_field_deep_p_s_davt_scalar_weight_fix (Ex.1)
-2. volleyball-dual-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_GT (Ex.2)
+1. videocoatt-dual-p_p_field_deep_p_s_davt_scalar_weight_fix (Ex.1)
+2. videocoatt-dual-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_GT (Ex.2)
 
 * DAVT  
 Trained model is published in here (https://github.com/ejcgt/attention-target-detection)
