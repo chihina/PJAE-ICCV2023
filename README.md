@@ -26,9 +26,10 @@ http://www.stat.ucla.edu/~lifengfan/shared_attention
 https://drive.google.com/drive/folders/1O55_wri92uv87g-2aDh8ll6dFVupmFaB?usp=share_link
 
 ## 2. Training
-You can change parameters of the model (e.g., multi-head numbers, transformer encoder numbers, ...) by editing the yaml files.
-Trained model are also published in here (https://drive.google.com/drive/folders/1O55_wri92uv87g-2aDh8ll6dFVupmFaB?usp=share_link
+* You can change parameters of the model (e.g., multi-head numbers, transformer encoder numbers, ...) by editing the yaml files.
+* Trained model are also published in here (https://drive.google.com/drive/folders/1O55_wri92uv87g-2aDh8ll6dFVupmFaB?usp=share_link
 )
+* trained models required to place in saved_weights/volleyball or saved_weights/videocoatt in the repository.
 
 
 ### 2.1 Volleyball dataset
