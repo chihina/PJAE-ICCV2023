@@ -26,19 +26,28 @@ http://www.stat.ucla.edu/~lifengfan/shared_attention
 https://drive.google.com/drive/folders/1O55_wri92uv87g-2aDh8ll6dFVupmFaB?usp=share_link
 
 ## 2. Training
-
 ### 2.1 Volleyball dataset
-
 ```
 python train.py yaml/volleyball/train_ours.yaml
 python train.py yaml/volleyball/train_ours.yaml
 ```
 
 ### 2.2 VideoCoAtt dataset
-
 ```
 python train.py yaml/volleyball/train_ours.yaml
 python train.py yaml/volleyball/train_ours.yaml
 ```
 
 ## 3. Evaluation
+### 3.1 Volleyball dataset
+```
+python train.py yaml/volleyball/train_ours.yaml
+python train.py yaml/volleyball/train_ours.yaml
+```
+
+
+### 3.2 VideoCoAtt dataset
+```
+python train.py yaml/volleyball/train_ours.yaml
+python train.py yaml/volleyball/train_ours.yaml
+```
