@@ -19,6 +19,9 @@ https://github.com/mostafa-saad/deep-activity-rec
 * Volleyball dataset (data/jae_dataset_bbox_gt, data/jae_dataset_bbox_pred)  
 https://drive.google.com/drive/folders/1O55_wri92uv87g-2aDh8ll6dFVupmFaB?usp=share_link
 
+* Volleyball dataset (data/vatic_ball_annotation/annotation_data)  
+https://drive.google.com/drive/folders/1O55_wri92uv87g-2aDh8ll6dFVupmFaB?usp=share_link
+
 * VideoCoAtt dataset (data/VideoCoAtt_Dataset)  
 http://www.stat.ucla.edu/~lifengfan/shared_attention
 
