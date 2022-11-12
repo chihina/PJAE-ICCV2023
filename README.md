@@ -26,8 +26,8 @@ http://www.stat.ucla.edu/~lifengfan/shared_attention
 https://drive.google.com/drive/folders/1O55_wri92uv87g-2aDh8ll6dFVupmFaB?usp=share_link
 
 ## 2. Training
-You can change parameters of the model (e.g., multi-head numbers, transformer encoder numbers, and so on) by editing yaml files.
-Trained model are published in here (https://drive.google.com/drive/folders/1O55_wri92uv87g-2aDh8ll6dFVupmFaB?usp=share_link
+You can change parameters of the model (e.g., multi-head numbers, transformer encoder numbers, ...) by editing the yaml files.
+Trained model are also published in here (https://drive.google.com/drive/folders/1O55_wri92uv87g-2aDh8ll6dFVupmFaB?usp=share_link
 )
 
 
@@ -72,7 +72,7 @@ The following folder contains the trained models.
 2. volleyball-dual-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_GT (Ex.2)
 
 * DAVT  
-Pretrained model is published in here (https://github.com/ejcgt/attention-target-detection)
+Trained model is published in here (https://github.com/ejcgt/attention-target-detection)
 
 * ISA
 ```
