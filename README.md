@@ -96,6 +96,8 @@ python eval_on_videocoatt_ours.py yaml/videocoatt/eval.yaml
 ```
 
 ## 4. Demo
+You can select the model which you would like to evaluate in the yaml files.
+
 ### 4.1 Volleyball dataset
 ```
 python demo_ours.py yaml/volleyball/demo.yaml
