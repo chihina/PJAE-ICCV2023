@@ -1,8 +1,3 @@
-'''
-    Author: Chihiro Nakatani
-    Dec 7th, 2021
-'''
-
 # import dl lib
 import torch
 from torch.utils.data import Dataset
