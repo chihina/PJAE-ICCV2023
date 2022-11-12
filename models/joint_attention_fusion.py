@@ -165,7 +165,7 @@ class JointAttentionFusion(nn.Module):
             final_fusion_weight_p_p = final_fusion_weight[0]
             final_fusion_weight_p_s = final_fusion_weight[1]
             final_joint_attention_heatmap = (final_fusion_weight_p_p*person_person_joint_attention_heatmap)+(final_fusion_weight_p_s*person_scene_joint_attention_heatmap)
-            print(f'p-p:{final_fusion_weight_p_p.item():.2f}, p-s:{final_fusion_weight_p_s.item():.2f}')
+            # print(f'p-p:{final_fusion_weight_p_p.item():.2f}, p-s:{final_fusion_weight_p_s.item():.2f}')
         else:
             person_person_joint_attention_heatmap_preconv = self.person_person_preconv(person_person_joint_attention_heatmap)
             person_scene_joint_attention_heatmap_preconv = self.person_scene_preconv(person_scene_joint_attention_heatmap)
