@@ -29,15 +29,38 @@ https://drive.google.com/drive/folders/1O55_wri92uv87g-2aDh8ll6dFVupmFaB?usp=sha
 You can change parameters of the model (e.g., multi-head numbers, transformer encoder numbers, and so on) by editing yaml files.
 
 ### 2.1 Volleyball dataset
+
+* Ours
 ```
 python train.py yaml/volleyball/train_ours_p_p.yaml
 python train.py yaml/volleyball/train_ours.yaml
 ```
 
+* DAVT
+```
+python train.py yaml/volleyball/train_ours_p_p.yaml
+python train.py yaml/volleyball/train_ours.yaml
+```
+
+* ISA
+```
+python train.py yaml/volleyball/train_ours_isa.yaml
+```
+
 ### 2.2 VideoCoAtt dataset
+
+* Ours
 ```
 python train.py yaml/videocoatt/train_ours_p_p.yaml
 python train.py yaml/videocoatt/train_ours.yaml
+```
+
+* DAVT
+Pretrained model is published in here ()
+
+* ISA
+```
+python train.py yaml/videocoatt/train_ours_isa.yaml
 ```
 
 ## 3. Evaluation
