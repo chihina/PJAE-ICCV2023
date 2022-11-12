@@ -181,7 +181,7 @@ class VolleyBallDataset(Dataset):
                 annotated_bbox = self.get_person_bbox_from_txt(annotation_path_person)
 
                 # get gt ball bbox
-                annotation_path = os.path.join(self.annotation_dir, f'nakatani_volleyball_{video_num}_{seq_num}_ver3.csv')
+                annotation_path = os.path.join(self.annotation_dir, f'volleyball_{video_num}_{seq_num}_ver3.csv')
                 bbox_array, bbox_flag_array = self.read_ball_bbox_from_csv(annotation_path)
 
                 if self.use_frame_type == 'mid':
