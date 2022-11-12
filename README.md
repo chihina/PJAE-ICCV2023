@@ -1,4 +1,4 @@
-# config_action_aware_joint_attention_estimation
+# Intro
 
 ## Environment
 python 3.7.1
