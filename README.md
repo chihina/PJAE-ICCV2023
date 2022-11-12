@@ -56,7 +56,7 @@ python train.py yaml/videocoatt/train_ours.yaml
 ```
 
 * DAVT
-Pretrained model is published in here ()
+Pretrained model is published in here (https://github.com/ejcgt/attention-target-detection)
 
 * ISA
 ```
