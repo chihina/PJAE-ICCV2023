@@ -67,6 +67,9 @@ The following folder contains the trained models.
 python train.py yaml/videocoatt/train_ours_p_p.yaml
 python train.py yaml/videocoatt/train_ours.yaml
 ```
+The following folder contains the trained models.
+1. volleyball-dual-p_p_field_deep_p_s_davt_scalar_weight_fix (Ex.1)
+2. volleyball-dual-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_GT (Ex.2)
 
 * DAVT  
 Pretrained model is published in here (https://github.com/ejcgt/attention-target-detection)
@@ -75,9 +78,14 @@ Pretrained model is published in here (https://github.com/ejcgt/attention-target
 ```
 python train.py yaml/videocoatt/train_ours_isa.yaml
 ```
+The following folder contains the trained models.
+1. videocoatt-isa_bbox_PRED_gaze_PRED (Ex.1)
+2. videocoatt-isa_bbox_GT_gaze_GT (Ex.2)
 
 ## 3. Evaluation
 ### 3.1 Volleyball dataset
+You can select the model which you would like to evaluate in the yaml files.
+
 ```
 python eval_on_volleyball_ours.py yaml/volleyball/eval.yaml
 ```
