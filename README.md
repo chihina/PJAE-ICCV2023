@@ -1,8 +1,5 @@
 # config_action_aware_joint_attention_estimation
 
-# Othello-game-python
-This is a othello game. It is written by python. 
-
 ## Environment
 python 3.7.1
 
