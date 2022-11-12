@@ -83,6 +83,13 @@ The following folder contains the trained models.
 1. videocoatt-isa_bbox_PRED_gaze_PRED (Ex.1)
 2. videocoatt-isa_bbox_GT_gaze_GT (Ex.2)
 
+* HGTD
+```
+python train.py yaml/videoattentiontarget/train_hgt.yaml
+```
+The following folder contains the trained models.
+1. videocoatt-videoattentiontarget-hgt-high (Ex.1 and Ex.2)
+
 ## 3. Evaluation
 ### 3.1 Volleyball dataset
 You can choose the model which you would like to evaluate in the yaml files.
@@ -107,6 +114,11 @@ python eval_on_videocoatt_ours.py yaml/videocoatt/eval.yaml
 * ISA
 ```
 python eval_on_videocoatt_isa.py yaml/videocoatt/eval.yaml
+```
+
+* HGTD
+```
+python eval_on_videocoatt_hgt.py yaml/videocoatt/eval.yaml
 ```
 
 ## 4. Demo
