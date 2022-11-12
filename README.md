@@ -11,7 +11,7 @@ pip install -r requirements.txt
 # Data preparation
 ## 1. Download dataset
 You can download daatset from the following url.  
-These dataset are required to place in data/ in the repository.
+These dataset are required to place in data/ in the repository.  
 
 * Volleyball dataset (dataset)  
 https://github.com/mostafa-saad/deep-activity-rec
