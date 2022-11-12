@@ -13,16 +13,16 @@ pip install -r requirements.txt
 You can download daatset from the following url.  
 These dataset are required to place in data/ in the repository.  
 
-* Volleyball dataset (dataset)  
+* Volleyball dataset (data/videos)  
 https://github.com/mostafa-saad/deep-activity-rec
 
-* Volleyball dataset (attributes)  
+* Volleyball dataset (data/jae_dataset_bbox_gt, data/jae_dataset_bbox_pred)  
 https://drive.google.com/drive/folders/1O55_wri92uv87g-2aDh8ll6dFVupmFaB?usp=share_link
 
-* VideoCoAtt dataset (dataset)  
+* VideoCoAtt dataset (data/VideoCoAtt_Dataset)  
 http://www.stat.ucla.edu/~lifengfan/shared_attention
 
-* VideoCoAtt dataset (attributes)  
+* VideoCoAtt dataset (data/VideoCoAtt_Dataset/dets_heads)  
 https://drive.google.com/drive/folders/1O55_wri92uv87g-2aDh8ll6dFVupmFaB?usp=share_link
 
 ## 2. Training
@@ -44,9 +44,7 @@ python train.py yaml/videocoatt/train_ours.yaml
 python eval_on_volleyball_ours.py yaml/volleyball/eval.yaml
 ```
 
-
 ### 3.2 VideoCoAtt dataset
 ```
 python eval_on_videocoatt_ours.py yaml/videocoatt/eval.yaml
 ```
-
