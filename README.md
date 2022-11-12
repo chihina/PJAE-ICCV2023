@@ -39,8 +39,8 @@ python train.py yaml/volleyball/train_ours_p_p.yaml
 python train.py yaml/volleyball/train_ours.yaml
 ```
 The following folder contains the trained models.
-** volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_weight_fusion_fine_token_only
-** mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_weight_fusion_fine_token_only
+**volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_weight_fusion_fine_token_only
+**volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_weight_fusion_fine_token_only
 
 * DAVT
 ```
