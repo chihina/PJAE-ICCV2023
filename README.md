@@ -12,9 +12,10 @@ pip install -r requirements.txt
 ## 1. Download dataset
 You can download daatset from the following url.
 
-* Volleyball dataset image
+* Volleyball dataset (image)
+https://github.com/mostafa-saad/deep-activity-rec
 
-* Volleyball dataset attributes:
+* Volleyball dataset (attributes)
 
 ## 2. Training
 
