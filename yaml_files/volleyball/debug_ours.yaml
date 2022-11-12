@@ -191,5 +191,5 @@ model_params:
   # fusion_net_type : early
   # fusion_net_type : mid
   # fusion_net_type : late
-  fusion_net_type : scalar_weight
-  # fusion_net_type : simple_average
+  # fusion_net_type : scalar_weight
+  fusion_net_type : simple_average

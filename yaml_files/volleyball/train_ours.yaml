@@ -12,40 +12,14 @@ exp_set:
 
   # [GT]
   # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_weight_fusion_fine_token_only
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_weight_fusion_fine_token_only_wo_position
-  wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_weight_fusion_fine_token_only_wo_gaze
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_weight_fusion_fine_token_only_wo_action
-
-  # === fusion ===
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_average_fusion_fine_token_only
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_cnn_fusion_fine_token_only
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_average_fusion_fix_token_only
 
   # [PRED]
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_weight_fusion_fine_ind_only
   # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_weight_fusion_fine_token_only
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_weight_fusion_fine_ind_and_token_ind_based
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_weight_fusion_fine_ind_and_token_token_based
-
-  # === fusion ===
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_average_fusion_fine_token_only
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_cnn_fusion_fine_token_only
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_cnn_fusion_fine_token_only_ver2
-
-  # === ablation ===
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_weight_fusion_fine_token_only_update
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_weight_fusion_fine_token_only_wo_position
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_weight_fusion_fine_token_only_wo_gaze
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_weight_fusion_fine_token_only_wo_action
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_weight_fusion_fine_token_only_wo_gaze_wo_position
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_weight_fusion_fine_token_only_wo_action_wo_gaze
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_weight_fusion_fine_token_only_wo_action_wo_position
 
   # batch_size: 8
   batch_size: 4
   num_workers: 16
   seed_num: 777
-  # seed_num: 888
   gpu_mode : True
   gpu_start : 6
   gpu_finish : 6
@@ -138,10 +112,8 @@ exp_params:
 
   # use_pretrained_joint_attention_estimator: False
   use_pretrained_joint_attention_estimator: True
-  # pretrained_joint_attention_estimator_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT
-  # pretrained_joint_attention_estimator_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT_wo_position
-  pretrained_joint_attention_estimator_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT_wo_gaze
-  # pretrained_joint_attention_estimator_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT_wo_action
+  pretrained_joint_attention_estimator_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT
+  # pretrained_joint_attention_estimator_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED
   freeze_joint_attention_estimator: False
   # freeze_joint_attention_estimator: True
 
@@ -153,8 +125,8 @@ model_params:
   use_position : True
 
   # Gaze
-  use_gaze : False
-  # use_gaze : True
+  # use_gaze : False
+  use_gaze : True
 
   # Action
   # use_action : False

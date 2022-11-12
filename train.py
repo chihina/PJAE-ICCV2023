@@ -102,11 +102,6 @@ def process_epoch(epoch, data_set, mode):
 
         if cfg.exp_params.gaze_types == 'GT':
             batch['head_vector'] = batch['head_vector_gt']
-            if cfg.exp_params.use_gaze_noise:
-                gaze_noise = torch.normal(mean=0, std=0.1, size=batch['head_vector'].shape, device=batch['head_vector'].device)
-                batch['head_vector'] = batch['head_vector'] + gaze_noise
-                gaze_norm = torch.norm(batch['head_vector'], dim=2)
-                batch['head_vector'] = batch['head_vector'] / gaze_norm[:, :, None]
         else:
             batch['head_vector'] = out_head['head_vector']
 
