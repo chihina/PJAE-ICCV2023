@@ -48,3 +48,14 @@ python eval_on_volleyball_ours.py yaml/volleyball/eval.yaml
 ```
 python eval_on_videocoatt_ours.py yaml/videocoatt/eval.yaml
 ```
+
+## 4. Demo
+### 4.1 Volleyball dataset
+```
+python demo_ours.py yaml/volleyball/demo.yaml
+```
+
+### 4.2 VideoCoAtt dataset
+```
+python demo_ours.py yaml/videocoatt/demo.yaml
+```
