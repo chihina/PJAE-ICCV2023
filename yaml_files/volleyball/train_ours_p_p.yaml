@@ -2,7 +2,8 @@ data:
   name: volleyball
   sendo_dataset_dir : data/volleyball_tracking_annotation
   rgb_dataset_dir : data/videos
-  annotation_dir : data/vatic_ball_annotation/annotation_data/
+  # annotation_dir : data/vatic_ball_annotation/annotation_data/
+  annotation_dir : data/vatic_ball_annotation/annotation_data_sub
   dataset_bbox_gt: data/jae_dataset_bbox_gt
   dataset_bbox_pred: data/jae_dataset_bbox_pred
 
@@ -10,7 +11,11 @@ exp_set:
   save_folder: saved_weights
   wandb_log : True
 
-  wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_token_only
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT_wo_action_wo_video_tuned
+  wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT_wo_action_wo_video_tuned_lr_0001
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT_wo_action_w_video_tuned
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT_wo_action_w_video_tuned_lr_0001
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT_wo_action_w_video_tuned_lr_000001
 
   batch_size: 8
   # batch_size: 4
@@ -18,8 +23,8 @@ exp_set:
   seed_num: 777
   # seed_num: 888
   gpu_mode : True
-  gpu_start : 1
-  gpu_finish : 1
+  gpu_start : 3
+  gpu_finish : 3
 
   resize_height : 320
   resize_width : 640
@@ -28,8 +33,8 @@ exp_set:
 
 exp_params:
 
-  use_person_person_att_loss : False
-  # use_person_person_att_loss : True
+  # use_person_person_att_loss : False
+  use_person_person_att_loss : True
   person_person_att_loss_weight : 1
 
   # use_person_person_jo_att_loss : False
@@ -70,6 +75,7 @@ exp_params:
   # loss : bce
 
   # learning rate
+  # lr : 0.00001
   # lr : 0.0001
   lr : 0.001
   # lr : 0.01
@@ -83,7 +89,8 @@ exp_params:
   # learning schedule
   nEpochs : 500
   start_iter : 0
-  snapshots : 100
+  # snapshots : 100
+  snapshots : 5
   scheduler_start : 1000
   scheduler_iter : 1100000
 
@@ -103,8 +110,10 @@ exp_params:
   # freeze_saliency_extractor: True
 
   use_pretrained_joint_attention_estimator: False
-  # use_pretrained_head_pose_estimator: True
-  pretrained_joint_attention_estimator_name: pretrain_head_estimator
+  # use_pretrained_joint_attention_estimator: True
+  # pretrained_joint_attention_estimator_name: pretrain_head_estimator
+  pretrained_joint_attention_estimator_name: videocoatt-dual-people_field_middle_token_only_bbox_GT_gaze_GT
+  # pretrained_joint_attention_estimator_name: videocoatt-dual-people_field_middle_token_only_bbox
   freeze_joint_attention_estimator: False
   # freeze_joint_attention_estimator: True
 
@@ -120,8 +129,8 @@ model_params:
   use_gaze : True
 
   # Action
-  # use_action : False
-  use_action : True
+  use_action : False
+  # use_action : True
 
   # Person embedding
   # head_embedding_type : liner
@@ -138,8 +147,8 @@ model_params:
   use_people_people_trans: True
 
   # people_people_trans_enc_num : 1
-  # people_people_trans_enc_num : 2
-  people_people_trans_enc_num : 3
+  people_people_trans_enc_num : 2
+  # people_people_trans_enc_num : 3
   # people_people_trans_enc_num : 4
   
   # mha_num_heads_people_people : 1

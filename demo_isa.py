@@ -128,7 +128,7 @@ cfg.update(cfg_arg)
 print(cfg)
 
 print("===> Building model")
-model_head, model_attention, model_saliency, cfg = model_generator(cfg)
+model_head, model_attention, model_saliency, model_fusion, cfg = model_generator(cfg)
 
 print("===> Building gpu configuration")
 cuda = cfg.exp_set.gpu_mode
@@ -190,7 +190,7 @@ for dir_name in save_image_dir_list:
 print("===> Starting demo processing")
 stop_iteration = 20
 if mode == 'test':
-    stop_iteration = 80
+    stop_iteration = 200
 for iteration, batch in enumerate(test_data_loader,1):
     if iteration > stop_iteration:
         break
@@ -345,11 +345,13 @@ for iteration, batch in enumerate(test_data_loader,1):
     # calc distances for each co att box
     gt_box = gt_box.numpy()
     gt_box_num = np.sum(np.sum(gt_box, axis=1)!=0)
+    print(gt_box_num)
     for gt_box_idx in range(gt_box_num):
         x_min_gt, y_min_gt, x_max_gt, y_max_gt = map(float, gt_box[gt_box_idx])
         x_min_gt, x_max_gt = map(lambda x: int(x*original_width), [x_min_gt, x_max_gt])
         y_min_gt, y_max_gt = map(lambda x: int(x*original_height), [y_min_gt, y_max_gt])
         x_mid_gt, y_mid_gt = (x_min_gt+x_max_gt)//2, (y_min_gt+y_max_gt)//2
+        break
     l2_dist = ((x_mid_gt-x_mid_pred)**2+(y_mid_gt-y_mid_pred)**2)**0.5
     # print(l2_dist)
 

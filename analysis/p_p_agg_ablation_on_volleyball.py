@@ -9,26 +9,28 @@ saved_result_dir = os.path.join('results', 'volleyball')
 
 # define analyze model type
 analyze_name_list = []
-analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED')
+analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT')
+# analyze_name_list.append('volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED')
 
 # define ablate type
 analyze_name_ablation_list = []
 analyze_name_ablation_list.append('_ind_only')
-analyze_name_ablation_list.append('_token_only')
+# analyze_name_ablation_list.append('_token_only')
+analyze_name_ablation_list.append('')
 analyze_name_ablation_list.append('_ind_and_token_ind_based')
-analyze_name_ablation_list.append('_ind_and_token_token_based')
+# analyze_name_ablation_list.append('_ind_and_token_token_based')
 
 # define model names
 model_name_list = []
 model_name_list.append('Ind only')
 model_name_list.append('Token only')
 model_name_list.append('Ind and Token (ind-based)')
-model_name_list.append('Ind and Token (token-based)')
+# model_name_list.append('Ind and Token (token-based)')
 
 # define test data type
 test_data_type_list = []
-# test_data_type_list.append('bbox_GT_gaze_GT_act_GT_blur_False')
-test_data_type_list.append('bbox_PRED_gaze_PRED_act_PRED_blur_False')
+test_data_type_list.append('bbox_GT_gaze_GT_act_GT_blur_False')
+# test_data_type_list.append('bbox_PRED_gaze_PRED_act_PRED_blur_False')
 for test_data_type in test_data_type_list:
     print(f'==={test_data_type}===')
     for analyze_name in analyze_name_list:

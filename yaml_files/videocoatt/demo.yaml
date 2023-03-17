@@ -1,7 +1,9 @@
 data:
   name: videocoatt
-  dataset_dir : data/VideoCoAtt_Dataset
-  saliency_dataset_dir : data/deepgaze_output_loader
+  # dataset_dir : data/VideoCoAtt_Dataset
+  dataset_dir : /misc/dl001/dataset/nakatani/VideoCoAtt_Dataset
+  # saliency_dataset_dir : data/deepgaze_output_loader
+  saliency_dataset_dir : /misc/dl001/dataset/nakatani/deepgaze_output_loader
 
 exp_set:
   save_folder : saved_weights
@@ -21,12 +23,18 @@ exp_set:
   # model_name: videocoatt-p_p_field_deep_p_s_davt_simple_average
   # model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fine
 
-  model_name: videocoatt-dual-people_field_middle
+  # model_name: videocoatt-dual-people_field_middle
+
+  # model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only
+  # model_name: videocoatt-isa_bbox_GT_gaze_GT
+  # model_name: videoattentiontarget-hgt
+
+  model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_GT
 
   seed_num : 777
   gpu_mode : True
-  gpu_start : 3
-  gpu_finish : 3
+  gpu_start : 6
+  gpu_finish : 6
   num_workers : 1
   batch_size : 1
   wandb_name : demo
@@ -36,8 +44,8 @@ exp_set:
   # mode : train
 
 exp_params:
-  test_heads_type : det
-  # test_heads_type : gt
+  # test_heads_type : det
+  test_heads_type : gt
   det_heads_model : det_heads
   test_heads_conf : 0.6
   use_gt_gaze : False

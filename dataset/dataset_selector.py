@@ -1,5 +1,5 @@
 from dataset.volleyball import VolleyBallDataset
-from dataset.videocoatt import VideoCoAttDataset, VideoCoAttDatasetNoAtt
+from dataset.videocoatt import VideoCoAttDataset, VideoCoAttDatasetNoAtt, VideoCoAttDatasetMultAP
 from dataset.videoattentiontarget import VideoAttentionTargetDataset
 from dataset.toy import ToyDataset
 from dataset.gazefollow import GazeFollowDataset
@@ -16,6 +16,10 @@ def dataset_generator(cfg, mode):
         if mode == 'valid':
             mode = 'validate'
         data_set = VideoCoAttDatasetNoAtt(cfg, mode)
+    elif cfg.data.name == 'videocoatt_mult_att':
+        if mode == 'valid':
+            mode = 'validate'
+        data_set = VideoCoAttDatasetMultAP(cfg, mode)
     elif cfg.data.name == 'videoattentiontarget':
         if mode == 'valid':
             mode = 'test'

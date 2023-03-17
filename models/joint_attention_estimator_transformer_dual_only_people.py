@@ -229,7 +229,7 @@ class JointAttentionEstimatorTransformerDualOnlyPeople(nn.Module):
             pass
         else:
             print('please use correct p_p aggregation type')
-            sys.exit()
+            # sys.exit()
 
     def forward(self, inp):
 
@@ -312,7 +312,7 @@ class JointAttentionEstimatorTransformerDualOnlyPeople(nn.Module):
         elif self.p_p_aggregation_type == 'ind_and_token_token_based':
             attention_token = head_info_params_emb[:, :-1, :]
         else:
-            sys.exit()
+            attention_token = head_info_params_emb[:, :-1, :]
 
         if 'fc' in self.p_p_estimator_type:
             attention_token_input = attention_token.view(self.batch_size, people_num, self.people_feat_dim)
@@ -357,22 +357,24 @@ class JointAttentionEstimatorTransformerDualOnlyPeople(nn.Module):
         person_person_joint_attention_heatmap = F.interpolate(person_person_joint_attention_heatmap, (self.hm_height, self.hm_width), mode='bilinear')
 
         # final p_p heatmap aggregation
+        no_pad_idx = torch.sum(head_feature, dim=2) != 0
         if self.p_p_aggregation_type == 'ind_only':
-            person_person_attention_heatmap = person_person_attention_heatmap * att_inside_flag[:, :, None, None]
+            person_person_attention_heatmap = person_person_attention_heatmap * no_pad_idx[:, :, None, None]
             person_person_joint_attention_heatmap = torch.sum(person_person_attention_heatmap, dim=1)
-            person_person_joint_attention_heatmap = person_person_joint_attention_heatmap / torch.sum(att_inside_flag, dim=1)[:, None, None]
+            person_person_joint_attention_heatmap = person_person_joint_attention_heatmap / torch.sum(no_pad_idx, dim=1)[:, None, None]
             person_person_joint_attention_heatmap = person_person_joint_attention_heatmap[:, None, :, :]
         elif self.p_p_aggregation_type == 'token_only':
             pass
         elif self.p_p_aggregation_type == 'ind_and_token_ind_based':
-            person_person_attention_heatmap = person_person_attention_heatmap * att_inside_flag[:, :, None, None]
+            person_person_attention_heatmap = person_person_attention_heatmap * no_pad_idx[:, :, None, None]
             person_person_joint_attention_heatmap = torch.sum(person_person_attention_heatmap, dim=1)
-            person_person_joint_attention_heatmap = person_person_joint_attention_heatmap / torch.sum(att_inside_flag, dim=1)[:, None, None]
+            person_person_joint_attention_heatmap = person_person_joint_attention_heatmap / torch.sum(no_pad_idx, dim=1)[:, None, None]
             person_person_joint_attention_heatmap = person_person_joint_attention_heatmap[:, None, :, :]
         elif self.p_p_aggregation_type == 'ind_and_token_token_based':
             pass
         else:
-            sys.exit()
+            pass
+            # sys.exit()
 
         # generate head xy map
         head_xy_map = head_xy_map * head_feature[:, :, :2, None, None]

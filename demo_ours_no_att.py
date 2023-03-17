@@ -98,11 +98,12 @@ def data_id_generator(img_path, cfg):
 
 # normalize heatmap
 def norm_heatmap(img_heatmap):
-    if np.min(img_heatmap) == np.max(img_heatmap):
-        img_heatmap[:, :] = 0
-    else: 
-        img_heatmap = (img_heatmap - np.min(img_heatmap)) / (np.max(img_heatmap) - np.min(img_heatmap))
-        img_heatmap *= 255
+
+    # if np.min(img_heatmap) == np.max(img_heatmap):
+    #     img_heatmap[:, :] = 0
+    # else:
+    #     img_heatmap = (img_heatmap - np.min(img_heatmap)) / (np.max(img_heatmap) - np.min(img_heatmap))
+    #     img_heatmap *= 255
 
     return img_heatmap
 
@@ -168,6 +169,7 @@ if cuda:
 print("===> Loading dataset")
 mode = cfg.exp_set.mode
 cfg.data.name = 'videocoatt_no_att'
+cfg.data.name = 'videocoatt_mult_att'
 test_set = dataset_generator(cfg, mode)
 test_data_loader = DataLoader(dataset=test_set,
                                 batch_size=cfg.exp_set.batch_size,
@@ -199,6 +201,7 @@ print("===> Starting demo processing")
 stop_iteration = 20
 if mode == 'test':
     stop_iteration = 200
+    # stop_iteration = 40
 for iteration, batch in enumerate(test_data_loader,1):
     if iteration > stop_iteration:
         break
@@ -290,7 +293,6 @@ for iteration, batch in enumerate(test_data_loader,1):
     person_scene_attention_heatmap = out['person_scene_attention_heatmap'].to('cpu').detach()[0]
     person_scene_joint_attention_heatmap = out['person_scene_joint_attention_heatmap'].to('cpu').detach()[0]
     final_joint_attention_heatmap = out['final_joint_attention_heatmap'].to('cpu').detach()[0]
-    print(torch.min(final_joint_attention_heatmap), torch.max(final_joint_attention_heatmap))
 
     if cfg.model_params.p_s_estimator_type == 'cnn':
         ang_att_map = out['ang_att_map'].to('cpu').detach()[0]
@@ -305,6 +307,7 @@ for iteration, batch in enumerate(test_data_loader,1):
     data_type_id = ''
     data_id = data_id_generator(img_path, cfg)
     print(f'Iter:{iteration}, {data_id}, {data_type_id}')
+    print(torch.min(final_joint_attention_heatmap), torch.max(final_joint_attention_heatmap))
 
     # expand directories
     single_image_dir_list = ['person_person_jo_att', 'person_person_jo_att_superimposed',
@@ -390,12 +393,12 @@ for iteration, batch in enumerate(test_data_loader,1):
     whole_image_action = cv2.addWeighted(img, 1.0, img, 0.0, 0)
 
     # plot estimated and groung-truth joint attentions
-    cv2.circle(person_person_joint_attention_heatmap, (pred_x_mid_p_p, pred_y_mid_p_p), 10, (0, 165, 255), thickness=-1)
-    cv2.circle(person_person_joint_attention_heatmap, (int(gt_x_mid), int(gt_y_mid)), 10, (0, 255, 0), thickness=-1)
-    cv2.circle(person_scene_joint_attention_heatmap, (pred_x_mid_p_s, pred_y_mid_p_s), 10, (0, 165, 255), thickness=-1)
-    cv2.circle(person_scene_joint_attention_heatmap, (int(gt_x_mid), int(gt_y_mid)), 10, (0, 255, 0), thickness=-1)
-    cv2.circle(final_joint_attention_heatmap, (pred_x_mid_final, pred_y_mid_final), 10, (0, 165, 255), thickness=-1)
-    cv2.circle(final_joint_attention_heatmap, (int(gt_x_mid), int(gt_y_mid)), 10, (0, 255, 0), thickness=-1)
+    # cv2.circle(person_person_joint_attention_heatmap, (pred_x_mid_p_p, pred_y_mid_p_p), 10, (0, 165, 255), thickness=-1)
+    # cv2.circle(person_person_joint_attention_heatmap, (int(gt_x_mid), int(gt_y_mid)), 10, (0, 255, 0), thickness=-1)
+    # cv2.circle(person_scene_joint_attention_heatmap, (pred_x_mid_p_s, pred_y_mid_p_s), 10, (0, 165, 255), thickness=-1)
+    # cv2.circle(person_scene_joint_attention_heatmap, (int(gt_x_mid), int(gt_y_mid)), 10, (0, 255, 0), thickness=-1)
+    # cv2.circle(final_joint_attention_heatmap, (pred_x_mid_final, pred_y_mid_final), 10, (0, 165, 255), thickness=-1)
+    # cv2.circle(final_joint_attention_heatmap, (int(gt_x_mid), int(gt_y_mid)), 10, (0, 255, 0), thickness=-1)
 
     # save an attention estimation as a superimposed image
     key_no_padding_num = torch.sum((torch.sum(head_feature, dim=-1) != 0)).numpy()
@@ -449,8 +452,8 @@ for iteration, batch in enumerate(test_data_loader,1):
             cv2.putText(whole_image_action, text=f'{action_idx}', org=(head_x, head_y-action_shift), color=action_color,
                         fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1.0, thickness=action_size, lineType=cv2.LINE_4)
 
-        cv2.circle(person_person_att, (gt_mid_x, gt_mid_y), 10, (0, 255, 0), thickness=-1)
-        cv2.circle(person_scene_att, (gt_mid_x, gt_mid_y), 10, (0, 255, 0), thickness=-1)
+        # cv2.circle(person_person_att, (gt_mid_x, gt_mid_y), 10, (0, 255, 0), thickness=-1)
+        # cv2.circle(person_scene_att, (gt_mid_x, gt_mid_y), 10, (0, 255, 0), thickness=-1)
         cv2.line(person_person_att, (head_x, head_y), (gt_mid_x, gt_mid_y), (0, 255, 0), 1)
         cv2.line(person_scene_att, (head_x, head_y), (gt_mid_x, gt_mid_y), (0, 255, 0), 1)
 

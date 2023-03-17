@@ -1,7 +1,9 @@
 data:
   name: videocoatt
-  dataset_dir : data/VideoCoAtt_Dataset
-  saliency_dataset_dir : data/deepgaze_output_loader
+  # dataset_dir : data/VideoCoAtt_Dataset
+  dataset_dir : /misc/dl001/dataset/nakatani/VideoCoAtt_Dataset
+  # saliency_dataset_dir : data/deepgaze_output_loader
+  saliency_dataset_dir : /misc/dl001/dataset/nakatani/deepgaze_output_loader
 
 exp_set:
   save_folder : saved_weights
@@ -47,13 +49,47 @@ exp_set:
   # model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_ind_and_token_token_based
 
   # model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_GT
-  # model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_GT_ver2
-  model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_GT_ver3
+
+  # model_name : videocoatt-dual-people_field_middle_ind_only
+  # model_name : videocoatt-dual-people_field_middle_ind_and_token_ind_based
+
+  # model_name: videocoatt-dual-people_field_middle_ind_only_bbox_GT_gaze_GT
+  # model_name: videocoatt-dual-people_field_middle_token_only_bbox_GT_gaze_GT
+  # model_name: videocoatt-dual-people_field_middle_ind_and_token_ind_based_bbox_GT_gaze_GT
+  # model_name: videocoatt-dual-people_field_middle_ind_and_token_token_based_bbox_GT_gaze_GT
+
+  model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_GT
+  # model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_GT_wo_position
+  # model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_GT_wo_gaze
+
+  # model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only
+  # model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_wo_position
+  # model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_wo_gaze
+
+  # model_name: videocoatt-p_p_field_deep_p_s_davt_freeze
+
+  # model_name: videocoatt-dual-people_field_middle_token_only_bbox_GT_gaze_GT_wo_action_wo_volley_tuned
+  # model_name: videocoatt-dual-people_field_middle_token_only_bbox_GT_gaze_GT_wo_action_w_volley_tuned_lr_0001
+  # model_name: videocoatt-dual-people_field_middle_token_only_bbox_GT_gaze_GT_wo_action_wo_volley_tuned_lr_000001
+  # model_name: videocoatt-dual-people_field_middle_token_only_bbox_GT_gaze_GT_wo_action_w_volley_tuned
+
+  # model_name: videocoatt-dual-people_field_middle_ind_only_bbox_GT_gaze_GT
+  # model_name: videocoatt-dual-people_field_middle_token_only_bbox_GT_gaze_GT
+  # model_name: videocoatt-dual-people_field_middle_ind_and_token_ind_based_bbox_GT_gaze_GT
+
+  # model_name: videocoatt-dual-people_field_middle_ind_only
+  # model_name: videocoatt-dual-people_field_middle_token_only
+  # model_name: videocoatt-dual-people_field_middle_ind_and_token_ind_based
+
+  # model_name: videocoatt-dual-people_fc_middle_bbox_GT_gaze_GT
+
+  # model_name: videocoatt-p_p_field_deep_p_s_davt_average_fix_token_only_GT
+  # model_name: videocoatt-p_p_field_deep_p_s_davt_cnn_fix_token_only_GT
 
   seed_num : 777
   gpu_mode : True
-  gpu_start : 1
-  gpu_finish : 1
+  gpu_start : 0
+  gpu_finish : 0
   num_workers : 1
   batch_size : 1
   wandb_name : test
@@ -65,7 +101,8 @@ exp_set:
 exp_params:
   # test_heads_type : det
   test_heads_type : gt
-  det_heads_model : det_heads
+  # det_heads_model : det_heads
+  det_heads_model : dets_txt_nk_faster_rcnn_20220421
   test_heads_conf : 0.6
   # test_heads_conf : 0.8
 
@@ -74,3 +111,7 @@ exp_params:
 
   use_frame_type: mid
   # use_frame_type: all
+
+  # use_thresh_type: accuracy
+  use_thresh_type: f_score
+  # use_thresh_type: f_score_macro

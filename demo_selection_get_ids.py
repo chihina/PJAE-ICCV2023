@@ -10,13 +10,16 @@ df['ours'] = df['volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_a
 df['isa'] = df['volleyball-isa_bbox_GT_gaze_GT_act_GT']
 df['davt'] = df['volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_p_s_only']
 df['isa-ours'] = df['isa']-df['ours']
+df['ours-isa'] = df['ours']-df['isa']
 df['davt-ours'] = df['davt']-df['ours']
+df['ours-davt'] = df['ours']-df['davt']
 print(df)
 
 # get data ids by distance conditions
-dist_thr = 130
-sampled_data = df[(df['isa-ours']>dist_thr) & (df['davt-ours']>dist_thr)]
+dist_thr = 20
+# sampled_data = df[(df['isa-ours']>dist_thr) & (df['davt-ours']>dist_thr)]
+sampled_data = df[(df['ours-isa']>dist_thr) & (df['ours-davt']>dist_thr)]
 print(sampled_data['ours'])
 print(sampled_data['isa'])
 print(sampled_data['davt'])
-print(sampled_data.index)
+# print(sampled_data.index)

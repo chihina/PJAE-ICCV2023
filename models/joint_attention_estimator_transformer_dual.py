@@ -360,6 +360,7 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
         person_person_joint_attention_heatmap = F.interpolate(person_person_joint_attention_heatmap, (self.hm_height, self.hm_width), mode='bilinear')
 
         # final p_p heatmap aggregation
+        no_pad_idx = torch.sum(head_feature, dim=2) != 0
         if self.p_p_aggregation_type == 'ind_only':
             person_person_attention_heatmap = person_person_attention_heatmap * att_inside_flag[:, :, None, None]
             person_person_joint_attention_heatmap = torch.sum(person_person_attention_heatmap, dim=1)

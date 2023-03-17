@@ -15,8 +15,8 @@ exp_set:
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 2
-  gpu_finish : 2
+  gpu_start : 3
+  gpu_finish : 3
 
   resize_height: 320
   resize_width: 480
@@ -98,9 +98,11 @@ exp_params:
   freeze_saliency_extractor: False
   # freeze_saliency_extractor: True
 
-  use_pretrained_joint_attention_estimator: False
-  # use_pretrained_joint_attention_estimator: True
-  pretrained_joint_attention_estimator_name: pretrain_head_estimator
+  # use_pretrained_joint_attention_estimator: False
+  use_pretrained_joint_attention_estimator: True
+  # pretrained_joint_attention_estimator_name: pretrain_head_estimator
+  # pretrained_joint_attention_estimator_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT
+  pretrained_joint_attention_estimator_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT_wo_action
   freeze_joint_attention_estimator: False
   # freeze_joint_attention_estimator: True
 
@@ -143,8 +145,8 @@ model_params:
   p_p_estimator_type : field_middle
   # p_p_estimator_type : field_deep
 
-  p_p_aggregation_type : ind_only
-  # p_p_aggregation_type : token_only
+  # p_p_aggregation_type : ind_only
+  p_p_aggregation_type : token_only
   # p_p_aggregation_type : ind_and_token_ind_based
   # p_p_aggregation_type : ind_and_token_token_based
 

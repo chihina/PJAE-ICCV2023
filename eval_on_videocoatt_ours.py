@@ -1,5 +1,6 @@
 # deep learning
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
@@ -34,7 +35,8 @@ from models.model_selector import model_generator
 
 def data_type_id_generator(cfg):
     # data_type_id = f'{cfg.exp_set.mode}_gt_gaze_{cfg.exp_params.test_gt_gaze}_head_conf_{cfg.exp_params.test_heads_conf}'
-    data_type_id = f'bbox_{cfg.exp_params.test_heads_type}_gaze_{cfg.exp_params.test_gt_gaze}'
+    data_type_id = f'bbox_{cfg.exp_params.test_heads_type}_gaze_{cfg.exp_params.test_gt_gaze}_thresh_{cfg.exp_params.use_thresh_type}'
+
     return data_type_id
 
 def each_data_type_id_generator(head_vector_gt, head_tensor, gt_box, cfg):
@@ -119,6 +121,13 @@ if cuda:
     model_saliency.eval()
     model_attention.eval()
     model_fusion.eval()
+
+# view learned fusion coeficient
+# fusion_weight = model_fusion.state_dict()['final_fusion_weight'].detach().cpu()
+# m = nn.Softmax()
+# fusion_weight = m(fusion_weight)
+# print(fusion_weight)
+# sys.exit()
 
 print("===> Loading dataset")
 mode = cfg.exp_set.mode
@@ -286,7 +295,8 @@ heatmap_p_s_peak_val_array = np.array(heatmap_p_s_peak_val_list)
 heatmap_final_peak_val_array = np.array(heatmap_final_peak_val_list)
 
 co_att_flag_gt = np.array(co_att_flag_gt_list)
-valid_metrics_list = ['accuracy', 'precision', 'recall', 'f1']
+# valid_metrics_list = ['accuracy', 'precision', 'recall', 'f1']
+valid_metrics_list = ['accuracy', 'precision', 'recall', 'f1', 'f1 (macro)']
 valid_metrics_p_p_array = np.zeros((255, len(valid_metrics_list)), dtype=np.float32)
 valid_metrics_p_s_array = np.zeros((255, len(valid_metrics_list)), dtype=np.float32)
 valid_metrics_final_array = np.zeros((255, len(valid_metrics_list)), dtype=np.float32)
@@ -312,6 +322,10 @@ for thresh_cand in range(0, 255, 1):
     f1_p_s = f1_score(co_att_flag_gt, co_att_flag_p_s_pred)
     f1_final = f1_score(co_att_flag_gt, co_att_flag_final_pred)
     
+    f1_macro_p_p = f1_score(co_att_flag_gt, co_att_flag_p_p_pred, average='macro')
+    f1_macro_p_s = f1_score(co_att_flag_gt, co_att_flag_p_s_pred, average='macro')
+    f1_macro_final = f1_score(co_att_flag_gt, co_att_flag_final_pred, average='macro')
+    
     valid_metrics_p_p_array[thresh_cand, 0] = acc_p_p
     valid_metrics_p_s_array[thresh_cand, 0] = acc_p_s
     valid_metrics_final_array[thresh_cand, 0] = acc_final
@@ -328,13 +342,27 @@ for thresh_cand in range(0, 255, 1):
     valid_metrics_p_s_array[thresh_cand, 3] = f1_p_s
     valid_metrics_final_array[thresh_cand, 3] = f1_final
 
-thresh_best_row_p_p = np.argmax(valid_metrics_p_p_array[:, 3])
-thresh_best_row_p_s = np.argmax(valid_metrics_p_s_array[:, 3])
-thresh_best_row_final = np.argmax(valid_metrics_final_array[:, 3])
+    valid_metrics_p_p_array[thresh_cand, 4] = f1_macro_p_p
+    valid_metrics_p_s_array[thresh_cand, 4] = f1_macro_p_s
+    valid_metrics_final_array[thresh_cand, 4] = f1_macro_final
 
-thresh_best_p_p = np.argmax(valid_metrics_p_p_array[:, 3])/255
-thresh_best_p_s = np.argmax(valid_metrics_p_s_array[:, 3])/255
-thresh_best_final = np.argmax(valid_metrics_final_array[:, 3])/255
+
+if cfg.exp_params.use_thresh_type == 'f_score':
+    thresh_opt_idx = 3
+elif cfg.exp_params.use_thresh_type == 'f_score_macro':
+    thresh_opt_idx = 4
+elif cfg.exp_params.use_thresh_type == 'accuracy':
+    thresh_opt_idx = 0
+else:
+    sys.exit()
+
+thresh_best_row_p_p = np.argmax(valid_metrics_p_p_array[:, thresh_opt_idx])
+thresh_best_row_p_s = np.argmax(valid_metrics_p_s_array[:, thresh_opt_idx])
+thresh_best_row_final = np.argmax(valid_metrics_final_array[:, thresh_opt_idx])
+
+thresh_best_p_p = np.argmax(valid_metrics_p_p_array[:, thresh_opt_idx])/255
+thresh_best_p_s = np.argmax(valid_metrics_p_s_array[:, thresh_opt_idx])/255
+thresh_best_final = np.argmax(valid_metrics_final_array[:, thresh_opt_idx])/255
 
 print("===> Starting test processing")
 l2_dist_list = []
@@ -546,6 +574,7 @@ metrics_dict['accuracy p-p'] = accuracy_score(co_att_gt_array, co_att_pred_array
 metrics_dict['precision p-p'] = precision_score(co_att_gt_array, co_att_pred_array_p_p)
 metrics_dict['recall p-p'] = recall_score(co_att_gt_array, co_att_pred_array_p_p)
 metrics_dict['f1 p-p'] = f1_score(co_att_gt_array, co_att_pred_array_p_p)
+metrics_dict['f1 macro p-p'] = f1_score(co_att_gt_array, co_att_pred_array_p_p, average='macro')
 metrics_dict['auc p-p'] = roc_auc_score(co_att_gt_array, co_att_pred_array_p_p)
 metrics_dict['thresh p-p'] = thresh_best_p_p
 
@@ -553,6 +582,7 @@ metrics_dict['accuracy p-s'] = accuracy_score(co_att_gt_array, co_att_pred_array
 metrics_dict['precision p-s'] = precision_score(co_att_gt_array, co_att_pred_array_p_s)
 metrics_dict['recall p-s'] = recall_score(co_att_gt_array, co_att_pred_array_p_s)
 metrics_dict['f1 p-s'] = f1_score(co_att_gt_array, co_att_pred_array_p_s)
+metrics_dict['f1 macro p-s'] = f1_score(co_att_gt_array, co_att_pred_array_p_s, average='macro')
 metrics_dict['auc p-s'] = roc_auc_score(co_att_gt_array, co_att_pred_array_p_s)
 metrics_dict['thresh p-s'] = thresh_best_p_s
 
@@ -560,6 +590,7 @@ metrics_dict['accuracy final'] = accuracy_score(co_att_gt_array, co_att_pred_arr
 metrics_dict['precision final'] = precision_score(co_att_gt_array, co_att_pred_array_final)
 metrics_dict['recall final'] = recall_score(co_att_gt_array, co_att_pred_array_final)
 metrics_dict['f1 final'] = f1_score(co_att_gt_array, co_att_pred_array_final)
+metrics_dict['f1 macro final'] = f1_score(co_att_gt_array, co_att_pred_array_final, average='macro')
 metrics_dict['auc final'] = roc_auc_score(co_att_gt_array, co_att_pred_array_final)
 metrics_dict['thresh final'] = thresh_best_final
 
