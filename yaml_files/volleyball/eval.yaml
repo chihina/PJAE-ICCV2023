@@ -31,16 +31,32 @@ exp_set:
   # model_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT_ind_and_token_ind_based
 
   # [Ours (finetune)]
-  model_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT_wo_action_wo_video_tuned
+  # model_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT_wo_action_wo_video_tuned
   # model_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT_wo_action_wo_video_tuned_lr_0001
   # model_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT_wo_action_w_video_tuned
   # model_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT_wo_action_w_video_tuned_lr_0001
   # model_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT_wo_action_w_video_tuned_lr_000001
 
+  # [ICCV rebuttal (self-attention)]
+  # model_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_ind_only_wo_trans
+  # model_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_token_only_wo_trans
+
+  # [ICCV rebuttal (gaussian)]
+  # model_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_token_only_var_100
+  # model_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_token_only_var_80
+  # model_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_token_only_var_60
+  # model_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_token_only_var_40
+  # model_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_token_only_var_20
+  # model_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_token_only_var_5
+  # model_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_token_only_var_1
+
+  # [ICCV rebuttal (failure)]
+  # model_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT
+
   seed_num : 777
   gpu_mode : True
-  gpu_start : 7
-  gpu_finish : 7
+  gpu_start : 5
+  gpu_finish : 5
   num_workers : 1
   batch_size : 1
   wandb_name : test

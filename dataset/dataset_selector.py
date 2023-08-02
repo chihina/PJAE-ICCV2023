@@ -1,4 +1,5 @@
 from dataset.volleyball import VolleyBallDataset
+from dataset.volleyball_wo_att import VolleyBallDatasetWithoutAtt
 from dataset.videocoatt import VideoCoAttDataset, VideoCoAttDatasetNoAtt, VideoCoAttDatasetMultAP
 from dataset.videoattentiontarget import VideoAttentionTargetDataset
 from dataset.toy import ToyDataset
@@ -8,6 +9,8 @@ def dataset_generator(cfg, mode):
     print(f'{cfg.data.name} dataset')
     if cfg.data.name == 'volleyball':
         data_set = VolleyBallDataset(cfg, mode)
+    elif cfg.data.name == 'volleyball_wo_att':
+        data_set = VolleyBallDatasetWithoutAtt(cfg, mode)
     elif cfg.data.name == 'videocoatt':
         if mode == 'valid':
             mode = 'validate'

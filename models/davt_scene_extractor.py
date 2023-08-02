@@ -267,10 +267,15 @@ class ModelSpatialDummy(nn.Module):
         head_img = inp['head_img']
         batch_size, people_num, _, resize_head_height, resize_head_width = head_img.shape
         person_scene_attention_heatmap = torch.zeros(batch_size, people_num, 64, 64, device=head_img.device)
-        
+
+        rgb_img = inp['rgb_img']
+        _, _, ori_height, ori_width = rgb_img.shape
+        saliency_img = torch.zeros(batch_size, 1, ori_height, ori_width, device=head_img.device)
+
         # pack output data
         out = {}
         out['person_scene_attention_heatmap'] = person_scene_attention_heatmap
+        out['saliency_img'] = saliency_img
 
         return out
 

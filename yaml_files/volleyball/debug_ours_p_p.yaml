@@ -48,16 +48,14 @@ exp_params:
   use_frame_type: mid
   # use_frame_type: all
 
-  bbox_types: GT
-  # bbox_types: PRED
+  # bbox_types: GT
+  bbox_types: PRED
 
-  gaze_types: GT
-  # gaze_types: PRED
-  # use_gaze_noise: False
-  use_gaze_noise: True
-  
-  action_types: GT
-  # action_types: PRED
+  # gaze_types: GT
+  gaze_types: PRED
+
+  # action_types: GT
+  action_types: PRED
   
   # position augmentation
   use_position_aug: False
@@ -69,8 +67,8 @@ exp_params:
   # loss : bce
 
   # learning rate
-  lr : 0.0001
-  # lr : 0.001
+  # lr : 0.0001
+  lr : 0.001
   # lr : 0.01
   # lr : 0.1
   
@@ -78,6 +76,8 @@ exp_params:
   # gaussian_sigma: 40
   # gaussian_sigma: 20
   gaussian_sigma: 10
+  # gaussian_sigma: 5
+  # gaussian_sigma: 1
 
   # learning schedule
   nEpochs : 500
@@ -101,10 +101,11 @@ exp_params:
   freeze_saliency_extractor: False
   # freeze_saliency_extractor: True
 
-  # use_pretrained_joint_attention_estimator: False
-  use_pretrained_head_pose_estimator: True
+  use_pretrained_joint_attention_estimator: False
+  # use_pretrained_joint_attention_estimator: True
   # pretrained_joint_attention_estimator_name: pretrain_head_estimator
   pretrained_joint_attention_estimator_name: videocoatt-dual-people_field_middle_token_only_bbox_GT_gaze_GT
+  # pretrained_joint_attention_estimator_name: videocoatt-dual-people_field_middle_token_only_bbox
   freeze_joint_attention_estimator: False
   # freeze_joint_attention_estimator: True
 
@@ -120,8 +121,8 @@ model_params:
   use_gaze : True
 
   # Action
-  use_action : False
-  # use_action : True
+  # use_action : False
+  use_action : True
 
   # Person embedding
   # head_embedding_type : liner
@@ -141,7 +142,7 @@ model_params:
   people_people_trans_enc_num : 2
   # people_people_trans_enc_num : 3
   # people_people_trans_enc_num : 4
-  
+
   # mha_num_heads_people_people : 1
   mha_num_heads_people_people : 2
   # mha_num_heads_people_people : 4
@@ -154,10 +155,11 @@ model_params:
   # p_p_estimator_type : deconv_shallow
   # p_p_estimator_type : deconv_middle
   p_p_estimator_type : field_middle
-  # p_p_estimator_type : field_deep  
+  # p_p_estimator_type : field_deep
 
   # p_p_aggregation_type : ind_only
-  p_p_aggregation_type : token_only
+  # p_p_aggregation_type : token_only
+  p_p_aggregation_type : token_only_concat
   # p_p_aggregation_type : ind_and_token_ind_based
   # p_p_aggregation_type : ind_and_token_token_based
 

@@ -34,6 +34,8 @@ def data_type_id_generator(head_vector_gt, head_tensor, gt_box, cfg):
 
     if cfg.data.name == 'volleyball':
         data_type_id = f'bbox_{cfg.exp_params.bbox_types}_gaze_{cfg.exp_params.gaze_types}_act_{cfg.exp_params.action_types}'
+    elif cfg.data.name == 'volleyball_wo_att':
+        data_type_id = f'bbox_{cfg.exp_params.bbox_types}_gaze_{cfg.exp_params.gaze_types}_act_{cfg.exp_params.action_types}'
     elif cfg.data.name == 'videocoatt':
         dets_people_num = np.sum(np.sum(head_vector_gt, axis=-1) != 0)
         # define data id of dets people
@@ -74,6 +76,10 @@ def data_type_id_generator(head_vector_gt, head_tensor, gt_box, cfg):
 def data_id_generator(img_path, cfg):
     data_id = 'unknown'
     if cfg.data.name == 'volleyball':
+        video_num, seq_num, img_name = img_path.split('/')[-3:]
+        img_num = img_name.split('.')[0]
+        data_id = f'{video_num}_{seq_num}_{img_num}'
+    elif cfg.data.name == 'volleyball_wo_att':
         video_num, seq_num, img_name = img_path.split('/')[-3:]
         img_num = img_name.split('.')[0]
         data_id = f'{video_num}_{seq_num}_{img_num}'
@@ -167,7 +173,7 @@ if cuda:
 
 print("===> Loading dataset")
 mode = cfg.exp_set.mode
-cfg.data.name = 'videocoatt_no_att'
+# cfg.data.name = 'videocoatt_no_att'
 test_set = dataset_generator(cfg, mode)
 test_data_loader = DataLoader(dataset=test_set,
                                 batch_size=cfg.exp_set.batch_size,

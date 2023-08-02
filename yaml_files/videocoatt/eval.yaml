@@ -58,7 +58,7 @@ exp_set:
   # model_name: videocoatt-dual-people_field_middle_ind_and_token_ind_based_bbox_GT_gaze_GT
   # model_name: videocoatt-dual-people_field_middle_ind_and_token_token_based_bbox_GT_gaze_GT
 
-  model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_GT
+  # model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_GT
   # model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_GT_wo_position
   # model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_GT_wo_gaze
 
@@ -86,10 +86,14 @@ exp_set:
   # model_name: videocoatt-p_p_field_deep_p_s_davt_average_fix_token_only_GT
   # model_name: videocoatt-p_p_field_deep_p_s_davt_cnn_fix_token_only_GT
 
+  # [iccv rebuttal]
+  # model_name: videocoatt-dual-people_field_middle_token_only_bbox_GT_gaze_GT
+  model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_GT
+
   seed_num : 777
   gpu_mode : True
-  gpu_start : 0
-  gpu_finish : 0
+  gpu_start : 6
+  gpu_finish : 6
   num_workers : 1
   batch_size : 1
   wandb_name : test

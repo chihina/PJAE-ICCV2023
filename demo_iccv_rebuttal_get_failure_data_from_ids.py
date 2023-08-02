@@ -195,15 +195,66 @@ for dir_name in save_image_dir_list:
         os.makedirs(save_image_dir_dic[dir_name])
 
 print("===> Starting demo processing")
-# selected_vid_id, selected_seq_id = 21, 41815
-# selected_vid_id, selected_seq_id = 20, 49685
-# selected_vid_id, selected_seq_id = 29, 30520
-# selected_vid_id, selected_seq_id = 44, 20235
-# selected_vid_id, selected_seq_id = 21, 65805
-# selected_vid_id, selected_seq_id = 11, 22200
-# selected_vid_id, selected_seq_id = 25, 39150
-selected_vid_id, selected_seq_id = 25, 52490
-selected_data_id = f'{selected_vid_id}_{selected_seq_id}_{selected_seq_id}'
+
+selected_vid_id_list = []
+selected_seq_id_list = []
+
+if cfg.data.name == 'volleyball':
+    selected_vid_id_list.append(20)
+    selected_seq_id_list.append(67725)
+    # 
+    selected_vid_id_list.append(21)
+    selected_seq_id_list.append(68490)
+    # 
+    selected_vid_id_list.append(25)
+    selected_seq_id_list.append(52490)
+    # 
+    selected_vid_id_list.append(44)
+    selected_seq_id_list.append(22095)
+    # 
+    selected_vid_id_list.append(37)
+    selected_seq_id_list.append(10544)
+    # 
+    selected_vid_id_list.append(44)
+    selected_seq_id_list.append(22090)
+    # 
+elif cfg.data.name == 'videocoatt':
+    selected_vid_id_list.append(39)
+    selected_seq_id_list.append('00261')
+    # 
+    selected_vid_id_list.append(80)
+    selected_seq_id_list.append('01271')
+    # 
+    selected_vid_id_list.append(48)
+    selected_seq_id_list.append('00271')
+    # 
+    selected_vid_id_list.append(100)
+    selected_seq_id_list.append('00671')
+    # 
+    selected_vid_id_list.append(17)
+    selected_seq_id_list.append('00281')
+    # 
+    selected_vid_id_list.append(25)
+    selected_seq_id_list.append('00361')
+    # 
+    selected_vid_id_list.append(25)
+    selected_seq_id_list.append('00361')
+    # 
+    selected_vid_id_list.append(36)
+    selected_seq_id_list.append('00161')
+    # 
+    selected_vid_id_list.append(48)
+    selected_seq_id_list.append('00271')
+    # 
+
+selected_data_id_list = []
+for selected_vid_id, selected_seq_id in zip(selected_vid_id_list, selected_seq_id_list):
+
+    if cfg.data.name == 'volleyball':
+        selected_data_id_list.append(f'{selected_vid_id}_{selected_seq_id}_{selected_seq_id}')
+    elif cfg.data.name == 'videocoatt':
+        selected_data_id_list.append(f'test_{selected_vid_id}_{selected_seq_id}_{selected_vid_id}')
+
 for iteration, batch in enumerate(test_data_loader,1):
 
     # define data id
@@ -212,7 +263,7 @@ for iteration, batch in enumerate(test_data_loader,1):
     data_id = data_id_generator(img_path, cfg)
     print(f'Iter:{iteration}, {data_id}')
 
-    if selected_data_id != data_id:
+    if data_id not in selected_data_id_list:
         continue
 
     # init heatmaps
@@ -254,10 +305,16 @@ for iteration, batch in enumerate(test_data_loader,1):
         out_head = model_head(batch)
         batch['head_img_extract'] = out_head['head_img_extract']
 
-        if cfg.exp_params.gaze_types == 'GT':
-            batch['head_vector'] = batch['head_vector_gt']
-        else:
-            batch['head_vector'] = out_head['head_vector']
+        if cfg.data.name == 'volleyball':
+            if cfg.exp_params.gaze_types == 'GT':
+                batch['head_vector'] = batch['head_vector_gt']
+            else:
+                batch['head_vector'] = out_head['head_vector']
+        elif cfg.data.name == 'videocoatt':
+            if cfg.exp_params.use_gt_gaze:
+                batch['head_vector'] = batch['head_vector_gt']
+            else:
+                batch['head_vector'] = out_head['head_vector']
 
         # change position inputs
         if cfg.model_params.use_gaze:
@@ -426,7 +483,7 @@ for iteration, batch in enumerate(test_data_loader,1):
         gt_mid_x, gt_mid_y = int(gt_mid_x*cfg.exp_set.resize_width), int(gt_mid_y*cfg.exp_set.resize_height)
 
         # gaze estimation
-        gaze_vec_x, gaze_vec_y = head_vector[person_idx, 0:2]
+        gaze_vec_x, gaze_vec_y = head_vector_gt[person_idx, 0:2]
         gaze_l = 50
         gaze_x, gaze_y = int(head_x+gaze_vec_x*gaze_l), int(head_y+gaze_vec_y*gaze_l)
         gaze_color = (255, 255, 255)
@@ -437,21 +494,22 @@ for iteration, batch in enumerate(test_data_loader,1):
         # cv2.arrowedLine(final_joint_attention_heatmap, (head_x, head_y), (gaze_x, gaze_y), gaze_color, gaze_size)
         cv2.arrowedLine(whole_image_gaze, (head_x, head_y), (gaze_x, gaze_y), gaze_color, gaze_size)
         
-        # action prediction
-        action_idx = np.argmax(action_vector.numpy())
-        action_idx = action_idx_to_name(action_idx)
-        action_color = (255, 255, 255)
-        action_size = 2
-        action_shift = 20
+        if cfg.data.name == 'volleyball':
+            # action prediction
+            action_idx = np.argmax(action_vector.numpy())
+            action_idx = action_idx_to_name(action_idx)
+            action_color = (255, 255, 255)
+            action_size = 2
+            action_shift = 20
 
-        # cv2.putText(person_person_joint_attention_heatmap, text=f'{action_idx}', org=(head_x, head_y-action_shift), color=action_color,
-        #             fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1.0, thickness=action_size, lineType=cv2.LINE_4)
-        # cv2.putText(person_scene_joint_attention_heatmap, text=f'{action_idx}', org=(head_x, head_y-action_shift), color=action_color,
-        #             fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1.0, thickness=action_size, lineType=cv2.LINE_4)
-        # cv2.putText(final_joint_attention_heatmap, text=f'{action_idx}', org=(head_x, head_y-action_shift), color=action_color,
-        #             fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1.0, thickness=action_size, lineType=cv2.LINE_4)
-        cv2.putText(whole_image_action, text=f'{action_idx}', org=(head_x, head_y-action_shift), color=action_color,
-                    fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1.0, thickness=action_size, lineType=cv2.LINE_4)
+            # cv2.putText(person_person_joint_attention_heatmap, text=f'{action_idx}', org=(head_x, head_y-action_shift), color=action_color,
+            #             fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1.0, thickness=action_size, lineType=cv2.LINE_4)
+            # cv2.putText(person_scene_joint_attention_heatmap, text=f'{action_idx}', org=(head_x, head_y-action_shift), color=action_color,
+            #             fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1.0, thickness=action_size, lineType=cv2.LINE_4)
+            # cv2.putText(final_joint_attention_heatmap, text=f'{action_idx}', org=(head_x, head_y-action_shift), color=action_color,
+            #             fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1.0, thickness=action_size, lineType=cv2.LINE_4)
+            cv2.putText(whole_image_action, text=f'{action_idx}', org=(head_x, head_y-action_shift), color=action_color,
+                        fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1.0, thickness=action_size, lineType=cv2.LINE_4)
 
         cv2.circle(person_person_att, (gt_mid_x, gt_mid_y), 10, (0, 255, 0), thickness=-1)
         cv2.circle(person_scene_att, (gt_mid_x, gt_mid_y), 10, (0, 255, 0), thickness=-1)
@@ -475,6 +533,3 @@ for iteration, batch in enumerate(test_data_loader,1):
     cv2.imwrite(os.path.join(save_image_dir_dic['final_jo_att_superimposed'], data_type_id, f'{mode}_{data_id}_final_jo_att_superimposed.png'), final_joint_attention_heatmap)
     cv2.imwrite(os.path.join(save_image_dir_dic['whole_image_gaze'], data_type_id, f'{mode}_{data_id}_final_jo_att_superimposed.png'), whole_image_gaze)
     cv2.imwrite(os.path.join(save_image_dir_dic['whole_image_action'], data_type_id, f'{mode}_{data_id}_final_jo_att_superimposed.png'), whole_image_action)
-
-    if selected_data_id == data_id:
-        break

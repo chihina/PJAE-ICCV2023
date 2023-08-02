@@ -1,0 +1,36 @@
+data:
+  name: volleyball_wo_att
+  sendo_dataset_dir : data/volleyball_tracking_annotation
+  rgb_dataset_dir : data/videos
+  annotation_dir : data/vatic_ball_annotation/annotation_data_sub/
+  dataset_bbox_gt: data/jae_dataset_bbox_gt
+  dataset_bbox_pred: data/jae_dataset_bbox_pred
+
+exp_set:
+  save_folder : saved_weights
+
+  # model_name: volleyball-selection
+
+  # [ICCV rebuttal]
+  model_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_ind_feat_token_only
+
+  seed_num : 777
+  gpu_mode : True
+  gpu_start : 7
+  gpu_finish : 7
+  num_workers : 1
+  batch_size : 1
+  wandb_name : demo
+
+  # mode: train
+  mode: test
+
+exp_params:
+  use_frame_type: mid
+  # use_frame_type: all
+
+  bbox_types: GT
+  # bbox_types: PRED
+
+  # vis_dist_error: False
+  vis_dist_error: True

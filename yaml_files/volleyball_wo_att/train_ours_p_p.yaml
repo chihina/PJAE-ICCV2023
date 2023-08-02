@@ -1,40 +1,33 @@
 data: 
-  name: volleyball
+  name: volleyball_wo_att
   sendo_dataset_dir : data/volleyball_tracking_annotation
   rgb_dataset_dir : data/videos
-  # annotation_dir : data/vatic_ball_annotation/annotation_data/
-  annotation_dir : data/vatic_ball_annotation/annotation_data_sub
+  annotation_dir : data/vatic_ball_annotation/annotation_data_sub/
   dataset_bbox_gt: data/jae_dataset_bbox_gt
   dataset_bbox_pred: data/jae_dataset_bbox_pred
+  all_bbox_gt: data/
 
 exp_set:
   save_folder: saved_weights
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_ind_feat_token_only
+  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_ind_feat_token_only_lr_0001
+  wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_ind_feat_token_only_lr_0001_wo_ind_loss
   wandb_log : True
 
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_ind_only_wo_trans
-  wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_token_only_wo_trans
-
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_token_only_var_100
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_token_only_var_80
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_token_only_var_60
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_token_only_var_40
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_token_only_var_20
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_token_only_var_5
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_token_only_var_1
-
-  batch_size: 8
-  # batch_size: 4
+  # batch_size: 8
+  batch_size: 2
   num_workers: 16
   seed_num: 777
-  # seed_num: 888
   gpu_mode : True
-  gpu_start : 1
-  gpu_finish : 1
+  gpu_start : 3
+  gpu_finish : 3
 
   resize_height : 320
   resize_width : 640
-  resize_head_width: 64
-  resize_head_height: 64
+  resize_head_height : 64
+  resize_head_width : 64
+  resize_height_person: 224
+  resize_width_person: 224
 
 exp_params:
 
@@ -61,34 +54,20 @@ exp_params:
   use_frame_type: mid
   # use_frame_type: all
 
-  # bbox_types: GT
-  bbox_types: PRED
-
-  # gaze_types: GT
-  gaze_types: PRED
-
-  # action_types: GT
-  action_types: PRED
-  
-  # position augmentation
-  use_position_aug: False
-  # use_position_aug: True
-  position_aug_std: 0.05
+  bbox_types: GT
+  # bbox_types: PRED
 
   # loss function
   loss : mse
   # loss : bce
 
   # learning rate
-  # lr : 0.0001
-  lr : 0.001
+  lr : 0.0001
+  # lr : 0.001
   # lr : 0.01
   # lr : 0.1
   
   # gt gaussian
-  # gaussian_sigma: 100
-  # gaussian_sigma: 80
-  # gaussian_sigma: 60
   # gaussian_sigma: 40
   # gaussian_sigma: 20
   gaussian_sigma: 10
@@ -126,31 +105,17 @@ exp_params:
   # freeze_joint_attention_estimator: True
 
 model_params:
-  model_type: ja_transformer_dual_only_people
+  model_type: ja_transformer_dual_only_people_img_feat
 
   # Position
   # use_position : False
   use_position : True
 
-  # Gaze
-  # use_gaze : False
-  use_gaze : True
-
-  # Action
-  # use_action : False
-  use_action : True
-
-  # Person embedding
-  # head_embedding_type : liner
-  head_embedding_type : mlp
-
-  # Whole image
-  # use_img : False
-  use_img : True
-
   # person-person transformer
-  people_feat_dim : 16
+  # people_feat_dim : 16
   # people_feat_dim : 32
+  people_feat_dim : 128
+
   # use_people_people_trans: False
   use_people_people_trans: True
 

@@ -2,6 +2,7 @@ from models.head_pose_estimator import HeadPoseEstimatorResnet
 from models.joint_attention_estimator_transformer import JointAttentionEstimatorTransformer
 from models.joint_attention_estimator_transformer_dual import JointAttentionEstimatorTransformerDual
 from models.joint_attention_estimator_transformer_dual_only_people import JointAttentionEstimatorTransformerDualOnlyPeople
+from models.joint_attention_estimator_transformer_dual_only_people_img_feat import JointAttentionEstimatorTransformerDualOnlyPeopleImgFeat
 from models.joint_attention_fusion import JointAttentionFusion, JointAttentionFusionDummy
 from models.inferring_shared_attention_estimation import InferringSharedAttentionEstimator
 from models.end_to_end_human_gaze_target import EndToEndHumanGazeTargetTransformer
@@ -29,6 +30,11 @@ def model_generator(cfg):
     elif cfg.model_params.model_type == 'ja_transformer_dual_only_people':
         model_head = HeadPoseEstimatorResnet(cfg)
         model_gaussian = JointAttentionEstimatorTransformerDualOnlyPeople(cfg)
+        model_saliency = ModelSpatialDummy()
+        model_fusion = JointAttentionFusionDummy()
+    elif cfg.model_params.model_type == 'ja_transformer_dual_only_people_img_feat':
+        model_head = HeadPoseEstimatorResnet(cfg)
+        model_gaussian = JointAttentionEstimatorTransformerDualOnlyPeopleImgFeat(cfg)
         model_saliency = ModelSpatialDummy()
         model_fusion = JointAttentionFusionDummy()
     elif cfg.model_params.model_type == 'isa':

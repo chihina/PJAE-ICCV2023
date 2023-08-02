@@ -1,12 +1,16 @@
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
+import torchvision
+import torchvision.models as models
+from models.model_utils import positionalencoding1d, positionalencoding2d
+
 import sys
 import  numpy as np
 
-class JointAttentionEstimatorTransformerDualOnlyPeople(nn.Module):
+class JointAttentionEstimatorTransformerDualOnlyPeopleImgFeat(nn.Module):
     def __init__(self, cfg):
-        super(JointAttentionEstimatorTransformerDualOnlyPeople, self).__init__()
+        super(JointAttentionEstimatorTransformerDualOnlyPeopleImgFeat, self).__init__()
 
         ## set useful variables
         self.epsilon = 1e-7
@@ -27,12 +31,6 @@ class JointAttentionEstimatorTransformerDualOnlyPeople(nn.Module):
         ## model params
         # position
         self.use_position = cfg.model_params.use_position
-
-        # gaze
-        self.use_gaze = cfg.model_params.use_gaze
-
-        # action
-        self.use_action = cfg.model_params.use_action
 
         # head embedding type
         self.head_embedding_type = cfg.model_params.head_embedding_type
@@ -65,29 +63,16 @@ class JointAttentionEstimatorTransformerDualOnlyPeople(nn.Module):
         self.use_person_scene_jo_att_loss = cfg.exp_params.use_person_scene_jo_att_loss
         self.use_final_jo_att_loss = cfg.exp_params.use_final_jo_att_loss
 
-        embeding_param_num = 0
-        if self.use_position:
-            embeding_param_num += 2
-        if self.use_action:
-            embeding_param_num += 9
-        if self.use_gaze:
-            embeding_param_num += 2
-
-        if self.head_embedding_type == 'liner':
-            self.head_info_feat_embeding = nn.Sequential(
-                nn.Linear(embeding_param_num, self.people_feat_dim),
-            )
-        elif self.head_embedding_type == 'mlp':
-            self.head_info_feat_embeding = nn.Sequential(
-                nn.Linear(embeding_param_num, self.people_feat_dim),
-                nn.ReLU(),
-                nn.Linear(self.people_feat_dim, self.people_feat_dim),
-                nn.ReLU(),
-                nn.Linear(self.people_feat_dim, self.people_feat_dim),
-            )
-        else:
-            print('please use correct head embedding type')
-            sys.exit()
+        self.crop_person_feat_extractor = models.vgg19(pretrained=True)
+        self.crop_person_feat_extractor.classifier = self.crop_person_feat_extractor.classifier[:-1]
+        self.person_feat_encoder = nn.Sequential(
+            nn.Linear(4096, self.people_feat_dim),
+            nn.ReLU(),
+            nn.Dropout(p=0.5),
+        )
+        self.pos_enc_ind_loc_feat = positionalencoding2d(self.people_feat_dim, self.resize_height, self.resize_width)
+        gpus_list = range(cfg.exp_set.gpu_start, cfg.exp_set.gpu_finish+1)
+        self.pos_enc_ind_loc_feat = self.pos_enc_ind_loc_feat.cuda(gpus_list[0])
 
         self.ja_embedding = nn.Parameter(torch.zeros(1, 1, self.people_feat_dim))
         if self.use_people_people_trans:
@@ -256,6 +241,8 @@ class JointAttentionEstimatorTransformerDualOnlyPeople(nn.Module):
         head_xy_map = inp['head_xy_map']
         gaze_xy_map = inp['gaze_xy_map']
         att_inside_flag = inp['att_inside_flag']
+        people_bbox = inp['people_bbox']
+        people_bbox_norm = inp['people_bbox_norm']
 
         # torch.autograd.set_detect_anomaly(True)
         
@@ -264,29 +251,26 @@ class JointAttentionEstimatorTransformerDualOnlyPeople(nn.Module):
 
         # position and action info handing
         head_position = torch.cat([input_feature[:, :, :2]], dim=-1)
-        head_action = torch.cat([input_feature[:, :, 2:]], dim=-1)
-        head_gaze = torch.cat([input_gaze[:, :, :2]], dim=-1)
-
-        if self.use_position and self.use_gaze and self.use_action:
-            head_info_params = torch.cat([head_position, head_gaze, head_action], dim=-1)
-        elif self.use_position and self.use_gaze:
-            head_info_params = torch.cat([head_position, head_gaze], dim=-1)
-        elif self.use_position and self.use_action:
-            head_info_params = torch.cat([head_position, head_action], dim=-1)
-        elif self.use_gaze and self.use_action:
-            head_info_params = torch.cat([head_gaze, head_action], dim=-1)
-        elif self.use_position:
-            head_info_params = torch.cat([head_position], dim=-1)
-        elif self.use_gaze:
-            head_info_params = torch.cat([head_gaze], dim=-1)
-        elif self.use_action:
-            head_info_params = torch.cat([head_action], dim=-1)
-        else:
-            print('no person information')
-            sys.exit()
+        head_info_params = torch.cat([head_position], dim=-1)
 
         # person feature embedding
-        head_info_params_emb = self.head_info_feat_embeding(head_info_params)
+        rgb_img_person = inp['rgb_img_person']
+        batch_size, people_num, img_channel, img_height_person, img_width_person  = rgb_img_person.shape
+        rgb_img_person = rgb_img_person.view(batch_size*people_num, img_channel, img_height_person, img_width_person)
+        crop_person_feat = self.crop_person_feat_extractor(rgb_img_person)
+        crop_person_feat = crop_person_feat.view(batch_size*people_num, -1)
+        ind_app_feat = self.person_feat_encoder(crop_person_feat)
+        ind_app_feat = ind_app_feat.view(batch_size, people_num, self.people_feat_dim)
+
+        people_bbox_norm_x_center = (people_bbox_norm[:, :, 0]+people_bbox_norm[:, :, 2])/2
+        people_bbox_norm_y_center = (people_bbox_norm[:, :, 1]+people_bbox_norm[:, :, 3])/2
+        people_bbox_x_center = people_bbox_norm_x_center.view(batch_size*people_num) * self.resize_width
+        people_bbox_y_center = people_bbox_norm_y_center.view(batch_size*people_num) * self.resize_height
+        pos_enc_ind_loc_feat = self.pos_enc_ind_loc_feat
+        ind_loc_feat = torch.transpose(pos_enc_ind_loc_feat[:, people_bbox_y_center.long(), people_bbox_x_center.long()], 0, 1)
+        ind_loc_feat = ind_loc_feat.view(batch_size, people_num, self.people_feat_dim)
+        head_info_params_emb = ind_app_feat + ind_loc_feat
+
         ja_embedding = self.ja_embedding
         ja_embedding = ja_embedding.expand(self.batch_size, 1, self.people_feat_dim)
         head_info_params_emb = torch.cat([head_info_params_emb, ja_embedding], dim=1)
