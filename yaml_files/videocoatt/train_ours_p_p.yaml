@@ -1,9 +1,7 @@
-data:
+data: 
   name: videocoatt
-  # dataset_dir : data/VideoCoAtt_Dataset
-  dataset_dir : /misc/dl001/dataset/nakatani/VideoCoAtt_Dataset
-  # saliency_dataset_dir : data/deepgaze_output_loader
-  saliency_dataset_dir : /misc/dl001/dataset/nakatani/deepgaze_output_loader
+  dataset_dir : data/VideoCoAtt_Dataset
+  saliency_dataset_dir : data/deepgaze_output_loader
 
 exp_set:
   save_folder: saved_weights
@@ -11,7 +9,6 @@ exp_set:
 
   # wandb_name: videocoatt-dual-people_fc_shallow
   # wandb_name: videocoatt-dual-people_fc_middle
-  wandb_name: videocoatt-dual-people_fc_middle_bbox_GT_gaze_GT
   # wandb_name: videocoatt-dual-people_fc_deep
   # wandb_name: videocoatt-dual-people_deconv_shallow
   # wandb_name: videocoatt-dual-people_deconv_middle
@@ -23,11 +20,6 @@ exp_set:
   # wandb_name: videocoatt-dual-people_field_middle_ind_and_token_ind_based
   # wandb_name: videocoatt-dual-people_field_middle_ind_and_token_token_based
 
-  # wandb_name: videocoatt-dual-people_field_middle_ind_only_bbox_GT_gaze_GT
-  # wandb_name: videocoatt-dual-people_field_middle_token_only_bbox_GT_gaze_GT
-  # wandb_name: videocoatt-dual-people_field_middle_ind_and_token_ind_based_bbox_GT_gaze_GT
-  # wandb_name: videocoatt-dual-people_field_middle_ind_and_token_token_based_bbox_GT_gaze_GT
-
   # wandb_name: videocoatt-dual-people_field_middle_token_only_mha_1
   # wandb_name: videocoatt-dual-people_field_middle_token_only_mha_4
   # wandb_name: videocoatt-dual-people_field_middle_token_only_mha_8
@@ -36,17 +28,8 @@ exp_set:
   # wandb_name: videocoatt-dual-people_field_middle_token_only_enc_3
 
   # wandb_name: videocoatt-dual-people_field_middle_ind_only_bbox_GT_gaze_GT
+  wandb_name: videocoatt-dual-people_field_middle_ind_only_bbox_GT_gaze_GT_ver2
   # wandb_name: videocoatt-dual-people_field_middle_ind_only_bbox_PRED_gaze_PRED
-
-  # wandb_name: videocoatt-dual-people_field_middle_ind_only_bbox_GT_gaze_GT_wo_position
-  # wandb_name: videocoatt-dual-people_field_middle_ind_only_bbox_GT_gaze_GT_wo_gaze
-  # wandb_name: videocoatt-dual-people_field_middle_ind_only_bbox_PRED_gaze_PRED_wo_position
-  # wandb_name: videocoatt-dual-people_field_middle_ind_only_bbox_PRED_gaze_PRED_wo_gaze
-
-  # wandb_name: videocoatt-dual-people_field_middle_token_only_bbox_GT_gaze_GT_wo_action_wo_volley_tuned
-  # wandb_name: videocoatt-dual-people_field_middle_token_only_bbox_GT_gaze_GT_wo_action_wo_volley_tuned_lr_000001
-  # wandb_name: videocoatt-dual-people_field_middle_token_only_bbox_GT_gaze_GT_wo_action_w_volley_tuned
-  # wandb_name: videocoatt-dual-people_field_middle_token_only_bbox_GT_gaze_GT_wo_action_w_volley_tuned_lr_0001
 
   # batch_size: 16
   batch_size: 8
@@ -100,7 +83,7 @@ exp_params:
   # loss : bce
 
   # learning rate
-  lr : 0.00001
+  lr : 0.0001
   # lr : 0.001
 
   # gt gaussian
@@ -109,8 +92,7 @@ exp_params:
   # learning schedule
   nEpochs : 500
   start_iter : 0
-  # snapshots : 100
-  snapshots : 5
+  snapshots : 100
   scheduler_start : 1000
   scheduler_iter : 1100000
 
@@ -141,9 +123,7 @@ exp_params:
 
   use_pretrained_joint_attention_estimator: False
   # use_pretrained_joint_attention_estimator: True
-  # pretrained_joint_attention_estimator_name: pretrain_head_estimator
-  pretrained_joint_attention_estimator_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT_wo_action
-  # pretrained_joint_attention_estimator_name: volleyball-dual-mid_p_p_field_middle_bbox_PRED_gaze_PRED_act_PRED_wo_action
+  pretrained_joint_attention_estimator_name: pretrain_head_estimator
   freeze_joint_attention_estimator: False
   # freeze_joint_attention_estimator: True
 
@@ -186,13 +166,13 @@ model_params:
   # mha_num_heads_people_people : 16
 
   # p_p_estimator_type : fc_shallow
-  p_p_estimator_type : fc_middle
+  # p_p_estimator_type : fc_middle
   # p_p_estimator_type : fc_deep
   # p_p_estimator_type : deconv_shallow
   # p_p_estimator_type : deconv_middle
   # p_p_estimator_type : deconv_deep
   # p_p_estimator_type : field_shallow
-  # p_p_estimator_type : field_middle
+  p_p_estimator_type : field_middle
   # p_p_estimator_type : field_deep  
 
   # p_p_aggregation_type : ind_only

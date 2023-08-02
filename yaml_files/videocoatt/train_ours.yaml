@@ -1,9 +1,7 @@
-data:
+data: 
   name: videocoatt
-  # dataset_dir : data/VideoCoAtt_Dataset
-  dataset_dir : /misc/dl001/dataset/nakatani/VideoCoAtt_Dataset
-  # saliency_dataset_dir : data/deepgaze_output_loader
-  saliency_dataset_dir : /misc/dl001/dataset/nakatani/deepgaze_output_loader
+  dataset_dir : data/VideoCoAtt_Dataset
+  saliency_dataset_dir : data/deepgaze_output_loader
 
 exp_set:
   save_folder: saved_weights
@@ -33,15 +31,8 @@ exp_set:
   # wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_enc_3
 
   # wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_GT
-  # wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_GT_wo_position
-  # wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_GT_wo_gaze
-
-  # wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only
-  # wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_wo_position
-  # wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_wo_gaze
-
-  # wandb_name: videocoatt-p_p_field_deep_p_s_davt_average_fix_token_only_GT
-  wandb_name: videocoatt-p_p_field_deep_p_s_davt_cnn_fix_token_only_GT
+  # wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_GT_ver2
+  wandb_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_GT_ver3
 
   # batch_size: 16
   # batch_size: 8
@@ -52,8 +43,8 @@ exp_set:
   # seed_num: 888
   seed_num: 999
   gpu_mode : True
-  gpu_start : 6
-  gpu_finish : 6
+  gpu_start : 5
+  gpu_finish : 5
 
   resize_height: 320
   resize_width: 480
@@ -65,12 +56,12 @@ exp_params:
   # use_person_person_att_loss : True
   person_person_att_loss_weight : 1
 
-  use_person_person_jo_att_loss : False
-  # use_person_person_jo_att_loss : True
+  # use_person_person_jo_att_loss : False
+  use_person_person_jo_att_loss : True
   person_person_jo_att_loss_weight : 1
 
-  use_person_scene_att_loss : False
-  # use_person_scene_att_loss : True
+  # use_person_scene_att_loss : False
+  use_person_scene_att_loss : True
   person_scene_att_loss_weight : 1
 
   use_person_scene_jo_att_loss : False
@@ -105,7 +96,7 @@ exp_params:
 
   # learning schedule
   # nEpochs : 500
-  nEpochs : 15
+  nEpochs : 20
   start_iter : 0
   snapshots : 100
   # snapshots : 1
@@ -140,11 +131,7 @@ exp_params:
   # use_pretrained_joint_attention_estimator: False
   use_pretrained_joint_attention_estimator: True
   # pretrained_joint_attention_estimator_name: pretrain_head_estimator
-  # pretrained_joint_attention_estimator_name: videocoatt-dual-people_field_middle_token_only_bbox_GT_gaze_GT_wo_position
-  # pretrained_joint_attention_estimator_name: videocoatt-dual-people_field_middle_token_only_bbox_GT_gaze_GT_wo_gaze
-  # pretrained_joint_attention_estimator_name: videocoatt-dual-people_field_middle_token_only_bbox_PRED_gaze_PRED_wo_position
-  # pretrained_joint_attention_estimator_name: videocoatt-dual-people_field_middle_token_only_bbox_PRED_gaze_PRED_wo_gaze
-  pretrained_joint_attention_estimator_name: videocoatt-dual-people_field_middle_token_only_bbox_GT_gaze_GT
+  pretrained_joint_attention_estimator_name: videocoatt-dual-people_field_middle_ind_only_bbox_GT_gaze_GT
   # freeze_joint_attention_estimator: False
   freeze_joint_attention_estimator: True
 
@@ -224,7 +211,7 @@ model_params:
   # use_p_s_estimator_att_inside : True
 
   # fusion_net_type : early
-  fusion_net_type : mid
+  # fusion_net_type : mid
   # fusion_net_type : late
   # fusion_net_type : simple_average
-  # fusion_net_type : scalar_weight
+  fusion_net_type : scalar_weight
