@@ -1,5 +1,10 @@
 # Intro
 
+This is the official repository for the following paper:
+
+Interaction-aware Joint Attention Estimation Using People Attributes, ICCV2023
+(toyota-ti.ac.jp/Lab/Denshi/iim/ukita/selection/ICCV2023-PJAE.html)
+
 ## Environment
 python 3.6.9
 
