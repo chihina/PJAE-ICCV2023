@@ -4,7 +4,7 @@ This is the official repository for the following paper:
 
 Chihiro Nakatani, Hiroaki Kawashima, Norimichi Ukita  
 Interaction-aware Joint Attention Estimation Using People Attributes, ICCV2023  
-([https://toyota-ti.ac.jp/Lab/Denshi/iim/ukita/selection/ICCV2023-PJAE.html](https://www.toyota-ti.ac.jp/Lab/Denshi/iim/ukita/selection/ICCV2023-PJAE.html))
+[https://toyota-ti.ac.jp/Lab/Denshi/iim/ukita/selection/ICCV2023-PJAE.html](https://www.toyota-ti.ac.jp/Lab/Denshi/iim/ukita/selection/ICCV2023-PJAE.html)
 
 ## Environment
 python 3.6.9
