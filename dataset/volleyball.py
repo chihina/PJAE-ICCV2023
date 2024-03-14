@@ -43,12 +43,13 @@ class VolleyBallDataset(Dataset):
 
         # data pack list
         self.feature_list = []
-        self.head_radius_list = []
         self.edge_list = []
         self.gt_bbox = []
         self.gt_bbox_id = []
         self.gt_bbox_resized = []
         self.rgb_path_list = []
+        self.head_radius_list = []
+
 
         self.train_video = [1, 3, 6, 7, 10, 13, 15, 16, 18, 22,
                                    23, 31, 36, 38, 39, 40, 41, 42, 48,
@@ -151,7 +152,9 @@ class VolleyBallDataset(Dataset):
             self.max_num_people = max(self.max_num_people, data_people_num)
 
     def generate_dataset_list(self):
+        vid_cnt = 0
         for video_num in tqdm(sorted(self.use_video_list)):
+            vid_cnt += 1
             gar_iar_ann_path = os.path.join(self.rgb_dataset_dir, str(video_num), 'annotations.txt')
             gar_iar_ann_dic = self.get_gar_iar_ann_dic(gar_iar_ann_path)
             seq_cnt = 0
@@ -174,7 +177,7 @@ class VolleyBallDataset(Dataset):
                     self.dataset_dir = self.dataset_bbox_pred
                 else:
                     print('Employ correct bbox dataset')
-                    sys.exit()                           
+                    sys.exit()           
 
                 # get gt person bbox
                 annotation_path_person = os.path.join(self.sendo_dataset_dir, str(video_num), str(seq_num), f'{seq_num}.txt')
@@ -193,7 +196,7 @@ class VolleyBallDataset(Dataset):
                 else:
                     print('please select correct frame type')
                     sys.exit()
-                
+
                 for img_num in img_num_list:
                     frame_id = (int(img_num) - int(seq_num)) + 20
 
@@ -257,8 +260,10 @@ class VolleyBallDataset(Dataset):
                 # one seq in demo mode
                 if self.wandb_name == 'debug' and seq_cnt > 10:
                     break
-                if self.wandb_name == 'demo' and seq_cnt > 3:
+                if self.wandb_name == 'demo':
                     break
+            if self.wandb_name == 'demo' and vid_cnt > 10:
+                break
 
     def __len__(self):
         return len(self.rgb_path_list)
@@ -285,6 +290,9 @@ class VolleyBallDataset(Dataset):
         head_bbox_tensor = torch.zeros(self.max_num_people, 4)
         att_inside_flag = torch.zeros(self.max_num_people, dtype=torch.bool)
 
+        # crop people images
+        vid_id, seq_id, img_file_name = img_file_path.split('/')[2:]
+        img_id = img_file_name.split('.')[0]
         for head_idx in range(len(self.feature_list[idx])):
             head_x, head_y = map(int, self.feature_list[idx][head_idx][:2])
             head_radius = int(self.head_radius_list[idx][head_idx])
@@ -304,7 +312,6 @@ class VolleyBallDataset(Dataset):
             # transform tensor 
             if self.transforms_head:
                 croped_head = self.transforms_head(croped_head)
-
             head_img[head_idx, :, :, :] = croped_head
             head_feature_tensor[head_idx, :2] = torch.tensor(self.feature_list[idx][head_idx][:2])
             head_feature_tensor[head_idx, 2:11] = torch.tensor(self.feature_list[idx][head_idx][2:11])

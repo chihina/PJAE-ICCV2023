@@ -163,6 +163,7 @@ for iteration, batch in enumerate(valid_data_loader):
 
     # init heatmaps
     num_people = batch['head_img'].shape[1]
+    
     x_axis_map = torch.arange(0, cfg.exp_set.resize_width, device=f'cuda:{gpus_list[0]}').reshape(1, -1)/(cfg.exp_set.resize_width)
     x_axis_map = torch.tile(x_axis_map, (cfg.exp_set.resize_height, 1))
     y_axis_map = torch.arange(0, cfg.exp_set.resize_height, device=f'cuda:{gpus_list[0]}').reshape(-1, 1)/(cfg.exp_set.resize_height)
@@ -186,7 +187,7 @@ for iteration, batch in enumerate(valid_data_loader):
         # move data into gpu
         if cuda:
             for key, val in batch.items():
-                if key != 'rgb_path':
+                if torch.is_tensor(val):
                     batch[key] = Variable(val).cuda(gpus_list[0])
 
         if cfg.model_params.use_position:

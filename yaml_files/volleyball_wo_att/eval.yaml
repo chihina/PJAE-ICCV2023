@@ -2,22 +2,40 @@ data:
   name: volleyball_wo_att
   sendo_dataset_dir : data/volleyball_tracking_annotation
   rgb_dataset_dir : data/videos
-  # annotation_dir : data/vatic_ball_annotation/annotation_data/
   annotation_dir : data/vatic_ball_annotation/annotation_data_sub/
-  dataset_bbox_gt: data/jae_dataset_bbox_gt
-  dataset_bbox_pred: data/jae_dataset_bbox_pred
+  dataset_bbox_gt: data/jae_dataset_bbox_gt_with_person_bbox
+  dataset_bbox_pred: data/jae_dataset_bbox_pred_with_person_bbox
 
 exp_set:
   save_folder : saved_weights
 
   # [ICCV rebuttal]
   # model_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_ind_feat_token_only
-  model_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_ind_feat_token_only_lr_0001_wo_ind_loss
+    
+  # model_name: volleyball_GT_ori_att_vid_token_cross
+  # model_name: volleyball_PRED_ori_att_vid_token_cross
+
+  # model_name: volleyball_GT_ori_att_vid_token_atb
+  # model_name: volleyball_PRED_ori_att_vid_token_atb
+
+  # model_name: volleyball_GT_ori_att_vid_atb
+  # model_name: volleyball_PRED_ori_att_vid_atb
+
+  # model_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT
+  # model_name: volleyball_PRED_ori_att_vid_token_t_enc
+
+  # model_name: volleyball_PRED_ori_att_vid_wo_token
+  # model_name: volleyball_PRED_ori_att_vid_token_t_enc
+  # model_name: volleyball_PRED_ori_att_vid_token_mask_t_enc
+  # model_name: volleyball_PRED_ori_att_vid_token_mask_every2_t_enc
+  # model_name: volleyball_PRED_ori_att_vid_token_mask_mid1_t_enc
+
+  model_name: volleyball-isa_bbox_PRED_gaze_PRED_action_PRED_vid
 
   seed_num : 777
   gpu_mode : True
-  gpu_start : 5
-  gpu_finish : 5
+  gpu_start : 7
+  gpu_finish : 7
   num_workers : 1
   batch_size : 1
   wandb_name : test
@@ -25,8 +43,16 @@ exp_set:
   mode: test
   
 exp_params:
-  use_frame_type: mid
+  # use_frame_type: mid
   # use_frame_type: all
 
-  bbox_types: GT
-  # bbox_types: PRED
+  # bbox_types: GT
+  bbox_types: PRED
+  
+  # action_types: GT
+  action_types: PRED
+  
+  # gaze_types: GT
+  gaze_types: PRED
+
+  use_blured_img: False

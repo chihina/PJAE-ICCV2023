@@ -2,7 +2,7 @@ data:
   name: volleyball
   sendo_dataset_dir : data/volleyball_tracking_annotation
   rgb_dataset_dir : data/videos
-  annotation_dir : data/vatic_ball_annotation/annotation_data/
+  annotation_dir : data/vatic_ball_annotation/annotation_data_sub/
   dataset_bbox_gt: data/jae_dataset_bbox_gt
   dataset_bbox_pred: data/jae_dataset_bbox_pred
 
@@ -24,10 +24,12 @@ exp_set:
   # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_PRED_gaze_PRED_act_PRED_weight_fusion_fine_token_only
   # model_name: volleyball-dual-mid_p_p_field_middle_p_s_davt_bbox_GT_gaze_GT_act_GT_weight_fusion_fine_token_only
 
+  model_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_gaze_GT_act_GT
+
   seed_num : 777
   gpu_mode : True
-  gpu_start : 0
-  gpu_finish : 0
+  gpu_start : 6
+  gpu_finish : 6
   num_workers : 1
   batch_size : 1
   wandb_name : test
@@ -38,14 +40,14 @@ exp_params:
   use_frame_type: mid
   # use_frame_type: all
 
-  bbox_types: GT
-  # bbox_types: PRED
+  # bbox_types: GT
+  bbox_types: PRED
   
-  action_types: GT
-  # action_types: PRED
+  # action_types: GT
+  action_types: PRED
   
-  gaze_types: GT
-  # gaze_types: PRED
+  # gaze_types: GT
+  gaze_types: PRED
 
   # use_action: True
   # use_position: True

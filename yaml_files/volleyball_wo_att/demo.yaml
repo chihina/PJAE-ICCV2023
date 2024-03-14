@@ -3,8 +3,8 @@ data:
   sendo_dataset_dir : data/volleyball_tracking_annotation
   rgb_dataset_dir : data/videos
   annotation_dir : data/vatic_ball_annotation/annotation_data_sub/
-  dataset_bbox_gt: data/jae_dataset_bbox_gt
-  dataset_bbox_pred: data/jae_dataset_bbox_pred
+  dataset_bbox_gt: data/jae_dataset_bbox_gt_with_person_bbox
+  dataset_bbox_pred: data/jae_dataset_bbox_pred_with_person_bbox
 
 exp_set:
   save_folder : saved_weights
@@ -12,7 +12,20 @@ exp_set:
   # model_name: volleyball-selection
 
   # [ICCV rebuttal]
-  model_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_ind_feat_token_only
+  # model_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_ind_feat_token_only
+
+  # model_name: volleyball-isa_bbox_PRED_gaze_PRED_action_PRED_vid
+  # model_name: volleyball_PRED_DAVT_only
+  # model_name: volleyball_PRED_DAVT_only_lr_e2_modified
+  # model_name: volleyball_PRED_DAVT_only_lr_e3_modified
+  # model_name: volleyball_PRED_DAVT_only_lr_e3_modified_wo_pretrain
+  # model_name: volleyball_PRED_DAVT_only_lr_e3_modified_init
+  # model_name: volleyball_PRED_DAVT_only_lr_e3_modified_videoatttarget
+  # model_name: volleyball_PRED_ori_att_vid_token_mask_random25_t_enc_DAVT_scalar_fusion
+  # model_name: volleyball_PRED_DAVT_only_lr_e3
+  model_name: volleyball_PRED_DAVT_only_lr_e3_demo
+  # model_name: volleyball_PRED_DAVT_only_lr_e3_videoatttarget
+  # model_name: volleyball_PRED_ori_att_vid_token_mask_random25_t_enc
 
   seed_num : 777
   gpu_mode : True
@@ -26,11 +39,17 @@ exp_set:
   mode: test
 
 exp_params:
-  use_frame_type: mid
+  # use_frame_type: mid
   # use_frame_type: all
 
-  bbox_types: GT
-  # bbox_types: PRED
+  # bbox_types: GT
+  bbox_types: PRED
+
+  # action_types: GT
+  action_types: PRED
+
+  # gaze_types: GT
+  gaze_types: PRED
 
   # vis_dist_error: False
   vis_dist_error: True

@@ -3,24 +3,42 @@ data:
   sendo_dataset_dir : data/volleyball_tracking_annotation
   rgb_dataset_dir : data/videos
   annotation_dir : data/vatic_ball_annotation/annotation_data_sub/
-  dataset_bbox_gt: data/jae_dataset_bbox_gt
-  dataset_bbox_pred: data/jae_dataset_bbox_pred
+  dataset_bbox_gt: data/jae_dataset_bbox_gt_with_person_bbox
+  dataset_bbox_pred: data/jae_dataset_bbox_pred_with_person_bbox
   all_bbox_gt: data/
 
 exp_set:
   save_folder: saved_weights
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_ind_feat_token_only
-  # wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_ind_feat_token_only_lr_0001
-  wandb_name: volleyball-dual-mid_p_p_field_middle_bbox_GT_ind_feat_token_only_lr_0001_wo_ind_loss
+
+  # wandb_name: volleyball_GT_ori_att_vid_token_t_enc
+  # wandb_name: volleyball_GT_ori_att_vid_token_mask_t_enc
+
+  # wandb_name: volleyball_PRED_ori_att_vid_wo_token
+  # wandb_name: volleyball_PRED_ori_att_vid_token_t_enc
+  # wandb_name: volleyball_PRED_ori_att_vid_token_mask_t_enc
+  # wandb_name: volleyball_PRED_ori_att_vid_token_mask_every2_t_enc
+  # wandb_name: volleyball_PRED_ori_att_vid_token_mask_mid1_t_enc
+  # wandb_name: volleyball_PRED_ori_att_vid_token_mask_random10_t_enc
+  # wandb_name: volleyball_PRED_ori_att_vid_token_mask_random25_t_enc
+  # wandb_name: volleyball_PRED_ori_att_vid_token_mask_random75_t_enc
+  # wandb_name: volleyball_PRED_ori_att_vid_token_mask_random90_t_enc
+  # wandb_name: volleyball_PRED_ori_att_vid_token_mask_every2_start_random_t_enc
+  # wandb_name: volleyball_PRED_ori_att_vid_token_mask_mid2_start_random_t_enc
+  # wandb_name: volleyball_PRED_ori_att_vid_token_mask_mid3_start_random_t_enc
+  # wandb_name: volleyball_PRED_ori_att_vid_token_mask_mid4_start_random_t_enc
+  # wandb_name: volleyball_PRED_ori_att_vid_token_mask_mid3_start_random_t_enc_cont
+  wandb_name: volleyball_PRED_ori_att_vid_token_mask_mid4_start_random_t_enc_cont
+
   wandb_log : True
 
   # batch_size: 8
+  # batch_size: 4
   batch_size: 2
   num_workers: 16
   seed_num: 777
   gpu_mode : True
-  gpu_start : 3
-  gpu_finish : 3
+  gpu_start : 4
+  gpu_finish : 4
 
   resize_height : 320
   resize_width : 640
@@ -51,17 +69,24 @@ exp_params:
   # use_final_jo_att_loss : True
   final_jo_att_loss_weight : 1
 
-  use_frame_type: mid
-  # use_frame_type: all
+  # use_frame_type: mid
+  use_frame_type: all
 
-  bbox_types: GT
-  # bbox_types: PRED
+  # bbox_types: GT
+  bbox_types: PRED
+
+  # gaze_types: GT
+  gaze_types: PRED
+
+  # action_types: GT
+  action_types: PRED
 
   # loss function
   loss : mse
   # loss : bce
 
   # learning rate
+  # lr : 0.00001
   lr : 0.0001
   # lr : 0.001
   # lr : 0.01
@@ -69,10 +94,8 @@ exp_params:
   
   # gt gaussian
   # gaussian_sigma: 40
-  # gaussian_sigma: 20
   gaussian_sigma: 10
   # gaussian_sigma: 5
-  # gaussian_sigma: 1
 
   # learning schedule
   nEpochs : 500
@@ -96,31 +119,37 @@ exp_params:
   freeze_saliency_extractor: False
   # freeze_saliency_extractor: True
 
-  use_pretrained_joint_attention_estimator: False
-  # use_pretrained_joint_attention_estimator: True
+  # use_pretrained_joint_attention_estimator: False
+  use_pretrained_joint_attention_estimator: True
   # pretrained_joint_attention_estimator_name: pretrain_head_estimator
-  pretrained_joint_attention_estimator_name: videocoatt-dual-people_field_middle_token_only_bbox_GT_gaze_GT
   # pretrained_joint_attention_estimator_name: videocoatt-dual-people_field_middle_token_only_bbox
+  # pretrained_joint_attention_estimator_name: volleyball_PRED_ori_att_vid_token_mask_mid3_start_random_t_enc
+  pretrained_joint_attention_estimator_name: volleyball_PRED_ori_att_vid_token_mask_mid4_start_random_t_enc
   freeze_joint_attention_estimator: False
   # freeze_joint_attention_estimator: True
 
 model_params:
   model_type: ja_transformer_dual_only_people_img_feat
 
-  # Position
   # use_position : False
   use_position : True
 
+  # use_gaze : False
+  use_gaze : True
+
+  # use_action : False
+  use_action : True
+
   # person-person transformer
   # people_feat_dim : 16
-  # people_feat_dim : 32
+  # people_feat_dim : 64
   people_feat_dim : 128
 
   # use_people_people_trans: False
   use_people_people_trans: True
 
-  # people_people_trans_enc_num : 1
-  people_people_trans_enc_num : 2
+  people_people_trans_enc_num : 1
+  # people_people_trans_enc_num : 2
   # people_people_trans_enc_num : 3
   # people_people_trans_enc_num : 4
 
@@ -165,3 +194,45 @@ model_params:
   # p_s_estimator_cnn_pretrain : True
   use_p_s_estimator_att_inside : False
   # use_p_s_estimator_att_inside : True
+
+  # attribute prediction loss
+  use_attribute_loss_type : original
+  # use_attribute_loss_type : interm
+  # use_attribute_loss_type : final
+
+  # attribute loss (action)
+  use_action_loss : True
+  # use_action_loss : False
+  use_action_class_num : 9
+  # action_loss_coef : 0.01
+  # action_loss_coef : 0.001
+  action_loss_coef : 0.0001
+
+  # attribute loss (gaze)
+  use_gaze_loss : True
+  # use_gaze_loss : False
+  gaze_loss_type : head
+  # gaze_loss_type : whole
+  # gaze_loss_coef : 0.01
+  gaze_loss_coef : 0.001
+
+  use_ind_feat_crop : roi_multi
+  # use_ind_feat_crop : crop_single
+
+  # temporal fusion type
+  # temporal_fusion_type : empty
+  # temporal_fusion_type : token
+  # temporal_fusion_type : token_mask
+  # temporal_fusion_type : token_mask_every2
+  # temporal_fusion_type : token_mask_mid1
+  # temporal_fusion_type : token_mask_mid2
+  # temporal_fusion_type : token_mask_mid3
+  temporal_fusion_type : token_mask_mid4
+  # temporal_fusion_type : token_mask_random10
+  # temporal_fusion_type : token_mask_random25
+  # temporal_fusion_type : token_mask_random75
+  # temporal_fusion_type : token_mask_random90
+  mha_num_heads_ja_token : 2
+  ja_token_trans_enc_num : 1
+  mha_num_heads_atb : 2
+  atb_trans_enc_num : 1

@@ -21,7 +21,8 @@ exp_set:
   # model_name: videocoatt-p_p_field_deep_p_s_davt_simple_average
   # model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fine
 
-  model_name: videocoatt-dual-people_field_middle
+  # model_name: videocoatt-dual-people_field_middle
+  model_name: videocoatt-p_p_field_deep_p_s_davt_scalar_weight_fix_token_only_GT
 
   seed_num : 777
   gpu_mode : True
@@ -36,15 +37,15 @@ exp_set:
   # mode : train
 
 exp_params:
-  test_heads_type : det
-  # test_heads_type : gt
+  # test_heads_type : det
+  test_heads_type : gt
   det_heads_model : det_heads
   test_heads_conf : 0.6
-  use_gt_gaze : False
-  # use_gt_gaze : True
+  # use_gt_gaze : False
+  use_gt_gaze : True
 
-  use_frame_type: mid
-  # use_frame_type: all
+  # use_frame_type: mid
+  use_frame_type: all
 
   # vis_dist_error: False
   vis_dist_error: True

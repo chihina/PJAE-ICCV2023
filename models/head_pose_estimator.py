@@ -34,15 +34,16 @@ class HeadPoseEstimatorResnet(nn.Module):
         head_img = inp['head_img']
 
         # head feature extraction
-        batch_size, people_num, channel_num, img_height, img_width = head_img.shape
-        head_img = head_img.view(batch_size*people_num, channel_num, img_height, img_width)
+        batch_size, frame_num, people_num, channel_num, img_height, img_width = head_img.shape
+        head_img = head_img.view(batch_size*frame_num*people_num, channel_num, img_height, img_width)
+        
         head_feature = self.feature_extractor(head_img)
         head_feature = head_feature.mean(dim=(-2, -1))
 
         # head pose estimation
         head_vector = self.head_pose_estimator(head_feature)
-        head_vector = head_vector.view(batch_size, people_num, -1)
-        head_feature = head_feature.view(batch_size, people_num, -1)
+        head_vector = head_vector.view(batch_size, frame_num, people_num, -1)
+        head_feature = head_feature.view(batch_size, frame_num, people_num, -1)
 
         # normarize head pose
         head_vector = F.normalize(head_vector, dim=-1)
@@ -67,8 +68,8 @@ class HeadPoseEstimatorResnet(nn.Module):
             loss_head_coef = 0
 
         # calculate loss
-        head_vector_no_pad = head_vector[:, :, 0:2]*att_inside_flag[:, :, None]
-        head_vector_gt_no_pad = head_vector_gt[:, :, 0:2]*att_inside_flag[:, :, None]
+        head_vector_no_pad = head_vector[:, :, :, 0:2]*att_inside_flag[:, :, :, None]
+        head_vector_gt_no_pad = head_vector_gt[:, :, :, 0:2]*att_inside_flag[:, :, :, None]
         head_num_sum_no_pad = torch.sum(att_inside_flag)
         loss_head = self.loss_func_head_pose(head_vector_no_pad, head_vector_gt_no_pad)
         loss_head = loss_head/head_num_sum_no_pad

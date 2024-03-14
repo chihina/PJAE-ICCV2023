@@ -9,7 +9,6 @@ from torch.utils.data import DataLoader
 # general module
 import argparse
 import sys
-import os
 import shutil
 import yaml
 import numpy as np
@@ -20,15 +19,23 @@ from collections import OrderedDict
 import warnings
 warnings.filterwarnings("ignore") 
 
-# original module
-from dataset.dataset_selector import dataset_generator
-from models.model_selector import model_generator
-
 parser = argparse.ArgumentParser(description="parameters for training")
 parser.add_argument("config", type=str, help="configuration yaml file path")
 args = parser.parse_args()
 cfg = Dict(yaml.safe_load(open(args.config)))
 print(cfg)
+
+import os
+print("===> Setting gpu numbers")
+# update gpu number for roi_align
+os.environ['CUDA_VISIBLE_DEVICES'] = f'{cfg.exp_set.gpu_start}'
+cfg.exp_set.gpu_start, cfg.exp_set.gpu_finish = 0, 0
+gpus_list = range(cfg.exp_set.gpu_start, cfg.exp_set.gpu_finish+1)
+cuda = cfg.exp_set.gpu_mode
+
+# original module
+from dataset.dataset_selector import dataset_generator
+from models.model_selector import model_generator
 
 def process_epoch(epoch, data_set, mode):
     data_length = len(data_set)
@@ -62,7 +69,7 @@ def process_epoch(epoch, data_set, mode):
         optimizer_fusion.zero_grad()
 
         # init heatmaps
-        cfg.exp_set.batch_size, num_people = batch['head_img'].shape[0:2]
+        cfg.exp_set.batch_size, frame_num, num_people = batch['head_img'].shape[0:3]
         x_axis_map = torch.arange(0, cfg.exp_set.resize_width, device=f'cuda:{gpus_list[0]}').reshape(1, -1)/(cfg.exp_set.resize_width)
         x_axis_map = torch.tile(x_axis_map, (cfg.exp_set.resize_height, 1))
         y_axis_map = torch.arange(0, cfg.exp_set.resize_height, device=f'cuda:{gpus_list[0]}').reshape(-1, 1)/(cfg.exp_set.resize_height)
@@ -85,7 +92,7 @@ def process_epoch(epoch, data_set, mode):
         # move data into gpu
         if cuda:
             for key, val in batch.items():
-                if key != 'rgb_path':
+                if torch.is_tensor(val):
                     batch[key] = Variable(val).cuda(gpus_list[0])
 
         head_feature = batch['head_feature']
@@ -93,7 +100,7 @@ def process_epoch(epoch, data_set, mode):
             input_feature = head_feature.clone() 
         else:
             input_feature = head_feature.clone()
-            input_feature[:, :, :2] = input_feature[:, :, :2] * 0
+            input_feature[:, :, :, :2] = input_feature[:, :, :, :2] * 0
         batch['input_feature'] = input_feature
 
         # head pose estimation
@@ -217,10 +224,6 @@ if not os.path.exists(saved_weights_dir):
     os.makedirs(saved_weights_dir)
 shutil.copy(args.config, os.path.join(saved_weights_dir, args.config.split('/')[-1]))
 
-print("===> Setting gpu numbers")
-cuda = cfg.exp_set.gpu_mode
-gpus_list = range(cfg.exp_set.gpu_start, cfg.exp_set.gpu_finish+1)
-
 print("===> Loading datasets")
 train_set = dataset_generator(cfg, 'train')
 
@@ -254,7 +257,19 @@ if cfg.exp_params.use_pretrained_saliency_extractor:
     print("===> Load pretrained model (saliecny extractor)")
     model_name = cfg.exp_params.pretrained_saliency_extractor_name
     if cfg.model_params.p_s_estimator_type == 'davt' and cfg.exp_params.pretrained_saliency_extractor_name == 'pretrained_scene_extractor_davt':
-        model_weight_path = os.path.join(cfg.exp_params.pretrained_models_dir, cfg.data.name, model_name, "model_demo.pt")
+        if cfg.exp_params.pretrained_saliecny_type == 'demo':
+            model_weight_path = os.path.join(cfg.exp_params.pretrained_models_dir, cfg.data.name, model_name, "model_demo.pt")
+        elif cfg.exp_params.pretrained_saliecny_type == 'gazefollow':
+            model_weight_path = os.path.join(cfg.exp_params.pretrained_models_dir, cfg.data.name, model_name, "model_gazefollow.pt")
+        elif cfg.exp_params.pretrained_saliecny_type == 'videoatttarget':
+            model_weight_path = os.path.join(cfg.exp_params.pretrained_models_dir, cfg.data.name, model_name, "model_videoatttarget.pt")
+        elif cfg.exp_params.pretrained_saliecny_type == 'init':
+            model_weight_path = os.path.join(cfg.exp_params.pretrained_models_dir, cfg.data.name, model_name, "initial_weights_for_temporal_training.pt")
+        else:
+            assert False, "Please check the pretrained saliency type"
+        print(f"Load pretrained model (saliency extractor) : {model_weight_path}")
+    elif cfg.model_params.p_s_estimator_type == 'isa':
+        model_weight_path = os.path.join(cfg.exp_params.pretrained_models_dir, cfg.data.name, model_name, "model_gaussian_best.pth.tar")
     else:
         model_weight_path = os.path.join(cfg.exp_params.pretrained_models_dir, cfg.data.name, model_name, "model_saliency_best.pth.tar")
     model_saliency_dict = model_saliency.state_dict()
@@ -327,12 +342,13 @@ for epoch in range(cfg.exp_params.start_iter, cfg.exp_params.nEpochs + 1):
     scheduler_saliency.step()
     scheduler_fusion.step()
 
-    current_val_loss = process_epoch(epoch, validation_data_loader, 'valid')
+    with torch.no_grad():
+        current_val_loss = process_epoch(epoch, validation_data_loader, 'valid')
 
-    if current_val_loss < best_loss:
-        best_loss = current_val_loss
-        best_checkpoint(epoch+1)
-        print("Save Best Loss : {}".format(best_loss))
+        if current_val_loss < best_loss:
+            best_loss = current_val_loss
+            best_checkpoint(epoch+1)
+            print("Save Best Loss : {}".format(best_loss))
 
-    if (epoch+1) % (cfg.exp_params.snapshots) == 0:
-        checkpoint(epoch+1)
+        if (epoch+1) % (cfg.exp_params.snapshots) == 0:
+            checkpoint(epoch+1)

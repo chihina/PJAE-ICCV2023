@@ -244,9 +244,6 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
         head_xy_map = inp['head_xy_map']
         gaze_xy_map = inp['gaze_xy_map']
         att_inside_flag = inp['att_inside_flag']
-
-        # torch.autograd.set_detect_anomaly(True)
-        
         # get usuful variable
         self.batch_size, people_num, _, _, _ = xy_axis_map.shape
 
@@ -440,6 +437,9 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
         gt_box_id = inp['gt_box_id']
         att_inside_flag = inp['att_inside_flag']
 
+        # pack loss
+        loss_set = {}
+
         # unpack data (output)
         person_person_attention_heatmap = out['person_person_attention_heatmap']
         person_person_joint_attention_heatmap = out['person_person_joint_attention_heatmap']
@@ -529,9 +529,6 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
         # loss_final_jo_att = self.loss_func_hm_mean(final_joint_attention_heatmap.float(), img_gt_joint_attention.float())
         # loss_final_jo_att = use_final_jo_att_coef * loss_final_jo_att
         # print('loss_final_jo_att', loss_final_jo_att)
-
-        # pack loss
-        loss_set = {}
         loss_set['loss_p_p_att'] = loss_p_p_att
         loss_set['loss_p_p_jo_att'] = loss_p_p_jo_att
         loss_set['loss_p_s_att'] = loss_p_s_att

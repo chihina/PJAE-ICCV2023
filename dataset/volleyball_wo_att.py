@@ -28,24 +28,42 @@ class VolleyBallDatasetWithoutAtt(Dataset):
         self.mode = mode
         self.resize_width = cfg.exp_set.resize_width
         self.resize_height = cfg.exp_set.resize_height
-        self.resize_head_height = cfg.exp_set.resize_head_height
         self.resize_head_width = cfg.exp_set.resize_head_width
+        self.resize_head_height = cfg.exp_set.resize_head_height
         self.resize_height_person = cfg.exp_set.resize_height_person
         self.resize_width_person = cfg.exp_set.resize_width_person
 
         # exp params
         self.use_frame_type = cfg.exp_params.use_frame_type
         self.bbox_types = cfg.exp_params.bbox_types
+        self.action_types = cfg.exp_params.action_types
         self.gaussian_sigma_head = cfg.exp_params.gaussian_sigma
         self.pass_winpoint = True
         self.use_blured_img = cfg.exp_params.use_blured_img
+
+        # model params
+        self.use_ind_feat_crop = 'crop_single'
+        if 'use_ind_feat_crop' in cfg.model_params:
+            self.use_ind_feat_crop = cfg.model_params.use_ind_feat_crop
+        self.use_attribute_loss_type = cfg.model_params.use_attribute_loss_type
 
         # data pack list
         self.gt_bbox = []
         self.gt_bbox_id = []
         self.gt_bbox_resized = []
         self.rgb_path_list = []
+        self.head_radius_list = []
+        self.feature_list = []
         self.person_bbox_dic = {}
+        self.person_action_list = ['blocking', 'digging', 'falling', 'jumping', 'moving',
+                                'setting', 'spiking', 'standing', 'waiting']
+        self.data_id_list = []
+        self.feature_dic = {}
+        self.gt_bbox_dic = {}
+        self.gt_bbox_id_dic = {}
+        self.gt_bbox_resized_dic = {}
+        self.rgb_path_dic = {}
+        self.head_radius_dic = {}
 
         self.train_video = [1, 3, 6, 7, 10, 13, 15, 16, 18, 22,
                                    23, 31, 36, 38, 39, 40, 41, 42, 48,
@@ -73,6 +91,16 @@ class VolleyBallDatasetWithoutAtt(Dataset):
         # set maximum number of people
         self.max_num_people = 0
         self.set_max_num_people()
+
+        self.transforms_head = transforms.Compose(
+            [
+                transforms.Resize((self.resize_head_height, self.resize_head_width)),
+                transforms.ToTensor(),
+                transforms.Normalize(
+                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                ),
+            ]
+        )
 
         if self.use_blured_img:
             self.transforms_rgb = transforms.Compose(
@@ -143,10 +171,16 @@ class VolleyBallDatasetWithoutAtt(Dataset):
 
     # set maximum number of people
     def set_max_num_people(self):
-        for annotated_bbox in self.person_bbox_dic.values():
-            for annotated_bbox_frame in annotated_bbox.values():
-                data_people_num = len(annotated_bbox_frame.keys())
-                self.max_num_people = max(self.max_num_people, data_people_num)
+        for data_idx in range(len(self.feature_list)):
+            data_people_num = len(self.feature_list[data_idx])
+            self.max_num_people = max(self.max_num_people, data_people_num)
+
+    # set maximum number of people
+    # def set_max_num_people(self):
+    #     for annotated_bbox in self.person_bbox_dic.values():
+    #         for annotated_bbox_frame in annotated_bbox.values():
+    #             data_people_num = len(annotated_bbox_frame.keys())
+    #             self.max_num_people = max(self.max_num_people, data_people_num)
 
     def generate_dataset_list(self):
         for video_num in tqdm(sorted(self.use_video_list)):
@@ -172,27 +206,37 @@ class VolleyBallDatasetWithoutAtt(Dataset):
                     self.dataset_dir = self.dataset_bbox_pred
                 else:
                     print('Employ correct bbox dataset')
-                    sys.exit()                           
-
-                # get gt person bbox
-                annotation_path_person = os.path.join(self.sendo_dataset_dir, str(video_num), str(seq_num), f'{seq_num}.txt')
-                annotated_bbox = self.get_person_bbox_from_txt(annotation_path_person)
-                self.person_bbox_dic[f'{video_num}_{seq_num}'] = annotated_bbox
+                    sys.exit()
 
                 # get gt ball bbox
                 annotation_path = os.path.join(self.annotation_dir, f'volleyball_{video_num}_{seq_num}_ver3.csv')
                 bbox_array, bbox_flag_array = self.read_ball_bbox_from_csv(annotation_path)
+                # if annotation is nothing
+                if bbox_array.shape[0] == 0:
+                    continue
+
+                # get json file numbers
+                if len(os.listdir(os.path.join(self.rgb_dataset_dir, str(video_num), str(seq_num)))) == 0:
+                    continue  
 
                 if self.use_frame_type == 'mid':
                     img_num_list = [seq_num]
                     # print('=== Employ mid frames ===')
                 elif self.use_frame_type == 'all':
-                    img_num_list = sorted(annotated_bbox.keys())
+                    img_num_list = [str(int(seq_num)+diff) for diff in range(-4, 6)]
                     # print('=== Employ all frames ===')
                 else:
                     print('please select correct frame type')
                     sys.exit()
-                
+
+                self.person_bbox_dic[f'{video_num}_{seq_num}'] = {}
+                self.feature_dic[f'{video_num}_{seq_num}'] = {}
+                self.gt_bbox_dic[f'{video_num}_{seq_num}'] = {}
+                self.gt_bbox_id_dic[f'{video_num}_{seq_num}'] = {}
+                self.gt_bbox_resized_dic[f'{video_num}_{seq_num}'] = {}
+                self.rgb_path_dic[f'{video_num}_{seq_num}'] = {}
+                self.head_radius_dic[f'{video_num}_{seq_num}'] = {}
+                self.data_id_list.append(f'{video_num}_{seq_num}')
                 for img_num in img_num_list:
                     frame_id = (int(img_num) - int(seq_num)) + 20
 
@@ -200,24 +244,67 @@ class VolleyBallDatasetWithoutAtt(Dataset):
                     rgb_img_file_path = os.path.join(self.rgb_dataset_dir, str(video_num), str(seq_num), f'{img_num}.jpg')
                     img_width, img_height = Image.open(rgb_img_file_path).size
 
-                    # if annotation dataset is nothing
-                    if bbox_array.shape[0] == 0:
-                        continue
                     ball_bbox = self.get_ball_bbox_from_csv(bbox_array, frame_id)
                     if bbox_flag_array[frame_id, 0] == 1:
                         continue
 
-                    self.gt_bbox.append(ball_bbox)
+                    # read json file
+                    inputs_file_path = os.path.join(self.dataset_dir, str(video_num), str(seq_num), f'{img_num}.json')
+                    with open(inputs_file_path, 'r') as f:
+                        people_info = json.load(f)
 
+                    self.feature_list_img = []
+                    self.head_radius_img = []
+                    self.person_bbox_img = []
+
+                    # read each person data
+                    for idx, person_info in people_info.items():
+                        head_id = float(person_info['person_idx'])
+                        head_x = float(person_info['head_x_center'])
+                        head_y = float(person_info['head_y_center'])
+                        head_radius = float(person_info['head_radius'])
+                        head_pose_x = float(person_info['gaze_x'])
+                        head_pose_y = float(person_info['gaze_y'])
+
+                        person_x_min = float(person_info['person_x_min'])
+                        person_y_min = float(person_info['person_y_min'])
+                        person_x_max = float(person_info['person_x_max'])
+                        person_y_max = float(person_info['person_y_max'])
+
+                        feature_list_img_item = [head_x, head_y]
+
+                        if self.action_types == 'GT':
+                            iar_label = float(person_info['action_num'])
+                            feature_list_img_item += [iar_idx == int(iar_label) for iar_idx in range(9)]
+                        elif self.action_types == 'PRED':
+                            iar_label = float(person_info['pred_action_num'])
+                            feature_list_img_item += [iar_idx == int(iar_label) for iar_idx in range(9)]
+                        else:
+                            print('please select correct action types')
+                            sys.exit()
+
+                        self.feature_list_img.append(feature_list_img_item)
+                        self.head_radius_img.append(head_radius)
+                        self.person_bbox_img.append([person_x_min, person_y_min, person_x_max, person_y_max])
+
+                    self.gt_bbox_dic[f'{video_num}_{seq_num}'][img_num] = ball_bbox
                     x_min, y_min, x_max, y_max = map(int, ball_bbox)
                     x_min, x_max = map(lambda x: int(x*self.resize_width/img_width), [x_min, x_max])
                     y_min, y_max = map(lambda x: int(x*self.resize_height/img_height), [y_min, y_max])
                     gt_box = np.array([x_min, y_min, x_max, y_max])
-                    gt_bbox_idx = np.arange(len(annotated_bbox[img_num].keys())).reshape(-1, 1)
-
+                    gt_bbox_idx = np.arange(len(self.feature_list_img)).reshape(-1, 1)
                     self.gt_bbox_id.append(gt_bbox_idx)
                     self.gt_bbox_resized.append(gt_box)
                     self.rgb_path_list.append(rgb_img_file_path)
+                    self.head_radius_list.append(self.head_radius_img)
+                    self.feature_list.append(self.feature_list_img)
+
+                    self.gt_bbox_id_dic[f'{video_num}_{seq_num}'][img_num] = gt_bbox_idx
+                    self.gt_bbox_resized_dic[f'{video_num}_{seq_num}'][img_num] = gt_box
+                    self.rgb_path_dic[f'{video_num}_{seq_num}'][img_num] = rgb_img_file_path
+                    self.head_radius_dic[f'{video_num}_{seq_num}'][img_num] = self.head_radius_img
+                    self.person_bbox_dic[f'{video_num}_{seq_num}'][img_num] = self.person_bbox_img
+                    self.feature_dic[f'{video_num}_{seq_num}'][img_num] = self.feature_list_img
 
                 # one seq in demo mode
                 if self.wandb_name == 'debug' and seq_cnt > 10:
@@ -226,91 +313,143 @@ class VolleyBallDatasetWithoutAtt(Dataset):
                     break
 
     def __len__(self):
-        return len(self.rgb_path_list)
+        return len(self.data_id_list)
 
     def __getitem__(self, idx):
+        data_id = self.data_id_list[idx]
+        video_num, seq_num = data_id.split('_')
+        seq_length = len(self.rgb_path_dic[f'{video_num}_{seq_num}'])
 
-        img_file_path = self.rgb_path_list[idx]
-        img = Image.open(img_file_path)
-        img_width, img_height = img.size
+        head_img = torch.zeros(seq_length, self.max_num_people, 3, self.resize_head_height, self.resize_head_width)
+        head_vector_gt_tensor = torch.zeros(seq_length, self.max_num_people, 2)
+        head_feature_tensor = torch.zeros(seq_length, self.max_num_people, 2+9)
+        head_bbox_tensor = torch.zeros(seq_length, self.max_num_people, 4)
+        att_inside_flag_tensor = torch.zeros(seq_length, self.max_num_people, dtype=torch.bool)
+        people_bbox_tensor = torch.zeros(seq_length, self.max_num_people, 4)
+        people_bbox_norm_tensor = torch.zeros(seq_length, self.max_num_people, 4)
+        img_gt_tensor = torch.zeros(seq_length, self.max_num_people, self.resize_height, self.resize_width)
+        img_tensor = torch.zeros(seq_length, 3, self.resize_height, self.resize_width)
+        img_wo_norm_tensor = torch.zeros(seq_length, 3, 720, 1280)
+        gt_box_tensor = torch.zeros(seq_length, self.max_num_people, 4)
+        gt_box_id_tensor = torch.zeros(seq_length, self.max_num_people, 1, dtype=torch.long)
 
-        bbox = self.gt_bbox[idx]
-        gt_box = np.array(bbox)
-        img_gt = self.load_gt_imgs_ball(img_width, img_height, bbox, self.gaussian_sigma_head)
-        x_min, y_min, x_max, y_max = map(int, gt_box)
-        x_mid, y_mid = (x_min+x_max)/2, (y_min+y_max)/2
-        gt_box_expand = gt_box[None, :]
-        gt_box_expand = np.tile(gt_box_expand, (self.max_num_people, 1))
-        gt_box_expand[:, ::2] /= img_width
-        gt_box_expand[:, 1::2] /= img_height
+        if self.use_ind_feat_crop == 'crop_single':
+            img_person_tensor = torch.zeros(seq_length, self.max_num_people, 3, self.resize_height_person, self.resize_width_person)
+        
+        for img_idx, img_num in enumerate(self.rgb_path_dic[f'{video_num}_{seq_num}'].keys()):
+            img_file_path = self.rgb_path_dic[f'{video_num}_{seq_num}'][img_num]
+            img = Image.open(img_file_path)
+            img_width, img_height = img.size
 
-        head_img = torch.zeros(self.max_num_people, 3, self.resize_head_height, self.resize_head_width)
-        head_vector_gt_tensor = torch.zeros(self.max_num_people, 2)
-        head_feature_tensor = torch.zeros(self.max_num_people, 2+9)
-        head_bbox_tensor = torch.zeros(self.max_num_people, 4)
-        att_inside_flag = torch.zeros(self.max_num_people, dtype=torch.bool)
-        img_person_tensor = torch.zeros(self.max_num_people, 3, self.resize_height_person, self.resize_width_person)
-        people_bbox_tensor = torch.zeros(self.max_num_people, 4)
-        people_bbox_norm_tensor = torch.zeros(self.max_num_people, 4)
+            bbox = self.gt_bbox_dic[f'{video_num}_{seq_num}'][img_num]
+            gt_box = np.array(bbox)
+            img_gt = self.load_gt_imgs_ball(img_width, img_height, bbox, self.gaussian_sigma_head)
+            x_min, y_min, x_max, y_max = map(int, gt_box)
+            x_mid, y_mid = (x_min+x_max)/2, (y_min+y_max)/2
+            gt_box_expand = gt_box[None, :]
+            gt_box_expand = np.tile(gt_box_expand, (self.max_num_people, 1))
+            gt_box_expand[:, ::2] /= img_width
+            gt_box_expand[:, 1::2] /= img_height
 
-        # crop people images
-        vid_id, seq_id, img_file_name = img_file_path.split('/')[2:]
-        img_id = img_file_name.split('.')[0]
-        people_bbox_str = self.person_bbox_dic[f'{vid_id}_{seq_id}'][img_id]
-        people_bbox = np.array(list(people_bbox_str.values()), dtype=np.int)
-        people_bbox_norm = np.array(list(people_bbox_str.values()), dtype=np.float)
-        for person_idx in range(people_bbox.shape[0]):
-            img_person = img.crop(people_bbox[person_idx, :])
-            if self.transforms_person:
-                img_person = self.transforms_person(img_person)
-            img_person_tensor[person_idx, :, :, :] = img_person
-            att_inside_flag[person_idx] = 1
+            # crop people images
+            vid_id, seq_id, img_file_name = img_file_path.split('/')[2:]
+            img_id = img_file_name.split('.')[0]
+            people_bbox = np.array(self.person_bbox_dic[f'{vid_id}_{seq_id}'][img_id], dtype=np.int)
+            people_bbox_norm = np.array(self.person_bbox_dic[f'{vid_id}_{seq_id}'][img_id], dtype=np.float)
+            for person_idx in range(people_bbox.shape[0]):
+                if self.use_ind_feat_crop == 'crop_single':
+                    img_person = img.crop(people_bbox[person_idx, :])
+                    if self.transforms_person:
+                        img_person = self.transforms_person(img_person)
+                    img_person_tensor[img_idx, person_idx, :, :, :] = img_person
 
-        # transform tensor
-        if self.transforms_rgb:
-            rgb_tensor = self.transforms_rgb(img)
-        if self.transforms_rgb_wo_norm:
-            rgb_tensor_wo_norm = self.transforms_rgb_wo_norm(img)
-        if self.transforms_gt:
-            img_gt = torch.tensor(img_gt).float()
-            img_gt = self.transforms_gt(img_gt)
-            img_gt = img_gt.expand(self.max_num_people, self.resize_height, self.resize_width)
+            # crop people head images
+            for head_idx in range(len(self.feature_dic[f'{video_num}_{seq_num}'][img_num])):
+                head_x, head_y = map(int, self.feature_dic[f'{video_num}_{seq_num}'][img_num][head_idx][:2])
+                head_radius = int(self.head_radius_dic[f'{video_num}_{seq_num}'][img_num][head_idx])
+                head_ball_vec_x, head_ball_vec_y = x_mid-head_x, y_mid-head_y
+                head_ball_vec_norm = ((head_ball_vec_x**2+head_ball_vec_y**2) ** 0.5) + 1e-5
+                head_ball_vec_x, head_ball_vec_y = head_ball_vec_x/head_ball_vec_norm, head_ball_vec_y/head_ball_vec_norm
 
-        # generate gt box id for joint attention estimation
-        gt_box_id_original = torch.tensor(self.gt_bbox_id[idx])
-        gt_box_id_original_num = gt_box_id_original.shape[0]
-        gt_box_id_original_max = 0 if gt_box_id_original_num == 0 else torch.max(gt_box_id_original)
+                head_x_min, head_y_min = head_x-head_radius, head_y-head_radius
+                head_x_max, head_y_max = head_x+head_radius, head_y+head_radius
+                head_x_min, head_y_min = max(head_x_min, 0), max(head_y_min, 0)
+                head_x_max, head_y_max = min(head_x_max, img_width), min(head_y_max, img_height)
+                try:
+                    croped_head = img.crop((head_x_min, head_y_min, head_x_max, head_y_max))
+                except Exception as e:
+                    print(e)
 
-        gt_box_id_expand_num = self.max_num_people - gt_box_id_original_num
-        gt_box_id_expand = torch.tensor([(gt_box_id_original_max+i+1) for i in range(gt_box_id_expand_num)]).view(-1, 1)
-        gt_box_id = torch.cat([gt_box_id_original, gt_box_id_expand], dim=0).long()
+                # transform tensor 
+                if self.transforms_head:
+                    croped_head = self.transforms_head(croped_head)
+                
+                head_img[img_idx, head_idx, :, :, :] = croped_head
+                head_feature_tensor[img_idx, head_idx, :2] = torch.tensor(self.feature_dic[f'{video_num}_{seq_num}'][img_num][head_idx][:2])
+                head_feature_tensor[img_idx, head_idx, 2:11] = torch.tensor(self.feature_dic[f'{video_num}_{seq_num}'][img_num][head_idx][2:11])
+                head_vector_gt_tensor[img_idx, head_idx, :] = torch.tensor([head_ball_vec_x, head_ball_vec_y])
+                head_bbox_tensor[img_idx, head_idx, :4] = torch.tensor(list(map(int, [head_x_min, head_y_min, head_x_max, head_y_max])))
+                att_inside_flag_tensor[img_idx, head_idx] = 1
 
-        people_bbox_img_num = people_bbox.shape[0]
-        people_bbox_tensor[:people_bbox_img_num, :] = torch.tensor(people_bbox)
-        people_bbox_norm_tensor[:people_bbox_img_num, :] = torch.tensor(people_bbox_norm)
-        people_bbox_norm_tensor[:, ::2] /= img_width
-        people_bbox_norm_tensor[:, 1::2] /= img_height
+            head_feature_tensor[img_idx, :, 0] /= img_width
+            head_feature_tensor[img_idx, :, 1] /= img_height
+            head_bbox_tensor[img_idx, :, 0] /= img_width
+            head_bbox_tensor[img_idx, :, 1] /= img_height
+            head_bbox_tensor[img_idx, :, 2] /= img_width
+            head_bbox_tensor[img_idx, :, 3] /= img_height
+
+            # transform tensor
+            if self.transforms_rgb:
+                rgb_tensor = self.transforms_rgb(img)
+            if self.transforms_rgb_wo_norm:
+                rgb_tensor_wo_norm = self.transforms_rgb_wo_norm(img)
+            if self.transforms_gt:
+                img_gt = torch.tensor(img_gt).float()
+                img_gt = self.transforms_gt(img_gt)
+                img_gt = img_gt.expand(self.max_num_people, self.resize_height, self.resize_width)
+
+            # generate gt box id for joint attention estimation
+            gt_box_id_original = torch.tensor(self.gt_bbox_id_dic[f'{video_num}_{seq_num}'][img_num])
+            gt_box_id_original_num = gt_box_id_original.shape[0]
+            gt_box_id_original_max = 0 if gt_box_id_original_num == 0 else torch.max(gt_box_id_original)
+            gt_box_id_expand_num = self.max_num_people - gt_box_id_original_num
+            gt_box_id_expand = torch.tensor([(gt_box_id_original_max+i+1) for i in range(gt_box_id_expand_num)]).view(-1, 1)
+            gt_box_id = torch.cat([gt_box_id_original, gt_box_id_expand], dim=0).long()
+
+            img_gt_tensor[img_idx, :, :, :] = img_gt
+            img_tensor[img_idx, :, :, :] = rgb_tensor
+            img_wo_norm_tensor[img_idx, :, :, :] = rgb_tensor_wo_norm
+            gt_box_tensor[img_idx, :, :] = torch.tensor(gt_box_expand)
+            gt_box_id_tensor[img_idx, :, :] = gt_box_id
+            people_bbox_img_num = people_bbox.shape[0]
+            people_bbox_tensor[img_idx, :people_bbox_img_num, :] = torch.tensor(people_bbox)
+            people_bbox_norm_tensor[img_idx, :people_bbox_img_num, :] = torch.tensor(people_bbox_norm)
+            people_bbox_norm_tensor[img_idx, :, ::2] /= img_width
+            people_bbox_norm_tensor[img_idx, :, 1::2] /= img_height
 
         # pack one data into a dict
         data = {}
-        
         data['head_img'] = head_img
         data['head_feature'] = head_feature_tensor
         data['head_bbox'] = head_bbox_tensor
         data['head_vector_gt'] = head_vector_gt_tensor
-        data['img_gt'] = img_gt
-        data['gt_box'] = gt_box_expand
-        data['gt_box_id'] = gt_box_id
-        data['rgb_img'] = rgb_tensor
-        data['saliency_img'] = rgb_tensor
-        data['att_inside_flag'] = att_inside_flag
-        data['rgb_path'] = img_file_path
-        data['rgb_img_person'] = img_person_tensor
+        data['img_gt'] = img_gt_tensor
+        data['gt_box'] = gt_box_tensor
+        data['gt_box_id'] = gt_box_id_tensor
+        data['rgb_img'] = img_tensor
+        data['saliency_img'] = img_tensor
+        data['att_inside_flag'] = att_inside_flag_tensor
+        rgb_path_list = list(self.rgb_path_dic[f'{video_num}_{seq_num}'].values())
+        data['rgb_path'] = rgb_path_list
+        data['data_id'] = data_id
         data['people_bbox'] = people_bbox_tensor
         data['people_bbox_norm'] = people_bbox_norm_tensor
 
-        if self.model_type == 'ball_detection' or self.model_type == 'isa' and self.data_name == 'volleyball':
-            data['rgb_img_wo_norm'] = rgb_tensor_wo_norm
+        if self.use_ind_feat_crop == 'crop_single':
+            data['rgb_img_person'] = img_person_tensor
+
+        if self.model_type == 'ball_detection' or self.model_type == 'isa' and 'volleyball' in self.data_name:
+            data['rgb_img_wo_norm'] = img_wo_norm_tensor
 
         return data
 

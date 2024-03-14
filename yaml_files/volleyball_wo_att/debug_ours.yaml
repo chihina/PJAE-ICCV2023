@@ -1,0 +1,224 @@
+data: 
+  name: volleyball_wo_att
+  sendo_dataset_dir : data/volleyball_tracking_annotation
+  rgb_dataset_dir : data/videos
+  annotation_dir : data/vatic_ball_annotation/annotation_data_sub/
+  dataset_bbox_gt: data/jae_dataset_bbox_gt_with_person_bbox
+  dataset_bbox_pred: data/jae_dataset_bbox_pred_with_person_bbox
+
+exp_set:
+  save_folder: saved_weights
+  wandb_name: debug
+  wandb_log : False
+
+  # batch_size: 8
+  # batch_size: 4
+  # batch_size: 2
+  batch_size: 1
+  num_workers: 16
+  seed_num: 777
+  gpu_mode : True
+  gpu_start : 5
+  gpu_finish : 5
+
+  resize_height : 320
+  resize_width : 640
+  resize_head_height : 64
+  resize_head_width : 64
+  resize_height_person: 224
+  resize_width_person: 224
+
+exp_params:
+
+  use_person_person_att_loss : False
+  # use_person_person_att_loss : True
+  person_person_att_loss_weight : 1
+
+  # use_person_person_jo_att_loss : False
+  use_person_person_jo_att_loss : True
+  person_person_jo_att_loss_weight : 1
+
+  # use_person_scene_att_loss : False
+  use_person_scene_att_loss : True
+  person_scene_att_loss_weight : 1
+
+  use_person_scene_jo_att_loss : False
+  # use_person_scene_jo_att_loss : True
+  person_scene_jo_att_loss_weight : 1
+
+  # use_final_jo_att_loss : False
+  use_final_jo_att_loss : True
+  final_jo_att_loss_weight : 1
+
+  # use_frame_type: mid
+  use_frame_type: all
+
+  # bbox_types: GT
+  bbox_types: PRED
+
+  # gaze_types: GT
+  gaze_types: PRED
+
+  # action_types: GT
+  action_types: PRED
+
+  # loss function
+  loss : mse
+  # loss : bce
+
+  # learning rate
+  lr : 0.00001
+  # lr : 0.0001
+  # lr : 0.001
+  # lr : 0.01
+  # lr : 0.1
+  
+  # gt gaussian
+  # gaussian_sigma: 40
+  gaussian_sigma: 10
+  # gaussian_sigma: 5
+
+  # learning schedule
+  # nEpochs : 500
+  nEpochs : 15
+  # nEpochs : 50
+  start_iter : 0
+  snapshots : 100
+  scheduler_start : 1000
+  scheduler_iter : 1100000
+
+  # pretrained models
+  pretrained_models_dir: saved_weights
+
+  # use_pretrained_head_pose_estimator: False
+  use_pretrained_head_pose_estimator: True
+  pretrained_head_pose_estimator_name: volleyball-head_pose_estimator
+  # freeze_head_pose_estimator: False
+  freeze_head_pose_estimator: True
+
+  # use_pretrained_saliency_extractor: False
+  use_pretrained_saliency_extractor: True
+  pretrained_saliency_extractor_name: pretrained_scene_extractor_davt
+  # pretrained_saliecny_type: demo
+  pretrained_saliecny_type: gazefollow
+  # pretrained_saliecny_type: videoatttarget
+  # pretrained_saliecny_type: init
+  # pretrained_saliency_extractor_name: volleyball_PRED_DAVT_only
+  # pretrained_saliency_extractor_name: volleyball-isa_bbox_PRED_gaze_PRED_action_PRED_vid
+  freeze_saliency_extractor: False
+  # freeze_saliency_extractor: True
+
+  # use_pretrained_joint_attention_estimator: False
+  use_pretrained_joint_attention_estimator: True
+  pretrained_joint_attention_estimator_name: volleyball_PRED_ori_att_vid_token_mask_random25_t_enc
+  freeze_joint_attention_estimator: False
+  # freeze_joint_attention_estimator: True
+
+model_params:
+  model_type: ja_transformer_dual_img_feat
+
+  # use_position : False
+  use_position : True
+
+  # use_gaze : False
+  use_gaze : True
+
+  # use_action : False
+  use_action : True
+
+  # person-person transformer
+  # people_feat_dim : 16
+  # people_feat_dim : 32
+  # people_feat_dim : 64
+  people_feat_dim : 128
+
+  # use_people_people_trans: False
+  use_people_people_trans: True
+  people_people_trans_enc_num : 1
+  # people_people_trans_enc_num : 2
+  # people_people_trans_enc_num : 3
+  # people_people_trans_enc_num : 4
+  # mha_num_heads_people_people : 1
+  mha_num_heads_people_people : 2
+  # mha_num_heads_people_people : 4
+  # mha_num_heads_people_people : 8
+  # mha_num_heads_people_people : 16
+
+  # p_p_estimator_type : fc_shallow
+  # p_p_estimator_type : fc_middle
+  # p_p_estimator_type : fc_deep
+  # p_p_estimator_type : deconv_shallow
+  # p_p_estimator_type : deconv_middle
+  p_p_estimator_type : field_middle
+  # p_p_estimator_type : field_deep
+
+  # p_p_aggregation_type : ind_only
+  p_p_aggregation_type : token_only
+  # p_p_aggregation_type : token_only_concat
+  # p_p_aggregation_type : ind_and_token_ind_based
+  # p_p_aggregation_type : ind_and_token_token_based
+
+  # rgb-person transformer
+  rgb_feat_dim : 256
+  rgb_people_trans_enc_num : 1
+  mha_num_heads_rgb_people : 1
+
+  # rgb_cnn_extractor_type : rgb_patch
+  # rgb_patch_size : 8
+  # rgb_cnn_extractor_type : resnet18
+  rgb_cnn_extractor_type : resnet50
+  # rgb_cnn_extractor_stage_idx : 1
+  # rgb_cnn_extractor_stage_idx : 2
+  # rgb_cnn_extractor_stage_idx : 3
+  rgb_cnn_extractor_stage_idx : 4
+
+  p_s_estimator_type : davt
+  # p_s_estimator_type : isa
+  # p_s_estimator_type : transformer
+  # p_s_estimator_type : cnn
+  p_s_estimator_cnn_pretrain : False
+  # p_s_estimator_cnn_pretrain : True
+  use_p_s_estimator_att_inside : False
+  # use_p_s_estimator_att_inside : True
+
+  # fusion_net_type : early
+  # fusion_net_type : mid
+  # fusion_net_type : late
+  fusion_net_type : scalar_weight
+  # fusion_net_type : simple_average
+
+  # attribute prediction loss
+  use_attribute_loss_type : original
+  # use_attribute_loss_type : interm
+  # use_attribute_loss_type : final
+
+  # attribute loss (action)
+  use_action_loss : True
+  # use_action_loss : False
+  use_action_class_num : 9
+  # action_loss_coef : 0.01
+  # action_loss_coef : 0.001
+  action_loss_coef : 0.0001
+
+  # attribute loss (gaze)
+  use_gaze_loss : True
+  # use_gaze_loss : False
+  gaze_loss_type : head
+  # gaze_loss_type : whole
+  # gaze_loss_coef : 0.01
+  gaze_loss_coef : 0.001
+
+  use_ind_feat_crop : roi_multi
+  # use_ind_feat_crop : crop_single
+
+  # temporal fusion type
+  # temporal_fusion_type : empty
+  # temporal_fusion_type : token
+  # temporal_fusion_type : token_mask
+  temporal_fusion_type : token_mask_random25
+  # temporal_fusion_type : token_mask_every2
+  # temporal_fusion_type : token_mask_mid1
+  mha_num_heads_ja_token : 2
+  ja_token_trans_enc_num : 1
+  mha_num_heads_atb : 2
+  atb_trans_enc_num : 1

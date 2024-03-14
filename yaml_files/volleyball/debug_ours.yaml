@@ -50,7 +50,7 @@ exp_params:
   # use_frame_type: all
 
   # bbox_types: GT
-  bbox_types: PRED
+  # bbox_types: PRED
 
   # gaze_types: GT
   gaze_types: PRED

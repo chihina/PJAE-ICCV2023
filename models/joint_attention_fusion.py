@@ -184,6 +184,10 @@ class JointAttentionFusion(nn.Module):
         gt_box = inp['gt_box']
         gt_box_id = inp['gt_box_id']
         att_inside_flag = inp['att_inside_flag']
+        head_feature = inp['head_feature']
+
+        # get variable
+        self.batch_size, self.frame_num, self.people_num, _ = head_feature.shape
 
         # unpack data (output)
         final_joint_attention_heatmap = out['final_joint_attention_heatmap']
@@ -197,15 +201,17 @@ class JointAttentionFusion(nn.Module):
             use_final_jo_att_coef = 0
 
         # generate gt map
-        img_gt_attention = (img_gt_attention * att_inside_flag[:, :, None, None]).float()
-        img_gt_joint_attention = torch.sum(img_gt_attention, dim=1)
+        img_gt_attention = (img_gt_attention * att_inside_flag[:, :, :, None, None]).float()
+        img_gt_joint_attention = torch.sum(img_gt_attention, dim=2)
         img_gt_all_thresh = torch.ones(1, device=img_gt_attention.device).float()
         img_gt_joint_attention = torch.where(img_gt_joint_attention>=img_gt_all_thresh, img_gt_all_thresh, img_gt_joint_attention)
         # print('F', f'{torch.min(final_joint_attention_heatmap).item():.2f} {torch.max(final_joint_attention_heatmap).item():.2f}')
 
         # calculate final loss
+        final_joint_attention_heatmap = final_joint_attention_heatmap.view(self.batch_size*self.frame_num, 1, self.resize_height, self.resize_width)
         final_joint_attention_heatmap = F.interpolate(final_joint_attention_heatmap, (self.resize_height, self.resize_width), mode='bilinear')
-        final_joint_attention_heatmap = final_joint_attention_heatmap[:, 0, :, :]
+        final_joint_attention_heatmap = final_joint_attention_heatmap.view(self.batch_size, self.frame_num, 1, self.resize_height, self.resize_width)
+        final_joint_attention_heatmap = final_joint_attention_heatmap[:, :, 0, :, :]
         loss_final_jo_att = self.loss_func_hm_mean(final_joint_attention_heatmap.float(), img_gt_joint_attention.float())
         loss_final_jo_att = use_final_jo_att_coef * loss_final_jo_att
         # print('loss_final_jo_att', loss_final_jo_att)
