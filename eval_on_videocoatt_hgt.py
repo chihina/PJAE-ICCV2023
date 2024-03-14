@@ -187,7 +187,7 @@ for iteration, batch in enumerate(test_data_loader,1):
         # move data into gpu
         if cuda:
             for key, val in batch.items():
-                if key != 'rgb_path':
+                if torch.is_tensor(val):
                     batch[key] = Variable(val).cuda(gpus_list[0])
 
         # head pose estimation

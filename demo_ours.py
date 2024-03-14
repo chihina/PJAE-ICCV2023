@@ -11,7 +11,6 @@ import argparse
 import yaml
 from addict import Dict
 import cv2
-import os
 import numpy as np
 import warnings
 warnings.filterwarnings("ignore") 
@@ -23,6 +22,28 @@ import seaborn as sns
 import glob
 import sys
 from PIL import Image
+import os
+import time
+from tqdm import tqdm
+
+print("===> Getting configuration")
+parser = argparse.ArgumentParser(description="parameters for training")
+parser.add_argument("config", type=str, help="configuration yaml file path")
+args = parser.parse_args()
+cfg_arg = Dict(yaml.safe_load(open(args.config)))
+print(os.path.join(cfg_arg.exp_set.save_folder, cfg_arg.data.name, cfg_arg.exp_set.model_name, 'train*.yaml'))
+saved_yaml_file_path = glob.glob(os.path.join(cfg_arg.exp_set.save_folder, cfg_arg.data.name, cfg_arg.exp_set.model_name, 'train*.yaml'))[0]
+cfg = Dict(yaml.safe_load(open(saved_yaml_file_path)))
+cfg.update(cfg_arg)
+print(cfg)
+
+print("===> Setting gpu numbers")
+# update gpu number for roi_align
+import os
+os.environ['CUDA_VISIBLE_DEVICES'] = f'{cfg_arg.exp_set.gpu_start}'
+cfg.exp_set.gpu_start, cfg.exp_set.gpu_finish = 0, 0
+gpus_list = range(cfg.exp_set.gpu_start, cfg.exp_set.gpu_finish+1)
+cuda = cfg.exp_set.gpu_mode
 
 # original module
 from dataset.dataset_selector import dataset_generator
@@ -119,23 +140,9 @@ def action_idx_to_name(action_idx):
 
     return ACTIONS[action_idx]
 
-print("===> Getting configuration")
-parser = argparse.ArgumentParser(description="parameters for training")
-parser.add_argument("config", type=str, help="configuration yaml file path")
-args = parser.parse_args()
-cfg_arg = Dict(yaml.safe_load(open(args.config)))
-print(os.path.join(cfg_arg.exp_set.save_folder, cfg_arg.data.name, cfg_arg.exp_set.model_name, 'train*.yaml'))
-saved_yaml_file_path = glob.glob(os.path.join(cfg_arg.exp_set.save_folder, cfg_arg.data.name, cfg_arg.exp_set.model_name, 'train*.yaml'))[0]
-cfg = Dict(yaml.safe_load(open(saved_yaml_file_path)))
-cfg.update(cfg_arg)
-print(cfg)
 
 print("===> Building model")
 model_head, model_attention, model_saliency, model_fusion, cfg = model_generator(cfg)
-
-print("===> Building gpu configuration")
-cuda = cfg.exp_set.gpu_mode
-gpus_list = range(cfg.exp_set.gpu_start, cfg.exp_set.gpu_finish+1)
 
 print("===> Building seed configuration")
 np.random.seed(cfg.exp_set.seed_num)
@@ -177,7 +184,7 @@ mode = cfg.exp_set.mode
 test_set = dataset_generator(cfg, mode)
 test_data_loader = DataLoader(dataset=test_set,
                                 batch_size=cfg.exp_set.batch_size,
-                                shuffle=True,
+                                shuffle=False,
                                 num_workers=cfg.exp_set.num_workers,
                                 pin_memory=True)
 print('{} demo samples found'.format(len(test_set)))
@@ -203,14 +210,15 @@ for dir_name in save_image_dir_list:
 
 print("===> Starting demo processing")
 stop_iteration = 20
-if mode == 'test':
-    stop_iteration = 200
+# if mode == 'test':
+    # stop_iteration = 500
 for iteration, batch in enumerate(test_data_loader,1):
     if iteration > stop_iteration:
         break
 
     # init heatmaps
-    num_people = batch['head_img'].shape[1]
+    # num_people = batch['head_img'].shape[1]
+    batch_size, frame_num, num_people = batch['head_img'].shape[0:3]
     x_axis_map = torch.arange(0, cfg.exp_set.resize_width, device=f'cuda:{gpus_list[0]}').reshape(1, -1)/(cfg.exp_set.resize_width)
     x_axis_map = torch.tile(x_axis_map, (cfg.exp_set.resize_height, 1))
     y_axis_map = torch.arange(0, cfg.exp_set.resize_height, device=f'cuda:{gpus_list[0]}').reshape(-1, 1)/(cfg.exp_set.resize_height)
@@ -234,7 +242,7 @@ for iteration, batch in enumerate(test_data_loader,1):
         # move data into gpu
         if cuda:
             for key, val in batch.items():
-                if key != 'rgb_path':
+                if torch.is_tensor(val):
                     batch[key] = Variable(val).cuda(gpus_list[0])
 
         if cfg.model_params.use_position:
@@ -273,29 +281,37 @@ for iteration, batch in enumerate(test_data_loader,1):
 
         # loss_set_head = model_head.calc_loss(batch, batch)
         loss_set_saliency = model_saliency.calc_loss(batch, batch, cfg)
-        # loss_set_attention = model_attention.calc_loss(batch, batch, cfg)
+        loss_set_attention = model_attention.calc_loss(batch, batch, cfg)
 
         out = {**out_head, **out_scene_feat, **out_attention, **batch}
 
-    img_gt = out['img_gt'].to('cpu').detach()[0]
-    angle_dist = out['angle_dist'].to('cpu').detach()[0]
-    distance_dist = out['distance_dist'].to('cpu').detach()[0]
-    # saliency_img = out['saliency_img'].to('cpu').detach()[0]
-    head_vector = out['head_vector'].to('cpu').detach()[0].numpy()
-    head_vector_gt = out['head_vector_gt'].to('cpu').detach()[0].numpy()
-    head_feature = out['head_feature'].to('cpu').detach()[0]
-    head_bbox = out['head_bbox'].to('cpu').detach()[0].numpy()
-    trans_att_people_rgb = out['trans_att_people_rgb'].to('cpu').detach()[0]
-    trans_att_people_people = out['trans_att_people_people'].to('cpu').detach()[0].numpy()
-    gt_box = out['gt_box'].to('cpu').detach()[0]
-    att_inside_flag = out['att_inside_flag'].to('cpu').detach()[0]
-    img_path = out['rgb_path'][0]
+    # set key frame index for evaluation
+    if cfg.exp_params.use_frame_type == 'all':
+        key_frame_idx = 4
+    elif cfg.exp_params.use_frame_type == 'mid':
+        key_frame_idx = 0
+    else:
+        assert False, f'Not implemented frame type: {cfg.exp_params.use_frame_type}'
 
-    person_person_attention_heatmap = out['person_person_attention_heatmap'].to('cpu').detach()[0]
-    person_person_joint_attention_heatmap = out['person_person_joint_attention_heatmap'].to('cpu').detach()[0]
-    person_scene_attention_heatmap = out['person_scene_attention_heatmap'].to('cpu').detach()[0]
-    person_scene_joint_attention_heatmap = out['person_scene_joint_attention_heatmap'].to('cpu').detach()[0]
-    final_joint_attention_heatmap = out['final_joint_attention_heatmap'].to('cpu').detach()[0]
+    img_gt = out['img_gt'].to('cpu').detach()[0][key_frame_idx]
+    # angle_dist = out['angle_dist'].to('cpu').detach()[0]
+    # distance_dist = out['distance_dist'].to('cpu').detach()[0]
+    # saliency_img = out['saliency_img'].to('cpu').detach()[0]
+    head_vector = out['head_vector'].to('cpu').detach()[0][key_frame_idx].numpy()
+    head_vector_gt = out['head_vector_gt'].to('cpu').detach()[0][key_frame_idx].numpy()
+    head_feature = out['head_feature'].to('cpu').detach()[0][key_frame_idx]
+    head_bbox = out['head_bbox'].to('cpu').detach()[0][key_frame_idx].numpy()
+    trans_att_people_rgb = out['trans_att_people_rgb'].to('cpu').detach()[0][key_frame_idx]
+    trans_att_people_people = out['trans_att_people_people'].to('cpu').detach()[0][key_frame_idx].numpy()
+    gt_box = out['gt_box'].to('cpu').detach()[0][key_frame_idx]
+    att_inside_flag = out['att_inside_flag'].to('cpu').detach()[0][key_frame_idx]
+    img_path = out['rgb_path'][0][key_frame_idx]
+
+    person_person_attention_heatmap = out['person_person_attention_heatmap'].to('cpu').detach()[0][key_frame_idx]
+    person_person_joint_attention_heatmap = out['person_person_joint_attention_heatmap'].to('cpu').detach()[0][key_frame_idx]
+    person_scene_attention_heatmap = out['person_scene_attention_heatmap'].to('cpu').detach()[0][key_frame_idx]
+    person_scene_joint_attention_heatmap = out['person_scene_joint_attention_heatmap'].to('cpu').detach()[0][key_frame_idx]
+    final_joint_attention_heatmap = out['final_joint_attention_heatmap'].to('cpu').detach()[0][key_frame_idx]
     print(torch.min(final_joint_attention_heatmap), torch.max(final_joint_attention_heatmap))
 
     if cfg.model_params.p_s_estimator_type == 'cnn':
@@ -396,12 +412,22 @@ for iteration, batch in enumerate(test_data_loader,1):
     whole_image_action = cv2.addWeighted(img, 1.0, img, 0.0, 0)
 
     # plot estimated and groung-truth joint attentions
-    cv2.circle(person_person_joint_attention_heatmap, (pred_x_mid_p_p, pred_y_mid_p_p), 10, (0, 165, 255), thickness=-1)
-    cv2.circle(person_person_joint_attention_heatmap, (int(gt_x_mid), int(gt_y_mid)), 10, (0, 255, 0), thickness=-1)
-    cv2.circle(person_scene_joint_attention_heatmap, (pred_x_mid_p_s, pred_y_mid_p_s), 10, (0, 165, 255), thickness=-1)
-    cv2.circle(person_scene_joint_attention_heatmap, (int(gt_x_mid), int(gt_y_mid)), 10, (0, 255, 0), thickness=-1)
-    cv2.circle(final_joint_attention_heatmap, (pred_x_mid_final, pred_y_mid_final), 10, (0, 165, 255), thickness=-1)
-    cv2.circle(final_joint_attention_heatmap, (int(gt_x_mid), int(gt_y_mid)), 10, (0, 255, 0), thickness=-1)
+    # cv2.circle(person_person_joint_attention_heatmap, (pred_x_mid_p_p, pred_y_mid_p_p), 10, (0, 165, 255), thickness=-1)
+    # cv2.circle(person_person_joint_attention_heatmap, (int(gt_x_mid), int(gt_y_mid)), 10, (0, 255, 0), thickness=-1)
+    # cv2.circle(person_scene_joint_attention_heatmap, (pred_x_mid_p_s, pred_y_mid_p_s), 10, (0, 165, 255), thickness=-1)
+    # cv2.circle(person_scene_joint_attention_heatmap, (int(gt_x_mid), int(gt_y_mid)), 10, (0, 255, 0), thickness=-1)
+    # cv2.circle(final_joint_attention_heatmap, (pred_x_mid_final, pred_y_mid_final), 10, (0, 165, 255), thickness=-1)
+    cv2.circle(final_joint_attention_heatmap, (int(gt_x_mid), int(gt_y_mid)), 5, (0, 255, 0), thickness=-1)
+
+    if cfg.data.name == 'volleyball':
+        thickness_data = 3
+        fontscale_data = 3.0
+    else:
+        thickness_data = 2
+        fontscale_data = 1.0
+
+    cv2.putText(final_joint_attention_heatmap, text=f'GT', org=(int(gt_x_mid)+20, int(gt_y_mid)+20), color=(0, 255, 0),
+        fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=fontscale_data, thickness=thickness_data, lineType=cv2.LINE_4)
 
     # save an attention estimation as a superimposed image
     key_no_padding_num = torch.sum((torch.sum(head_feature, dim=-1) != 0)).numpy()

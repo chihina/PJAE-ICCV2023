@@ -1,0 +1,82 @@
+data: 
+  name: volleyball_wo_att
+  sendo_dataset_dir : data/volleyball_tracking_annotation
+  rgb_dataset_dir : data/videos
+  annotation_dir : data/vatic_ball_annotation/annotation_data_sub/
+  dataset_bbox_gt: data/jae_dataset_bbox_gt_with_person_bbox
+  dataset_bbox_pred: data/jae_dataset_bbox_pred_with_person_bbox
+
+exp_set:
+  save_folder: saved_weights
+  wandb_name: volleyball-isa_bbox_PRED_gaze_PRED_action_PRED_vid
+  wandb_log : True
+
+  batch_size: 1
+  num_workers: 16
+  seed_num: 777
+  gpu_mode : True
+  gpu_start : 4
+  gpu_finish : 4
+
+  resize_height : 320
+  resize_width : 480
+  resize_head_height : 64
+  resize_head_width : 64
+  resize_height_person: 224
+  resize_width_person: 224
+
+exp_params:
+  # use_e_att_loss : False
+  use_e_att_loss : True
+
+  # use_frame_type: mid
+  use_frame_type: all
+
+  # bbox_types: GT
+  bbox_types: PRED
+
+  # gaze_types: GT
+  gaze_types: PRED
+  
+  # action_types: GT
+  action_types: PRED
+
+  # loss function
+  loss : mse
+  # loss : bce
+
+  # learning rate
+  lr : 0.0001
+
+  # gt gaussian
+  gaussian_sigma: 10
+
+  # learning schedule
+  nEpochs : 500
+  start_iter : 0
+  snapshots : 100
+  scheduler_start : 1000
+  scheduler_iter : 1100000
+  # pretrained models
+  pretrained_models_dir: saved_weights
+
+  # use_pretrained_head_pose_estimator: False
+  use_pretrained_head_pose_estimator: True
+  pretrained_head_pose_estimator_name: volleyball-head_pose_estimator
+  # freeze_head_pose_estimator: False
+  freeze_head_pose_estimator: True
+
+  # use_pretrained_saliency_extractor: False
+  use_pretrained_saliency_extractor: True
+  pretrained_saliency_extractor_name: 2021_0708_lr_e3_gamma_1_stack_3_mid_frame_ver2
+  # freeze_saliency_extractor: False
+  freeze_saliency_extractor: True
+
+  use_pretrained_joint_attention_estimator: False
+  # use_pretrained_joint_attention_estimator: True
+  pretrained_joint_attention_estimator_name: pretrain_head_estimator
+  freeze_joint_attention_estimator: False
+  # freeze_joint_attention_estimator: True
+
+model_params:
+  model_type: isa

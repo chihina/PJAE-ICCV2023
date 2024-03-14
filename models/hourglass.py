@@ -132,6 +132,8 @@ class HourglassNet(nn.Module):
     def forward(self, inp):
         rgb_img = inp['rgb_img']
         rgb_img_wo_norm = inp['rgb_img_wo_norm']
+        batch_size, frame_num, channel, resize_height, resize_width = rgb_img_wo_norm.shape
+        rgb_img_wo_norm = rgb_img_wo_norm.reshape(batch_size*frame_num, channel, resize_height, resize_width)
 
         x = self.pre(rgb_img_wo_norm)
         combined_hm_preds = []
@@ -146,8 +148,9 @@ class HourglassNet(nn.Module):
         
         # only return plob map (excluding size and offset)
         saliency_img = torch.stack(combined_hm_preds, 1)[:, -1, 0, :, :][:, None, :, :]
-        _, _, ori_height, ori_width = rgb_img.shape
+        ori_height, ori_width = rgb_img.shape[-2:]
         saliency_img = F.interpolate(saliency_img, (ori_height, ori_width), mode='bilinear')
+        saliency_img = saliency_img.reshape(batch_size, frame_num, 1, ori_height, ori_width)
 
         # pack return values
         data = {}

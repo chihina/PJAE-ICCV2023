@@ -2,11 +2,12 @@ from models.head_pose_estimator import HeadPoseEstimatorResnet
 from models.joint_attention_estimator_transformer import JointAttentionEstimatorTransformer
 from models.joint_attention_estimator_transformer_dual import JointAttentionEstimatorTransformerDual
 from models.joint_attention_estimator_transformer_dual_only_people import JointAttentionEstimatorTransformerDualOnlyPeople
-from models.joint_attention_estimator_transformer_dual_only_people_img_feat import JointAttentionEstimatorTransformerDualOnlyPeopleImgFeat
+from models.joint_attention_estimator_transformer_dual_img_feat import JointAttentionEstimatorTransformerDualImgFeat
+from models.joint_attention_estimator_transformer_dual_img_feat_only_people import JointAttentionEstimatorTransformerDualOnlyPeopleImgFeat
 from models.joint_attention_fusion import JointAttentionFusion, JointAttentionFusionDummy
 from models.inferring_shared_attention_estimation import InferringSharedAttentionEstimator
 from models.end_to_end_human_gaze_target import EndToEndHumanGazeTargetTransformer
-from models.davt_scene_extractor import ModelSpatial, ModelSpatialDummy
+from models.davt_scene_extractor import ModelSpatial, ModelSpatialDummy, ModelSpatioTemporal
 from models.transformer_scene_extractor import SceneFeatureTransformer
 from models.cnn_scene_extractor import SceneFeatureCNN
 from models.hourglass import HourglassNet
@@ -32,6 +33,19 @@ def model_generator(cfg):
         model_gaussian = JointAttentionEstimatorTransformerDualOnlyPeople(cfg)
         model_saliency = ModelSpatialDummy()
         model_fusion = JointAttentionFusionDummy()
+    elif cfg.model_params.model_type == 'ja_transformer_dual_img_feat':
+        model_head = HeadPoseEstimatorResnet(cfg)
+        model_gaussian = JointAttentionEstimatorTransformerDualImgFeat(cfg)
+        if cfg.model_params.p_s_estimator_type == 'davt':
+            if cfg.exp_params.use_frame_type == 'mid':
+                model_saliency = ModelSpatial()
+            else:
+                model_saliency = ModelSpatioTemporal(num_lstm_layers = 2)
+        elif cfg.model_params.p_s_estimator_type == 'cnn':
+            model_saliency = SceneFeatureCNN(cfg)
+        elif cfg.model_params.p_s_estimator_type == 'transformer':
+            model_saliency = SceneFeatureTransformer(cfg)
+        model_fusion = JointAttentionFusion(cfg)
     elif cfg.model_params.model_type == 'ja_transformer_dual_only_people_img_feat':
         model_head = HeadPoseEstimatorResnet(cfg)
         model_gaussian = JointAttentionEstimatorTransformerDualOnlyPeopleImgFeat(cfg)
@@ -40,7 +54,7 @@ def model_generator(cfg):
     elif cfg.model_params.model_type == 'isa':
         model_head = HeadPoseEstimatorResnet(cfg)
         model_gaussian = InferringSharedAttentionEstimator(cfg)
-        if cfg.data.name == 'volleyball':
+        if 'volleyball' in cfg.data.name:
             model_saliency = HourglassNet(3, 3, 5)
         else:
             model_saliency = ModelSpatialDummy(cfg)

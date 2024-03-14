@@ -59,7 +59,7 @@ cfg.update(cfg_arg)
 print(cfg)
 
 print("===> Building model")
-model_head, model_attention, model_saliency, cfg = model_generator(cfg)
+model_head, model_attention, model_saliency, _, cfg = model_generator(cfg)
 
 print("===> Building gpu configuration")
 cuda = cfg.exp_set.gpu_mode
@@ -118,7 +118,7 @@ for iteration, batch in enumerate(test_data_loader):
     print(f'{iteration}/{len(test_data_loader)}')
 
     # init heatmaps
-    num_people = batch['head_img'].shape[1]
+    batch_size, frame_num, num_people = batch['head_img'].shape[0:3]
     x_axis_map = torch.arange(0, cfg.exp_set.resize_width, device=f'cuda:{gpus_list[0]}').reshape(1, -1)/(cfg.exp_set.resize_width)
     x_axis_map = torch.tile(x_axis_map, (cfg.exp_set.resize_height, 1))
     y_axis_map = torch.arange(0, cfg.exp_set.resize_height, device=f'cuda:{gpus_list[0]}').reshape(-1, 1)/(cfg.exp_set.resize_height)
@@ -142,14 +142,14 @@ for iteration, batch in enumerate(test_data_loader):
         # move data into gpu
         if cuda:
             for key, val in batch.items():
-                if key != 'rgb_path':
+                if torch.is_tensor(val):
                     batch[key] = Variable(val).cuda(gpus_list[0])
 
         if cfg.model_params.use_position:
             input_feature = batch['head_feature'].clone() 
         else:
             input_feature = batch['head_feature'].clone()
-            input_feature[:, :, :2] = input_feature[:, :, :2] * 0
+            input_feature[:, :, :, :2] = input_feature[:, :, :, :2] * 0
         batch['input_feature'] = input_feature
 
         # head pose estimation
@@ -187,10 +187,21 @@ for iteration, batch in enumerate(test_data_loader):
     img_path = out['rgb_path'][0]
 
     # calc a center of gt bbox
-    # img = Image.open(batch['rgb_path'][0])
-    # original_width, original_height = img.size
-    img = cv2.imread(batch['rgb_path'][0])
-    original_height, original_width, _ = img.shape
+    img = Image.open(batch['rgb_path'][0][0])
+    original_width, original_height = img.size
+
+    # set key frame index for evaluation
+    if cfg.exp_params.use_frame_type == 'all':
+        key_frame_idx = 4
+    elif cfg.exp_params.use_frame_type == 'mid':
+        key_frame_idx = 0
+    else:
+        assert False, f'Not implemented frame type: {cfg.exp_params.use_frame_type}'
+
+    gt_box = gt_box[key_frame_idx, :, :]
+    final_joint_attention_heatmap = final_joint_attention_heatmap[key_frame_idx, :, :]
+
+    # calc a center of gt bbox
     resize_height_old = cfg.exp_set.resize_height
     resize_width_old = cfg.exp_set.resize_width
     cfg.exp_set.resize_height = original_height

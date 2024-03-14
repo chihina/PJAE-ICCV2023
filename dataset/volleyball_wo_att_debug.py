@@ -10,7 +10,7 @@ from tqdm import tqdm
 import pandas as pd
 import json
 
-class VolleyBallDataset(Dataset):
+class VolleyBallDatasetWithoutAtt(Dataset):
     def __init__(self, cfg, mode, transform=None, pre_transform=None):
 
         # data
@@ -28,28 +28,34 @@ class VolleyBallDataset(Dataset):
         self.mode = mode
         self.resize_width = cfg.exp_set.resize_width
         self.resize_height = cfg.exp_set.resize_height
-        self.resize_head_width = cfg.exp_set.resize_head_width
         self.resize_head_height = cfg.exp_set.resize_head_height
+        self.resize_head_width = cfg.exp_set.resize_head_width
+        self.resize_height_person = cfg.exp_set.resize_height_person
+        self.resize_width_person = cfg.exp_set.resize_width_person
 
         # exp params
         self.use_frame_type = cfg.exp_params.use_frame_type
-        self.use_position_aug = cfg.exp_params.use_position_aug
-        self.position_aug_std = cfg.exp_params.position_aug_std
         self.bbox_types = cfg.exp_params.bbox_types
         self.action_types = cfg.exp_params.action_types
         self.gaussian_sigma_head = cfg.exp_params.gaussian_sigma
         self.pass_winpoint = True
         self.use_blured_img = cfg.exp_params.use_blured_img
 
+        # model params
+        self.use_ind_feat_crop = 'crop_single'
+        if 'use_ind_feat_crop' in cfg.model_params:
+            self.use_ind_feat_crop = cfg.model_params.use_ind_feat_crop
+
         # data pack list
         self.feature_list = []
-        self.edge_list = []
         self.gt_bbox = []
         self.gt_bbox_id = []
         self.gt_bbox_resized = []
         self.rgb_path_list = []
         self.head_radius_list = []
-
+        self.person_bbox_dic = {}
+        self.person_action_list = ['blocking', 'digging', 'falling', 'jumping', 'moving',
+                                'setting', 'spiking', 'standing', 'waiting']
 
         self.train_video = [1, 3, 6, 7, 10, 13, 15, 16, 18, 22,
                                    23, 31, 36, 38, 39, 40, 41, 42, 48,
@@ -124,6 +130,16 @@ class VolleyBallDataset(Dataset):
             ]
         )
 
+        self.transforms_person = transforms.Compose(
+            [
+                transforms.Resize((self.resize_height_person, self.resize_width_person)),
+                transforms.ToTensor(),
+                transforms.Normalize(
+                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                ),
+            ]
+        )
+
     # generator gt gaussian
     def generate_2d_gaussian(self, height, width, peak_xy, sigma=1):
         peak_x, peak_y = peak_xy
@@ -151,10 +167,15 @@ class VolleyBallDataset(Dataset):
             data_people_num = len(self.feature_list[data_idx])
             self.max_num_people = max(self.max_num_people, data_people_num)
 
+    # set maximum number of people
+    # def set_max_num_people(self):
+    #     for annotated_bbox in self.person_bbox_dic.values():
+    #         for annotated_bbox_frame in annotated_bbox.values():
+    #             data_people_num = len(annotated_bbox_frame.keys())
+    #             self.max_num_people = max(self.max_num_people, data_people_num)
+
     def generate_dataset_list(self):
-        vid_cnt = 0
         for video_num in tqdm(sorted(self.use_video_list)):
-            vid_cnt += 1
             gar_iar_ann_path = os.path.join(self.rgb_dataset_dir, str(video_num), 'annotations.txt')
             gar_iar_ann_dic = self.get_gar_iar_ann_dic(gar_iar_ann_path)
             seq_cnt = 0
@@ -177,11 +198,14 @@ class VolleyBallDataset(Dataset):
                     self.dataset_dir = self.dataset_bbox_pred
                 else:
                     print('Employ correct bbox dataset')
-                    sys.exit()           
+                    sys.exit()
 
                 # get gt person bbox
-                annotation_path_person = os.path.join(self.sendo_dataset_dir, str(video_num), str(seq_num), f'{seq_num}.txt')
-                annotated_bbox = self.get_person_bbox_from_txt(annotation_path_person)
+                # annotation_path_person = os.path.join(self.sendo_dataset_dir, str(video_num), str(seq_num), f'{seq_num}.txt')
+                # annotated_bbox = self.get_person_bbox_from_txt(annotation_path_person)
+                # self.person_bbox_dic[f'{video_num}_{seq_num}'] = annotated_bbox
+                # annotated_bbox, annotatd_action = self.get_person_info_from_txt(annotation_path_person)
+                # self.person_action_dic[f'{video_num}_{seq_num}'] = annotatd_action
 
                 # get gt ball bbox
                 annotation_path = os.path.join(self.annotation_dir, f'volleyball_{video_num}_{seq_num}_ver3.csv')
@@ -197,6 +221,7 @@ class VolleyBallDataset(Dataset):
                     print('please select correct frame type')
                     sys.exit()
 
+                self.person_bbox_dic[f'{video_num}_{seq_num}'] = {}
                 for img_num in img_num_list:
                     frame_id = (int(img_num) - int(seq_num)) + 20
 
@@ -218,6 +243,7 @@ class VolleyBallDataset(Dataset):
 
                     self.feature_list_img = []
                     self.head_radius_img = []
+                    self.person_bbox_img = []
 
                     # read each person data
                     for idx, person_info in people_info.items():
@@ -227,6 +253,11 @@ class VolleyBallDataset(Dataset):
                         head_radius = float(person_info['head_radius'])
                         head_pose_x = float(person_info['gaze_x'])
                         head_pose_y = float(person_info['gaze_y'])
+
+                        person_x_min = float(person_info['person_x_min'])
+                        person_y_min = float(person_info['person_y_min'])
+                        person_x_max = float(person_info['person_x_max'])
+                        person_y_max = float(person_info['person_y_max'])
 
                         feature_list_img_item = [head_x, head_y]
 
@@ -238,10 +269,14 @@ class VolleyBallDataset(Dataset):
                             feature_list_img_item += [iar_idx == int(iar_label) for iar_idx in range(9)]
                         else:
                             print('please select correct action types')
-                            sys.exit()   
+                            sys.exit()
 
+                        # iar_label_gt = float(person_info['action_num'])
+                        # iar_label_pred = float(person_info['pred_action_num'])
+                        # feature_list_img_item = [head_x, head_y, head_radius, head_pose_x, head_pose_y, iar_label_gt]
                         self.feature_list_img.append(feature_list_img_item)
                         self.head_radius_img.append(head_radius)
+                        self.person_bbox_img.append([person_x_min, person_y_min, person_x_max, person_y_max])
 
                     self.gt_bbox.append(ball_bbox)
 
@@ -249,6 +284,7 @@ class VolleyBallDataset(Dataset):
                     x_min, x_max = map(lambda x: int(x*self.resize_width/img_width), [x_min, x_max])
                     y_min, y_max = map(lambda x: int(x*self.resize_height/img_height), [y_min, y_max])
                     gt_box = np.array([x_min, y_min, x_max, y_max])
+                    # gt_bbox_idx = np.arange(len(annotated_bbox[img_num].keys())).reshape(-1, 1)
                     gt_bbox_idx = np.arange(len(self.feature_list_img)).reshape(-1, 1)
 
                     self.gt_bbox_id.append(gt_bbox_idx)
@@ -256,14 +292,13 @@ class VolleyBallDataset(Dataset):
                     self.rgb_path_list.append(rgb_img_file_path)
                     self.feature_list.append(self.feature_list_img)
                     self.head_radius_list.append(self.head_radius_img)
+                    self.person_bbox_dic[f'{video_num}_{seq_num}'][img_num] = self.person_bbox_img
 
                 # one seq in demo mode
                 if self.wandb_name == 'debug' and seq_cnt > 10:
                     break
-                if self.wandb_name == 'demo':
+                if self.wandb_name == 'demo' and seq_cnt > 3:
                     break
-            if self.wandb_name == 'demo' and vid_cnt > 10:
-                break
 
     def __len__(self):
         return len(self.rgb_path_list)
@@ -289,10 +324,29 @@ class VolleyBallDataset(Dataset):
         head_feature_tensor = torch.zeros(self.max_num_people, 2+9)
         head_bbox_tensor = torch.zeros(self.max_num_people, 4)
         att_inside_flag = torch.zeros(self.max_num_people, dtype=torch.bool)
+        people_bbox_tensor = torch.zeros(self.max_num_people, 4)
+        people_bbox_norm_tensor = torch.zeros(self.max_num_people, 4)
+        people_action_tensor = torch.zeros(self.max_num_people)
+        people_gaze_ternsor = torch.zeros(self.max_num_people, 2)
+        if self.use_ind_feat_crop == 'crop_single':
+            img_person_tensor = torch.zeros(self.max_num_people, 3, self.resize_height_person, self.resize_width_person)
 
         # crop people images
         vid_id, seq_id, img_file_name = img_file_path.split('/')[2:]
         img_id = img_file_name.split('.')[0]
+        # people_bbox_str = self.person_bbox_dic[f'{vid_id}_{seq_id}'][img_id]
+        # people_bbox = np.array(list(people_bbox_str.values()), dtype=np.int)
+        # people_bbox_norm = np.array(list(people_bbox_str.values()), dtype=np.float)
+        people_bbox = np.array(self.person_bbox_dic[f'{vid_id}_{seq_id}'][img_id], dtype=np.int)
+        people_bbox_norm = np.array(self.person_bbox_dic[f'{vid_id}_{seq_id}'][img_id], dtype=np.float)
+        for person_idx in range(people_bbox.shape[0]):
+            if self.use_ind_feat_crop == 'crop_single':
+                img_person = img.crop(people_bbox[person_idx, :])
+                if self.transforms_person:
+                    img_person = self.transforms_person(img_person)
+                img_person_tensor[person_idx, :, :, :] = img_person
+
+        # crop people head images
         for head_idx in range(len(self.feature_list[idx])):
             head_x, head_y = map(int, self.feature_list[idx][head_idx][:2])
             head_radius = int(self.head_radius_list[idx][head_idx])
@@ -318,6 +372,7 @@ class VolleyBallDataset(Dataset):
             head_vector_gt_tensor[head_idx, :] = torch.tensor([head_ball_vec_x, head_ball_vec_y])
             head_bbox_tensor[head_idx, :4] = torch.tensor(list(map(int, [head_x_min, head_y_min, head_x_max, head_y_max])))
             att_inside_flag[head_idx] = 1
+            # head_feature_tensor[head_idx, :2] = torch.tensor([head_x, head_y])
 
         head_feature_tensor[:, 0] /= img_width
         head_feature_tensor[:, 1] /= img_height
@@ -325,15 +380,6 @@ class VolleyBallDataset(Dataset):
         head_bbox_tensor[:, 1] /= img_height
         head_bbox_tensor[:, 2] /= img_width
         head_bbox_tensor[:, 3] /= img_height
-
-        # add position noise
-        if self.use_position_aug and self.mode == 'train':
-            normal_noise_mean = torch.zeros(self.max_num_people)
-            normal_noise_std = torch.ones(self.max_num_people)*self.position_aug_std
-            normal_noise_x = torch.normal(mean=normal_noise_mean, std=normal_noise_std)
-            normal_noise_y = torch.normal(mean=normal_noise_mean, std=normal_noise_std)
-            head_feature_tensor[:, 0] = head_feature_tensor[:, 0] + normal_noise_x
-            head_feature_tensor[:, 1] = head_feature_tensor[:, 1] + normal_noise_y
 
         # transform tensor
         if self.transforms_rgb:
@@ -354,6 +400,19 @@ class VolleyBallDataset(Dataset):
         gt_box_id_expand = torch.tensor([(gt_box_id_original_max+i+1) for i in range(gt_box_id_expand_num)]).view(-1, 1)
         gt_box_id = torch.cat([gt_box_id_original, gt_box_id_expand], dim=0).long()
 
+        people_bbox_img_num = people_bbox.shape[0]
+        people_bbox_tensor[:people_bbox_img_num, :] = torch.tensor(people_bbox)
+        people_bbox_norm_tensor[:people_bbox_img_num, :] = torch.tensor(people_bbox_norm)
+        people_bbox_norm_tensor[:, ::2] /= img_width
+        people_bbox_norm_tensor[:, 1::2] /= img_height
+
+        # obtain ground truth feature
+        # people_feature = np.array(self.feature_list[idx])
+        # people_action = people_feature[:, 5]
+        # people_action_tensor[:people_bbox_img_num] = torch.tensor(people_action)
+        # people_gaze = people_feature[:, 3:5]
+        # people_gaze_ternsor[:people_bbox_img_num, :] = torch.tensor(people_gaze)
+
         # pack one data into a dict
         data = {}
         data['head_img'] = head_img
@@ -367,6 +426,13 @@ class VolleyBallDataset(Dataset):
         data['saliency_img'] = rgb_tensor
         data['att_inside_flag'] = att_inside_flag
         data['rgb_path'] = img_file_path
+        data['people_bbox'] = people_bbox_tensor
+        data['people_bbox_norm'] = people_bbox_norm_tensor
+        # data['action_person'] = people_action_tensor
+        # data['gaze_person'] = people_gaze_ternsor
+
+        if self.use_ind_feat_crop == 'crop_single':
+            data['rgb_img_person'] = img_person_tensor
 
         if self.model_type == 'ball_detection' or self.model_type == 'isa' and self.data_name == 'volleyball':
             data['rgb_img_wo_norm'] = rgb_tensor_wo_norm
@@ -425,3 +491,22 @@ class VolleyBallDataset(Dataset):
             person_bbox_dic[img_id][per_id] = [x_min, y_min, x_max, y_max]
 
         return person_bbox_dic
+
+    def get_person_info_from_txt(self, txt_file_path: str) -> list:
+        person_bbox_dic = {}
+        person_action_dic = {}
+
+        with open(txt_file_path, 'r') as f:
+            lines = f.readlines()
+        for line_idx, line in enumerate(lines):
+            per_id, x_min, y_min, x_max, y_max, img_id, _, _, _, iar_label = line.split()
+            if int(per_id) > 11:
+                continue
+
+            if not img_id in person_bbox_dic.keys():
+                person_bbox_dic[img_id] = {}
+                person_action_dic[img_id] = {}
+            person_bbox_dic[img_id][per_id] = [x_min, y_min, x_max, y_max]
+            person_action_dic[img_id][per_id] = self.person_action_list.index(iar_label)
+
+        return person_bbox_dic, person_action_dic

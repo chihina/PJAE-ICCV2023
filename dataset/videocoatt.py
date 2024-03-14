@@ -284,6 +284,9 @@ class VideoCoAttDataset(Dataset):
             video_cnt += 1
             seq_cnt = 0
 
+            if not video_num in ['10', '15', '19', '23']:
+                continue
+
             annotation_path = os.path.join(self.dataset_dir, 'annotations', self.mode, f'{video_num}.txt')
             ann_dic = self.read_annotation_file(annotation_path)
 
@@ -338,10 +341,10 @@ class VideoCoAttDataset(Dataset):
 
                 seq_cnt += 1
 
-                if self.wandb_name == 'demo' and seq_cnt > 1:
-                    break
-            if self.wandb_name == 'demo' and video_cnt > 100:
-                break
+                # if self.wandb_name == 'demo' and seq_cnt > 1:
+                    # break
+            # if self.wandb_name == 'demo' and video_cnt > 5:
+                # break
 
     # generage gt imgs for probability heatmap
     def load_gt_imgs(self, img_width, img_height, bbox, gamma):

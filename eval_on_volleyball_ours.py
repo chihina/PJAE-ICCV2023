@@ -12,7 +12,6 @@ import argparse
 import yaml
 from addict import Dict
 import cv2
-import os
 import numpy as np
 import warnings
 warnings.filterwarnings("ignore") 
@@ -25,6 +24,28 @@ import sys
 import json
 from PIL import Image
 import glob
+import os
+
+print("===> Getting configuration")
+parser = argparse.ArgumentParser(description="parameters for training")
+parser.add_argument("config", type=str, help="configuration yaml file path")
+parser.add_argument("-model_name", type=str, help="model name")
+args = parser.parse_args()
+cfg_arg = Dict(yaml.safe_load(open(args.config)))
+if args.model_name:
+    cfg_arg.exp_set.model_name = args.model_name
+print(os.path.join(cfg_arg.exp_set.save_folder, cfg_arg.data.name, cfg_arg.exp_set.model_name, 'train*.yaml'))
+saved_yaml_file_path = glob.glob(os.path.join(cfg_arg.exp_set.save_folder, cfg_arg.data.name, cfg_arg.exp_set.model_name, 'train*.yaml'))[0]
+cfg = Dict(yaml.safe_load(open(saved_yaml_file_path)))
+cfg.update(cfg_arg)
+
+print("===> Setting gpu numbers")
+# update gpu number for roi_align
+import os
+os.environ['CUDA_VISIBLE_DEVICES'] = f'{cfg_arg.exp_set.gpu_start}'
+cfg.exp_set.gpu_start, cfg.exp_set.gpu_finish = 0, 0
+gpus_list = range(cfg.exp_set.gpu_start, cfg.exp_set.gpu_finish+1)
+cuda = cfg.exp_set.gpu_mode
 
 # original module
 from dataset.dataset_selector import dataset_generator
@@ -34,22 +55,22 @@ def data_type_id_generator(cfg):
     data_type_id = f'bbox_{cfg.exp_params.bbox_types}_gaze_{cfg.exp_params.gaze_types}_act_{cfg.exp_params.action_types}_blur_{cfg.exp_params.use_blured_img}'
     return data_type_id
 
-print("===> Getting configuration")
-parser = argparse.ArgumentParser(description="parameters for training")
-parser.add_argument("config", type=str, help="configuration yaml file path")
-args = parser.parse_args()
-cfg_arg = Dict(yaml.safe_load(open(args.config)))
-saved_yaml_file_path = glob.glob(os.path.join(cfg_arg.exp_set.save_folder, cfg_arg.data.name, cfg_arg.exp_set.model_name, 'train*.yaml'))[0]
-cfg = Dict(yaml.safe_load(open(saved_yaml_file_path)))
-cfg.update(cfg_arg)
-print(cfg)
+# print("===> Getting configuration")
+# parser = argparse.ArgumentParser(description="parameters for training")
+# parser.add_argument("config", type=str, help="configuration yaml file path")
+# args = parser.parse_args()
+# cfg_arg = Dict(yaml.safe_load(open(args.config)))
+# saved_yaml_file_path = glob.glob(os.path.join(cfg_arg.exp_set.save_folder, cfg_arg.data.name, cfg_arg.exp_set.model_name, 'train*.yaml'))[0]
+# cfg = Dict(yaml.safe_load(open(saved_yaml_file_path)))
+# cfg.update(cfg_arg)
+# print(cfg)
+
+# print("===> Building gpu configuration")
+# cuda = cfg.exp_set.gpu_mode
+# gpus_list = range(cfg.exp_set.gpu_start, cfg.exp_set.gpu_finish+1)
 
 print("===> Building model")
 model_head, model_attention, model_saliency, model_fusion, cfg = model_generator(cfg)
-
-print("===> Building gpu configuration")
-cuda = cfg.exp_set.gpu_mode
-gpus_list = range(cfg.exp_set.gpu_start, cfg.exp_set.gpu_finish+1)
 
 print("===> Building seed configuration")
 np.random.seed(cfg.exp_set.seed_num)
@@ -126,7 +147,7 @@ for iteration, batch in enumerate(test_data_loader):
     print(f'{iteration}/{len(test_data_loader)}')
 
     # init heatmaps
-    num_people = batch['head_img'].shape[1]
+    _, _, num_people = batch['head_img'].shape[0:3]
     x_axis_map = torch.arange(0, cfg.exp_set.resize_width, device=f'cuda:{gpus_list[0]}').reshape(1, -1)/(cfg.exp_set.resize_width)
     x_axis_map = torch.tile(x_axis_map, (cfg.exp_set.resize_height, 1))
     y_axis_map = torch.arange(0, cfg.exp_set.resize_height, device=f'cuda:{gpus_list[0]}').reshape(-1, 1)/(cfg.exp_set.resize_height)
@@ -150,14 +171,14 @@ for iteration, batch in enumerate(test_data_loader):
         # move data into gpu
         if cuda:
             for key, val in batch.items():
-                if key != 'rgb_path':
+                if torch.is_tensor(val):
                     batch[key] = Variable(val).cuda(gpus_list[0])
 
         if cfg.model_params.use_position:
             input_feature = batch['head_feature'].clone() 
         else:
             input_feature = batch['head_feature'].clone()
-            input_feature[:, :, :2] = input_feature[:, :, :2] * 0
+            input_feature[:, :, :, :2] = input_feature[:, :, :, :2] * 0
         batch['input_feature'] = input_feature
 
         # head pose estimation
@@ -195,25 +216,37 @@ for iteration, batch in enumerate(test_data_loader):
     final_joint_attention_heatmap = out['final_joint_attention_heatmap'].to('cpu').detach()
 
     # calc a center of gt bbox
-    img = Image.open(batch['rgb_path'][0])
+    img = Image.open(batch['rgb_path'][0][0])
     original_width, original_height = img.size
-    cfg.exp_set.resize_height = original_height
-    cfg.exp_set.resize_width = original_width
+
+    # set key frame index for evaluation
+    if cfg.exp_params.use_frame_type == 'all':
+        key_frame_idx = 4
+    elif cfg.exp_params.use_frame_type == 'mid':
+        key_frame_idx = 0
+    else:
+        assert False, f'Not implemented frame type: {cfg.exp_params.use_frame_type}'
+
+    gt_box = gt_box[key_frame_idx, :, :]
+    person_person_joint_attention_heatmap = person_person_joint_attention_heatmap[:, key_frame_idx, :, :]
+    person_scene_joint_attention_heatmap = person_scene_joint_attention_heatmap[:, key_frame_idx, :, :]
+    final_joint_attention_heatmap = final_joint_attention_heatmap[:, key_frame_idx, :, :]
+
     peak_x_min_gt, peak_y_min_gt, peak_x_max_gt, peak_y_max_gt = gt_box[0]
     peak_x_mid_gt, peak_y_mid_gt = (peak_x_min_gt+peak_x_max_gt)/2, (peak_y_min_gt+peak_y_max_gt)/2
-    peak_x_mid_gt, peak_y_mid_gt = peak_x_mid_gt*cfg.exp_set.resize_width, peak_y_mid_gt*cfg.exp_set.resize_height
+    peak_x_mid_gt, peak_y_mid_gt = peak_x_mid_gt*original_width, peak_y_mid_gt*original_height
     peak_x_mid_gt, peak_y_mid_gt = map(int, [peak_x_mid_gt, peak_y_mid_gt])
 
     # calc a centers of pred bboxes
-    person_person_joint_attention_heatmap = F.interpolate(person_person_joint_attention_heatmap, (cfg.exp_set.resize_height, cfg.exp_set.resize_width), mode='bilinear')
+    person_person_joint_attention_heatmap = F.interpolate(person_person_joint_attention_heatmap, (original_height, original_width), mode='bilinear')
     person_person_joint_attention_heatmap = person_person_joint_attention_heatmap[0, 0, :, :]
     pred_y_mid_p_p, pred_x_mid_p_p = np.unravel_index(np.argmax(person_person_joint_attention_heatmap), person_person_joint_attention_heatmap.shape)
 
-    person_scene_joint_attention_heatmap = F.interpolate(person_scene_joint_attention_heatmap, (cfg.exp_set.resize_height, cfg.exp_set.resize_width), mode='bilinear')
+    person_scene_joint_attention_heatmap = F.interpolate(person_scene_joint_attention_heatmap, (original_height, original_width), mode='bilinear')
     person_scene_joint_attention_heatmap = person_scene_joint_attention_heatmap[0, 0, :, :]
     pred_y_mid_p_s, pred_x_mid_p_s = np.unravel_index(np.argmax(person_scene_joint_attention_heatmap), person_scene_joint_attention_heatmap.shape)
 
-    final_joint_attention_heatmap = F.interpolate(final_joint_attention_heatmap, (cfg.exp_set.resize_height, cfg.exp_set.resize_width), mode='bilinear')
+    final_joint_attention_heatmap = F.interpolate(final_joint_attention_heatmap, (original_height, original_width), mode='bilinear')
     final_joint_attention_heatmap = final_joint_attention_heatmap[0, 0, :, :]
     pred_y_mid_final, pred_x_mid_final = np.unravel_index(np.argmax(final_joint_attention_heatmap), final_joint_attention_heatmap.shape)
 
