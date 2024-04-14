@@ -69,7 +69,8 @@ def process_epoch(epoch, data_set, mode):
         optimizer_fusion.zero_grad()
 
         # init heatmaps
-        cfg.exp_set.batch_size, frame_num, num_people = batch['head_img'].shape[0:3]
+        # cfg.exp_set.batch_size, frame_num, num_people = batch['head_img'].shape[0:3]
+        cfg.exp_set.batch_size, num_people = batch['head_img'].shape[0:2]
         x_axis_map = torch.arange(0, cfg.exp_set.resize_width, device=f'cuda:{gpus_list[0]}').reshape(1, -1)/(cfg.exp_set.resize_width)
         x_axis_map = torch.tile(x_axis_map, (cfg.exp_set.resize_height, 1))
         y_axis_map = torch.arange(0, cfg.exp_set.resize_height, device=f'cuda:{gpus_list[0]}').reshape(-1, 1)/(cfg.exp_set.resize_height)
