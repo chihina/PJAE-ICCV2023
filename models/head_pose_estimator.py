@@ -34,19 +34,15 @@ class HeadPoseEstimatorResnet(nn.Module):
         head_img = inp['head_img']
 
         # head feature extraction
-        # batch_size, frame_num, people_num, channel_num, img_height, img_width = head_img.shape
-        batch_size, people_num, channel_num, img_height, img_width = head_img.shape
-        # head_img = head_img.view(batch_size*frame_num*people_num, channel_num, img_height, img_width)
-        head_img = head_img.view(batch_size*people_num, channel_num, img_height, img_width)
+        batch_size, frame_num, people_num, channel_num, img_height, img_width = head_img.shape
+        head_img = head_img.view(batch_size*frame_num*people_num, channel_num, img_height, img_width)
         
         head_feature = self.feature_extractor(head_img)
         head_feature = head_feature.mean(dim=(-2, -1))
 
         # head pose estimation
         head_vector = self.head_pose_estimator(head_feature)
-        # head_vector = head_vector.view(batch_size, frame_num, people_num, -1)
         head_vector = head_vector.view(batch_size, people_num, -1)
-        # head_feature = head_feature.view(batch_size, frame_num, people_num, -1)
         head_feature = head_feature.view(batch_size, people_num, -1)
 
         # normarize head pose

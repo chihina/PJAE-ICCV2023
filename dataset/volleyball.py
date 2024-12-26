@@ -43,6 +43,7 @@ class VolleyBallDataset(Dataset):
 
         # data pack list
         self.feature_list = []
+        self.person_bbox_list = []
         self.edge_list = []
         self.gt_bbox = []
         self.gt_bbox_id = []
@@ -218,7 +219,6 @@ class VolleyBallDataset(Dataset):
 
                     self.feature_list_img = []
                     self.head_radius_img = []
-
                     # read each person data
                     for idx, person_info in people_info.items():
                         head_id = float(person_info['person_idx'])
@@ -269,7 +269,6 @@ class VolleyBallDataset(Dataset):
         return len(self.rgb_path_list)
 
     def __getitem__(self, idx):
-
         img_file_path = self.rgb_path_list[idx]
         img = Image.open(img_file_path)
         img_width, img_height = img.size
@@ -356,17 +355,17 @@ class VolleyBallDataset(Dataset):
 
         # pack one data into a dict
         data = {}
-        data['head_img'] = head_img
-        data['head_feature'] = head_feature_tensor
-        data['head_bbox'] = head_bbox_tensor
-        data['head_vector_gt'] = head_vector_gt_tensor
-        data['img_gt'] = img_gt
-        data['gt_box'] = gt_box_expand
+        data['head_img'] = head_img.unsqueeze(0)
+        data['head_feature'] = head_feature_tensor.unsqueeze(0)
+        data['head_bbox'] = head_bbox_tensor.unsqueeze(0)
+        data['head_vector_gt'] = head_vector_gt_tensor.unsqueeze(0)
+        data['img_gt'] = img_gt.unsqueeze(0)
+        data['gt_box'] = gt_box_expand[None, :]
         data['gt_box_id'] = gt_box_id
         data['rgb_img'] = rgb_tensor
         data['saliency_img'] = rgb_tensor
-        data['att_inside_flag'] = att_inside_flag
-        data['rgb_path'] = img_file_path
+        data['att_inside_flag'] = att_inside_flag.unsqueeze(0)
+        data['rgb_path'] = [img_file_path]
 
         if self.model_type == 'ball_detection' or self.model_type == 'isa' and self.data_name == 'volleyball':
             data['rgb_img_wo_norm'] = rgb_tensor_wo_norm

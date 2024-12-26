@@ -236,8 +236,10 @@ for iteration, batch in enumerate(test_data_loader,1):
         break
 
     # init heatmaps
-    # num_people = batch['head_img'].shape[1]
-    batch_size, frame_num, num_people = batch['head_img'].shape[0:3]
+    if len(batch['head_img'].shape) == 5:
+        batch_size, num_people = batch['head_img'].shape[0:2]
+    else:
+        batch_size, frame_num, num_people = batch['head_img'].shape[0:3]
     x_axis_map = torch.arange(0, cfg.exp_set.resize_width, device=f'cuda:{gpus_list[0]}').reshape(1, -1)/(cfg.exp_set.resize_width)
     x_axis_map = torch.tile(x_axis_map, (cfg.exp_set.resize_height, 1))
     y_axis_map = torch.arange(0, cfg.exp_set.resize_height, device=f'cuda:{gpus_list[0]}').reshape(-1, 1)/(cfg.exp_set.resize_height)
@@ -304,34 +306,46 @@ for iteration, batch in enumerate(test_data_loader,1):
 
         out = {**out_head, **out_scene_feat, **out_attention, **batch}
 
-    img_gt_vid = out['img_gt'].to('cpu').detach()[0]
-    head_vector_vid = out['head_vector'].to('cpu').detach()[0].numpy()
-    head_vector_gt_vid = out['head_vector_gt'].to('cpu').detach()[0].numpy()
-    head_feature_vid = out['head_feature'].to('cpu').detach()[0]
-    head_bbox_vid = out['head_bbox'].to('cpu').detach()[0].numpy()
-    # trans_att_people_rgb_vid = out['trans_att_people_rgb'].to('cpu').detach()[0]
-    # trans_att_people_people_vid = out['trans_att_people_people'].to('cpu').detach()[0].numpy()
-    gt_box_vid = out['gt_box'].to('cpu').detach()[0]
-    att_inside_flag = out['att_inside_flag'].to('cpu').detach()[0]
+    # img_gt_vid = out['img_gt'].to('cpu').detach()[0]
+    # head_vector_vid = out['head_vector'].to('cpu').detach()[0].numpy()
+    # head_vector_gt_vid = out['head_vector_gt'].to('cpu').detach()[0].numpy()
+    # head_feature_vid = out['head_feature'].to('cpu').detach()[0]
+    # head_bbox_vid = out['head_bbox'].to('cpu').detach()[0].numpy()
+    # gt_box_vid = out['gt_box'].to('cpu').detach()[0]
+    # att_inside_flag = out['att_inside_flag'].to('cpu').detach()[0]
+    # person_person_attention_heatmap_vid = out['person_person_attention_heatmap'].to('cpu').detach()[0]
+    # person_person_joint_attention_heatmap_vid = out['person_person_joint_attention_heatmap'].to('cpu').detach()[0]
+    # person_scene_attention_heatmap_vid = out['person_scene_attention_heatmap'].to('cpu').detach()[0]
+    # person_scene_joint_attention_heatmap_vid = out['person_scene_joint_attention_heatmap'].to('cpu').detach()[0]
+    # final_joint_attention_heatmap_vid = out['final_joint_attention_heatmap'].to('cpu').detach()[0]
 
-    person_person_attention_heatmap_vid = out['person_person_attention_heatmap'].to('cpu').detach()[0]
-    person_person_joint_attention_heatmap_vid = out['person_person_joint_attention_heatmap'].to('cpu').detach()[0]
-    person_scene_attention_heatmap_vid = out['person_scene_attention_heatmap'].to('cpu').detach()[0]
-    person_scene_joint_attention_heatmap_vid = out['person_scene_joint_attention_heatmap'].to('cpu').detach()[0]
-    final_joint_attention_heatmap_vid = out['final_joint_attention_heatmap'].to('cpu').detach()[0]
+    img_gt_vid = out['img_gt'].to('cpu').detach()
+    head_vector_vid = out['head_vector'].to('cpu').detach()
+    head_vector_gt_vid = out['head_vector_gt'].to('cpu').detach()
+    head_feature_vid = out['head_feature'].to('cpu').detach()
+    head_bbox_vid = out['head_bbox'].to('cpu').detach()
+    gt_box_vid = out['gt_box'].to('cpu').detach()
+    att_inside_flag = out['att_inside_flag'].to('cpu').detach()
+    person_person_attention_heatmap_vid = out['person_person_attention_heatmap'].to('cpu').detach()
+    person_person_joint_attention_heatmap_vid = out['person_person_joint_attention_heatmap'].to('cpu').detach()
+    person_scene_attention_heatmap_vid = out['person_scene_attention_heatmap'].to('cpu').detach()
+    person_scene_joint_attention_heatmap_vid = out['person_scene_joint_attention_heatmap'].to('cpu').detach()
+    final_joint_attention_heatmap_vid = out['final_joint_attention_heatmap'].to('cpu').detach()
+    data_id_vid = out['data_id'][0]
+    data_id = data_id_vid
 
     if cfg.model_params.p_s_estimator_type == 'cnn':
         ang_att_map = out['ang_att_map'].to('cpu').detach()[0]
 
     # define data id
     data_type_id = ''
-    data_id_vid = out['data_id'][0]
     print(f'Iter:{iteration}, {data_id_vid}, {data_type_id}')
     resize_height = cfg.exp_set.resize_height
     resize_width = cfg.exp_set.resize_width
 
     pred_ja_vid = np.zeros((len(out['rgb_path']), 2))
     gt_ja_vid = np.zeros((len(out['rgb_path']), 2))
+
     for img_idx, img_path in enumerate(tqdm(out['rgb_path'])):
         person_person_joint_attention_heatmap = person_person_joint_attention_heatmap_vid[img_idx]
         person_scene_joint_attention_heatmap = person_scene_joint_attention_heatmap_vid[img_idx]
@@ -346,8 +360,7 @@ for iteration, batch in enumerate(test_data_loader,1):
         person_scene_attention_heatmap = person_scene_attention_heatmap_vid[img_idx]
 
         # redefine image size
-        img_path = img_path[0]
-        data_id = data_id_generator(img_path, cfg)
+        # data_id = data_id_generator(img_path, cfg)
         img = cv2.imread(img_path)
         original_height, original_width, _ = img.shape
         cfg.exp_set.resize_height = original_height
@@ -388,8 +401,8 @@ for iteration, batch in enumerate(test_data_loader,1):
             save_image(img_gt[person_idx], os.path.join(save_image_dir_dic['gt_map'], data_type_id, data_id_vid, f'{mode}_{data_id}_{person_idx}_gt.png'))
             save_image(person_person_attention_heatmap[person_idx], os.path.join(save_image_dir_dic['person_person_att'], data_type_id, data_id_vid, f'{mode}_{data_id}_{person_idx}_person_person_att.png'))
             save_image(person_scene_attention_heatmap[person_idx], os.path.join(save_image_dir_dic['person_scene_att'], data_type_id, data_id_vid, f'{mode}_{data_id}_{person_idx}_person_scene_att.png'))
-            if cfg.model_params.p_s_estimator_type == 'cnn':
-                save_image(ang_att_map[person_idx], os.path.join(save_image_dir_dic['person_scene_ang_att'], data_type_id, data_id_vid, f'{mode}_{data_id}_{person_idx}_person_scene_ang_att.png'))
+            # if cfg.model_params.p_s_estimator_type == 'cnn':
+                # save_image(ang_att_map[person_idx], os.path.join(save_image_dir_dic['person_scene_ang_att'], data_type_id, data_id_vid, f'{mode}_{data_id}_{person_idx}_person_scene_ang_att.png'))
 
         # save attention of transformers (people and people attention)
         # if 'ja_transformer' in cfg.model_params.model_type:
@@ -448,8 +461,8 @@ for iteration, batch in enumerate(test_data_loader,1):
         # cv2.circle(person_person_joint_attention_heatmap, (int(gt_x_mid), int(gt_y_mid)), 10, (0, 255, 0), thickness=-1)
         # cv2.circle(person_scene_joint_attention_heatmap, (pred_x_mid_p_s, pred_y_mid_p_s), 10, (0, 165, 255), thickness=-1)
         # cv2.circle(person_scene_joint_attention_heatmap, (int(gt_x_mid), int(gt_y_mid)), 10, (0, 255, 0), thickness=-1)
-        # cv2.circle(final_joint_attention_heatmap, (pred_x_mid_final, pred_y_mid_final), 10, (0, 165, 255), thickness=-1)
-        cv2.circle(final_joint_attention_heatmap, (int(gt_x_mid), int(gt_y_mid)), 5, (0, 255, 0), thickness=-1)
+        cv2.circle(final_joint_attention_heatmap, (pred_x_mid_final, pred_y_mid_final), 10, (0, 165, 255), thickness=-1)
+        cv2.circle(final_joint_attention_heatmap, (int(gt_x_mid), int(gt_y_mid)), 10, (0, 255, 0), thickness=-1)
 
         if cfg.data.name == 'volleyball':
             thickness_data = 3
@@ -458,8 +471,8 @@ for iteration, batch in enumerate(test_data_loader,1):
             thickness_data = 2
             fontscale_data = 1.0
 
-        cv2.putText(final_joint_attention_heatmap, text=f'GT', org=(int(gt_x_mid)+20, int(gt_y_mid)+20), color=(0, 255, 0),
-            fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=fontscale_data, thickness=thickness_data, lineType=cv2.LINE_4)
+        # cv2.putText(final_joint_attention_heatmap, text=f'GT', org=(int(gt_x_mid)+20, int(gt_y_mid)+20), color=(0, 255, 0),
+            # fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=fontscale_data, thickness=thickness_data, lineType=cv2.LINE_4)
 
         # save an attention estimation as a superimposed image
         key_no_padding_num = torch.sum((torch.sum(head_feature, dim=-1) != 0)).numpy()
@@ -542,7 +555,7 @@ for iteration, batch in enumerate(test_data_loader,1):
     for generate_video_type in generate_video_type_list:
         frames = []
         for img_idx, img_path in enumerate(tqdm(out['rgb_path'])):
-            data_id = data_id_generator(img_path[0], cfg)
+            # data_id = data_id_generator(img_path[0], cfg)
             frame = cv2.imread(os.path.join(save_image_dir_dic[generate_video_type], data_type_id, data_id_vid, f'{mode}_{data_id}_{generate_video_type}.png'))
             frames.append(cv2.resize(frame, (original_width, original_height)))
         video_path = os.path.join(save_image_dir_dic[f'{generate_video_type}_video'], data_type_id, f'{data_id_vid}.mp4')

@@ -101,6 +101,7 @@ class VideoCoAttDataset(Dataset):
     def __getitem__(self, idx):
         # get path of images_nk
         img_file_path = self.rgb_path_list[idx]
+        data_id = img_file_path.split('/')[-1].split('.')[0]
         saliency_file_path = self.saliency_path_list[idx]
 
         # read a rgb image
@@ -192,6 +193,7 @@ class VideoCoAttDataset(Dataset):
         # data['saliency_img'] = saliency_tensor
         data['att_inside_flag'] = torch.sum(torch.tensor(bboxes), dim=-1)!=0
         data['rgb_path'] = img_file_path
+        data['data_id'] = data_id
 
         return data
 
@@ -284,8 +286,8 @@ class VideoCoAttDataset(Dataset):
             video_cnt += 1
             seq_cnt = 0
 
-            if not video_num in ['10', '15', '19', '23']:
-                continue
+            # if not video_num in ['10', '15', '19', '23']:
+                # continue
 
             annotation_path = os.path.join(self.dataset_dir, 'annotations', self.mode, f'{video_num}.txt')
             ann_dic = self.read_annotation_file(annotation_path)
@@ -332,6 +334,20 @@ class VideoCoAttDataset(Dataset):
                     use_head_feature[:, 0] = (use_head_boxes[:, 0] + use_head_boxes[:, 2]) / 2
                     use_head_feature[:, 1] = (use_head_boxes[:, 1] + use_head_boxes[:, 3]) / 2
 
+                seq_num = int(file_name.split('.')[0].split('_')[0])
+
+                # test_test_10_00011_10_person_scene_jo_att_superimposed
+                # test_test_12_00051_12_person_scene_jo_att_superimposed
+                # test_test_51_00101_51_person_scene_jo_att_superimposed
+                if int(video_num) == 10 and int(seq_num) == 11:
+                    pass
+                elif int(video_num) == 12 and int(seq_num) == 51:
+                    pass
+                elif int(video_num) == 51 and int(seq_num) == 101:
+                    pass
+                else:
+                    continue
+
                 self.gt_bbox.append(co_att_bbox)
                 self.gt_bbox_id.append(co_att_id)
                 self.rgb_path_list.append(rgb_img_file_path)
@@ -340,6 +356,7 @@ class VideoCoAttDataset(Dataset):
                 self.feature_list.append(use_head_feature)
 
                 seq_cnt += 1
+
 
                 # if self.wandb_name == 'demo' and seq_cnt > 1:
                     # break

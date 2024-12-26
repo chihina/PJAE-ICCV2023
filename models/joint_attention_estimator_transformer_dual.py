@@ -244,13 +244,14 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
         head_xy_map = inp['head_xy_map']
         gaze_xy_map = inp['gaze_xy_map']
         att_inside_flag = inp['att_inside_flag']
+
         # get usuful variable
-        self.batch_size, people_num, _, _, _ = xy_axis_map.shape
+        self.batch_size, self.frame_num, self.people_num, _ = head_feature.shape
 
         # position and action info handing
-        head_position = torch.cat([input_feature[:, :, :2]], dim=-1)
-        head_action = torch.cat([input_feature[:, :, 2:]], dim=-1)
-        head_gaze = torch.cat([input_gaze[:, :, :2]], dim=-1)
+        head_position = torch.cat([input_feature[:, :, :, :2]], dim=-1)
+        head_action = torch.cat([input_feature[:, :, :, 2:]], dim=-1)
+        head_gaze = torch.cat([input_gaze[:, :, :, :2]], dim=-1)
 
         if self.use_position and self.use_gaze and self.use_action:
             head_info_params = torch.cat([head_position, head_gaze, head_action], dim=-1)
@@ -273,14 +274,16 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
         # person feature embedding
         head_info_params_emb = self.head_info_feat_embeding(head_info_params)
         ja_embedding = self.ja_embedding
-        ja_embedding = ja_embedding.expand(self.batch_size, 1, self.people_feat_dim)
-        head_info_params_emb = torch.cat([head_info_params_emb, ja_embedding], dim=1)
+        ja_embedding = ja_embedding.expand(self.batch_size, self.frame_num, 1, self.people_feat_dim)
+        head_info_params_emb = torch.cat([head_info_params_emb, ja_embedding], dim=-2)
+        head_info_params_emb = head_info_params_emb.view(self.batch_size*self.frame_num, self.people_num+1, self.people_feat_dim)
 
         # people relation encoding
         if self.use_people_people_trans:
             key_padding_mask_people_people = (torch.sum(head_feature, dim=-1) == 0).bool()
-            key_padding_mask_joint_attention = torch.zeros(self.batch_size, 1, device=head_feature.device).bool()
-            key_padding_mask_people_people = torch.cat([key_padding_mask_people_people, key_padding_mask_joint_attention], dim=1)
+            key_padding_mask_joint_attention = torch.zeros(self.batch_size, self.frame_num, 1, device=head_feature.device).bool()
+            key_padding_mask_people_people = torch.cat([key_padding_mask_people_people, key_padding_mask_joint_attention], dim=-1)
+            key_padding_mask_people_people = key_padding_mask_people_people.view(self.batch_size*self.frame_num, self.people_num+1)
 
             for i in range(self.people_people_trans_enc_num):
                 head_info_params_feat, people_people_trans_weights = self.people_people_self_attention[i](head_info_params_emb, head_info_params_emb, head_info_params_emb, key_padding_mask=key_padding_mask_people_people)
@@ -290,52 +293,55 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
                 head_info_params_feat_feed_res = self.trans_layer_norm_people_people(head_info_params_feat_feed_res)
                 head_info_params_emb = head_info_params_feat_feed_res
 
-                trans_att_people_people_i = people_people_trans_weights.view(self.batch_size, 1, people_num+1, people_num+1)
+                trans_att_people_people_i = people_people_trans_weights.view(self.batch_size, 1, self.people_num+1, self.people_num+1)
+
                 if i == 0:
                     trans_att_people_people = trans_att_people_people_i
                 else:
                     trans_att_people_people = torch.cat([trans_att_people_people, trans_att_people_people_i], dim=1)
         else:
-            trans_att_people_people = torch.zeros(self.batch_size, self.people_people_trans_enc_num, people_num, people_num)
+            trans_att_people_people = torch.zeros(self.batch_size, self.frame_num, self.people_people_trans_enc_num, self.people_num+1, self.people_num+1)
+        trans_att_people_people = trans_att_people_people.view(self.batch_size, self.frame_num, self.people_people_trans_enc_num, self.people_num+1, self.people_num+1)
+        head_info_params_emb = head_info_params_emb.view(self.batch_size, self.frame_num, self.people_num+1, self.people_feat_dim)
 
         # attention estimation of person-to-person path
         if self.p_p_aggregation_type == 'ind_only':
-            attention_token = head_info_params_emb[:, :-1, :]
+            attention_token = head_info_params_emb[:, :, :-1, :]
         elif self.p_p_aggregation_type == 'token_only':
-            attention_token = head_info_params_emb[:, :-1, :]
+            attention_token = head_info_params_emb[:, :, :-1, :]
         elif self.p_p_aggregation_type == 'ind_and_token_ind_based':
-            attention_token = head_info_params_emb[:, :-1, :]
-            ja_embedding_relation = head_info_params_emb[:, -1, :][:, None, :]
-            attention_token = attention_token + head_info_params_emb[:, -1, :][:, None, :]
+            attention_token = head_info_params_emb[:, :, :-1, :]
+            ja_embedding_relation = head_info_params_emb[:, :, -1, :][:, :, None, :]
+            attention_token = attention_token + ja_embedding_relation
         elif self.p_p_aggregation_type == 'ind_and_token_ind_based':
-            attention_token = head_info_params_emb[:, :-1, :]
+            attention_token = head_info_params_emb[:, :, :-1, :]
         elif self.p_p_aggregation_type == 'ind_and_token_token_based':
-            attention_token = head_info_params_emb[:, :-1, :]
+            attention_token = head_info_params_emb[:, :, :-1, :]
         else:
             sys.exit()
 
         if 'fc' in self.p_p_estimator_type:
-            attention_token_input = attention_token.view(self.batch_size, people_num, self.people_feat_dim)
+            attention_token_input = attention_token.view(self.batch_size, self.people_num, self.people_feat_dim)
         elif 'deconv' in self.p_p_estimator_type:
-            attention_token_input = attention_token.view(self.batch_size, people_num, self.people_feat_dim)
+            attention_token_input = attention_token.view(self.batch_size, self.people_num, self.people_feat_dim)
             attention_token_input = self.person_person_attention_heatmap_pre_fc(attention_token_input)
-            attention_token_input = attention_token_input.view(self.batch_size*people_num, self.latent_ch, self.latent_height, self.latent_width)
+            attention_token_input = attention_token_input.view(self.batch_size*self.people_num, self.latent_ch, self.latent_height, self.latent_width)
         elif 'field' in self.p_p_estimator_type:
-            attention_token_view = attention_token.view(self.batch_size, people_num, 1, self.people_feat_dim)
-            attention_token_expand = attention_token_view.expand(self.batch_size, people_num, self.hm_height_middle*self.hm_width_middle, self.people_feat_dim)
-            x_axis_map = xy_axis_map[:, :, 0, :, :]
-            y_axis_map = xy_axis_map[:, :, 1, :, :]
-            x_axis_map = F.interpolate(x_axis_map, (self.hm_height_middle, self.hm_width_middle), mode='bilinear')
-            y_axis_map = F.interpolate(y_axis_map, (self.hm_height_middle, self.hm_width_middle), mode='bilinear')
-            x_axis_map = x_axis_map.view(self.batch_size, people_num, self.hm_height_middle*self.hm_width_middle, 1)
-            y_axis_map = y_axis_map.view(self.batch_size, people_num, self.hm_height_middle*self.hm_width_middle, 1)
+            attention_token_view = attention_token.view(self.batch_size, self.frame_num, self.people_num, 1, self.people_feat_dim)
+            attention_token_expand = attention_token_view.expand(self.batch_size, self.frame_num, self.people_num, self.hm_height_middle*self.hm_width_middle, self.people_feat_dim)
+            xy_axis_map = xy_axis_map.view(self.batch_size, 1, self.people_num, 2, self.hm_height_middle, self.hm_width_middle)
+            xy_axis_map = xy_axis_map.expand(self.batch_size, self.frame_num, self.people_num, 2, self.hm_height_middle, self.hm_width_middle)
+            x_axis_map = xy_axis_map[:, :, :, 0, :, :]
+            y_axis_map = xy_axis_map[:, :, :, 1, :, :]
+            x_axis_map = x_axis_map.view(self.batch_size, self.frame_num, self.people_num, self.hm_height_middle*self.hm_width_middle, 1)
+            y_axis_map = y_axis_map.view(self.batch_size, self.frame_num, self.people_num, self.hm_height_middle*self.hm_width_middle, 1)
             attention_token_input = torch.cat([attention_token_expand, x_axis_map, y_axis_map], dim=-1)
         person_person_attention_heatmap = self.person_person_attention_heatmap(attention_token_input)
-        person_person_attention_heatmap = person_person_attention_heatmap.view(self.batch_size, people_num, self.hm_height_middle, self.hm_width_middle)
+        person_person_attention_heatmap = person_person_attention_heatmap.view(self.batch_size, self.people_num, self.hm_height_middle, self.hm_width_middle)
         person_person_attention_heatmap = F.interpolate(person_person_attention_heatmap, (self.hm_height, self.hm_width), mode='bilinear')
 
         # joint attention estimation of person-to-person path
-        ja_embedding_relation = head_info_params_emb[:, -1, :]
+        ja_embedding_relation = head_info_params_emb[:, :, -1, :]
         if 'fc' in self.p_p_estimator_type:
             ja_embedding_relation_input = ja_embedding_relation.view(self.batch_size, 1, self.people_feat_dim)
         elif 'deconv' in self.p_p_estimator_type:
@@ -343,24 +349,27 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
             ja_embedding_relation_input = self.person_person_attention_heatmap_pre_fc(ja_embedding_relation_input)
             ja_embedding_relation_input = ja_embedding_relation_input.view(self.batch_size, self.latent_ch, self.latent_height, self.latent_width)
         elif 'field' in self.p_p_estimator_type:
-            ja_embedding_relation_view = ja_embedding_relation.view(self.batch_size, 1, 1, self.people_feat_dim)
-            ja_embedding_relation_expand = ja_embedding_relation_view.expand(self.batch_size, 1, self.hm_height_middle*self.hm_width_middle, self.people_feat_dim)
-            x_axis_map = xy_axis_map[:, 0, 0, :, :][:, None, :, :]
-            y_axis_map = xy_axis_map[:, 0, 1, :, :][:, None, :, :]
+            ja_embedding_relation_view = ja_embedding_relation.view(self.batch_size, self.frame_num, 1, 1, self.people_feat_dim)
+            ja_embedding_relation_expand = ja_embedding_relation_view.expand(self.batch_size, self.frame_num, 1, self.hm_height_middle*self.hm_width_middle, self.people_feat_dim)
+            x_axis_map = xy_axis_map[:, 0, 0, 0, :, :][:, None, :, :]
+            y_axis_map = xy_axis_map[:, 0, 0, 1, :, :][:, None, :, :]
             x_axis_map = F.interpolate(x_axis_map, (self.hm_height_middle, self.hm_width_middle), mode='bilinear')
             y_axis_map = F.interpolate(y_axis_map, (self.hm_height_middle, self.hm_width_middle), mode='bilinear')
-            x_axis_map = x_axis_map.view(self.batch_size, 1, self.hm_height_middle*self.hm_width_middle, 1)
-            y_axis_map = y_axis_map.view(self.batch_size, 1, self.hm_height_middle*self.hm_width_middle, 1)
+            x_axis_map = x_axis_map.view(self.batch_size, 1, 1, self.hm_height_middle*self.hm_width_middle, 1)
+            x_axis_map = x_axis_map.expand(self.batch_size, self.frame_num, 1, self.hm_height_middle*self.hm_width_middle, 1)
+            y_axis_map = y_axis_map.view(self.batch_size, 1, 1, self.hm_height_middle*self.hm_width_middle, 1)
+            y_axis_map = y_axis_map.expand(self.batch_size, self.frame_num, 1, self.hm_height_middle*self.hm_width_middle, 1)
             ja_embedding_relation_input = torch.cat([ja_embedding_relation_expand, x_axis_map, y_axis_map], dim=-1)
+        
         person_person_joint_attention_heatmap = self.person_person_attention_heatmap(ja_embedding_relation_input)
-        person_person_joint_attention_heatmap = person_person_joint_attention_heatmap.view(self.batch_size, 1, self.hm_height_middle, self.hm_width_middle)
+        person_person_joint_attention_heatmap = person_person_joint_attention_heatmap.view(self.batch_size*self.frame_num, 1, self.hm_height_middle, self.hm_width_middle)
         person_person_joint_attention_heatmap = F.interpolate(person_person_joint_attention_heatmap, (self.hm_height, self.hm_width), mode='bilinear')
 
         # final p_p heatmap aggregation
-        no_pad_idx = torch.sum(head_feature, dim=2) != 0
+        no_pad_idx = torch.sum(head_feature, dim=-1) != 0
         if self.p_p_aggregation_type == 'ind_only':
             person_person_attention_heatmap = person_person_attention_heatmap * att_inside_flag[:, :, None, None]
-            person_person_joint_attention_heatmap = torch.sum(person_person_attention_heatmap, dim=1)
+            person_person_joint_attention_heatmap = torch.sum(person_person_attention_heatmap, dim=-2)
             person_person_joint_attention_heatmap = person_person_joint_attention_heatmap / torch.sum(att_inside_flag, dim=1)[:, None, None]
             person_person_joint_attention_heatmap = person_person_joint_attention_heatmap[:, None, :, :]
         elif self.p_p_aggregation_type == 'token_only':
@@ -374,26 +383,35 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
             pass
         else:
             sys.exit()
+        person_person_joint_attention_heatmap = person_person_joint_attention_heatmap.view(self.batch_size, self.frame_num, 1, self.hm_height, self.hm_width)
 
         # attention estimation of person-to-scene path
         person_scene_attention_heatmap = inp['person_scene_attention_heatmap']
-        person_scene_attention_heatmap = person_scene_attention_heatmap.view(self.batch_size, people_num, self.hm_height_middle_p_s, self.hm_width_middle_p_s)
+        person_scene_attention_heatmap = person_scene_attention_heatmap.view(self.batch_size*self.frame_num, self.people_num, self.hm_height_middle_p_s, self.hm_width_middle_p_s)
         person_scene_attention_heatmap = F.interpolate(person_scene_attention_heatmap, (self.hm_height_p_s, self.hm_width_p_s), mode='bilinear')
-        person_scene_attention_heatmap = person_scene_attention_heatmap * (torch.sum(head_feature, dim=2) != 0)[:, :, None, None]
+        person_scene_attention_heatmap = person_scene_attention_heatmap.view(self.batch_size, self.frame_num, self.people_num, self.hm_height_p_s, self.hm_width_p_s)
+        person_scene_attention_heatmap = person_scene_attention_heatmap * (torch.sum(head_feature, dim=-1) != 0)[:, :, :, None, None]
 
         # joint attention estimation of person-to-scene path
-        person_scene_joint_attention_heatmap = torch.sum(person_scene_attention_heatmap, dim=1)
-        no_pad_idx_cnt = torch.sum((torch.sum(head_feature, dim=2) != 0), dim=1)
+        head_feature_bf = head_feature.view(self.batch_size*self.frame_num, self.people_num, -1)
+        head_vector_bf = head_vector.view(self.batch_size*self.frame_num, self.people_num, -1)
+
+        person_scene_attention_heatmap = person_scene_attention_heatmap.view(self.batch_size*self.frame_num, self.people_num, self.hm_height_p_s, self.hm_width_p_s)
+        person_scene_joint_attention_heatmap = torch.sum(person_scene_attention_heatmap, dim=-3)
+        no_pad_idx_cnt = torch.sum((torch.sum(head_feature_bf, dim=-1) != 0), dim=1)
         person_scene_joint_attention_heatmap = person_scene_joint_attention_heatmap / no_pad_idx_cnt[:, None, None]
         person_scene_joint_attention_heatmap = person_scene_joint_attention_heatmap[:, None, :, :]
 
         # generate head xy map
-        head_xy_map = head_xy_map * head_feature[:, :, :2, None, None]
+        # head_xy_map = head_xy_map * head_feature[:, :, :2, None, None]
+        head_xy_map = head_xy_map * head_feature_bf[:, :, :2, None, None]
 
         # generate gaze xy map
-        gaze_xy_map = gaze_xy_map * head_vector[:, :, :2, None, None]
+        # gaze_xy_map = gaze_xy_map * head_vector[:, :, :2, None, None]
+        gaze_xy_map = gaze_xy_map * head_vector_bf[:, :, :2, None, None]
 
         # generate gaze cone map
+        xy_axis_map = xy_axis_map.view(self.batch_size*self.frame_num, self.people_num, 2, self.hm_height, self.hm_width)
         xy_axis_map_dif_head = xy_axis_map - head_xy_map
         x_axis_map_dif_head_mul_gaze = xy_axis_map_dif_head * gaze_xy_map
         xy_dot_product = torch.sum(x_axis_map_dif_head_mul_gaze, dim=2)
@@ -409,19 +427,18 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
         distance_x_y = distance_x_y / (2**0.5)
 
         angle_dist = torch.exp(-torch.pow(theta_x_y, 2)/(2* 0.5 ** 2))
-        angle_dist = angle_dist * (torch.sum(head_feature, dim=2) != 0)[:, :, None, None]
+        angle_dist = angle_dist * (torch.sum(head_feature_bf, dim=-1) != 0)[:, :, None, None]
         distance_dist = torch.exp(-torch.pow(theta_x_y, 2)/(2* 0.5 ** 2))
-        distance_dist = distance_dist * (torch.sum(head_feature, dim=2) != 0)[:, :, None, None]
-        trans_att_people_rgb = torch.zeros(self.batch_size, people_num, 1, self.hm_height, self.hm_height)
-        trans_att_people_rgb = torch.zeros(self.batch_size, people_num, 1, self.hm_height, self.hm_height)
+        distance_dist = distance_dist * (torch.sum(head_feature_bf, dim=-1) != 0)[:, :, None, None]
+        trans_att_people_rgb = torch.zeros(self.batch_size, self.people_num, 1, self.hm_height, self.hm_height)
+        trans_att_people_rgb = torch.zeros(self.batch_size, self.people_num, 1, self.hm_height, self.hm_height)
 
         # pack return values
         data = {}
-        data['person_person_attention_heatmap'] = person_person_attention_heatmap
+        data['person_person_attention_heatmap'] = person_person_attention_heatmap.view(self.batch_size, self.frame_num, self.people_num, self.hm_height, self.hm_width)
         data['person_person_joint_attention_heatmap'] = person_person_joint_attention_heatmap
-        data['person_scene_attention_heatmap'] = person_scene_attention_heatmap
+        data['person_scene_attention_heatmap'] = person_scene_attention_heatmap.view(self.batch_size, self.frame_num, self.people_num, self.hm_height_p_s, self.hm_width_p_s)
         data['person_scene_joint_attention_heatmap'] = person_scene_joint_attention_heatmap
-
         data['angle_dist'] = angle_dist
         data['distance_dist'] = distance_dist
         data['trans_att_people_rgb'] = trans_att_people_rgb
@@ -488,40 +505,38 @@ class JointAttentionEstimatorTransformerDual(nn.Module):
         #     use_final_jo_att_coef = 0
 
         # generate gt map
-        img_gt_attention = (img_gt_attention * att_inside_flag[:, :, None, None]).float()
-        img_gt_joint_attention = torch.sum(img_gt_attention, dim=1)
+        img_gt_attention = (img_gt_attention * att_inside_flag[:, :, :, None, None]).float()
+        img_gt_joint_attention = torch.sum(img_gt_attention, dim=-3)
         img_gt_all_thresh = torch.ones(1, device=img_gt_attention.device).float()
         img_gt_joint_attention = torch.where(img_gt_joint_attention>=img_gt_all_thresh, img_gt_all_thresh, img_gt_joint_attention)
 
         # calculate person-person path loss
+        person_person_attention_heatmap = person_person_attention_heatmap.view(self.batch_size*self.frame_num, self.people_num, self.hm_height_middle, self.hm_width_middle)
         person_person_attention_heatmap = F.interpolate(person_person_attention_heatmap, (self.resize_height, self.resize_width), mode='bilinear')
-        person_person_attention_heatmap = person_person_attention_heatmap * att_inside_flag[:, :, None, None]
+        person_person_attention_heatmap = person_person_attention_heatmap * att_inside_flag[:, :, :, None, None]
         loss_p_p_att = self.loss_func_hm_sum(person_person_attention_heatmap.float(), img_gt_attention.float())
         loss_p_p_att = loss_p_p_att/(torch.sum(att_inside_flag)*self.resize_height*self.resize_width)
         loss_p_p_att = loss_person_person_att_coef * loss_p_p_att
+
+        person_person_joint_attention_heatmap = person_person_joint_attention_heatmap.view(self.batch_size*self.frame_num, 1, self.hm_height_middle, self.hm_width_middle)
         person_person_joint_attention_heatmap = F.interpolate(person_person_joint_attention_heatmap, (self.resize_height, self.resize_width), mode='bilinear')
-        person_person_joint_attention_heatmap = person_person_joint_attention_heatmap[:, 0, :, :]
+        person_person_joint_attention_heatmap = person_person_joint_attention_heatmap.view(self.batch_size, self.frame_num, self.resize_height, self.resize_width)
         loss_p_p_jo_att = self.loss_func_hm_mean(person_person_joint_attention_heatmap.float(), img_gt_joint_attention.float())
         loss_p_p_jo_att = use_person_person_jo_att_coef * loss_p_p_jo_att
-        # print('loss_p_p_att', loss_p_p_att)
-        # print('loss_p_p_jo_att', loss_p_p_jo_att)
-        # print('JA', f'{torch.min(person_person_joint_attention_heatmap).item():.2f} {torch.max(person_person_joint_attention_heatmap).item():.2f}')
-        # print('AT', f'{torch.min(person_scene_joint_attention_heatmap).item():.2f} {torch.max(person_scene_joint_attention_heatmap).item():.2f}')
-        # print('GT', f'{torch.min(img_gt_joint_attention).item():.2f} {torch.max(img_gt_joint_attention).item():.2f}')
-        # print('F', f'{torch.min(final_joint_attention_heatmap).item():.2f} {torch.max(final_joint_attention_heatmap).item():.2f}')
 
         # calculate person-scene path loss
+        person_scene_attention_heatmap = person_scene_attention_heatmap.view(self.batch_size*self.frame_num, self.people_num, self.hm_height_p_s, self.hm_width_p_s)
         person_scene_attention_heatmap = F.interpolate(person_scene_attention_heatmap, (self.resize_height, self.resize_width), mode='bilinear')
-        person_scene_attention_heatmap = person_scene_attention_heatmap * att_inside_flag[:, :, None, None]
+        person_scene_attention_heatmap = person_scene_attention_heatmap.view(self.batch_size, self.frame_num, self.people_num, self.resize_height, self.resize_width)
+        person_scene_attention_heatmap = person_scene_attention_heatmap * att_inside_flag[:, :, :, None, None]
         loss_p_s_att = self.loss_func_hm_sum(person_scene_attention_heatmap.float(), img_gt_attention.float())
         loss_p_s_att = loss_p_s_att/(torch.sum(att_inside_flag)*self.resize_height*self.resize_width)
         loss_p_s_att = use_person_scene_att_coef * loss_p_s_att
+
         person_scene_joint_attention_heatmap = F.interpolate(person_scene_joint_attention_heatmap, (self.resize_height, self.resize_width), mode='bilinear')
         person_scene_joint_attention_heatmap = person_scene_joint_attention_heatmap[:, 0, :, :]
         loss_p_s_jo_att = self.loss_func_hm_mean(person_scene_joint_attention_heatmap.float(), img_gt_joint_attention.float())
         loss_p_s_jo_att = use_person_scene_jo_att_coef * loss_p_s_jo_att
-        # print('loss_p_s_att', loss_p_s_att)
-        # print('loss_p_s_jo_att', loss_p_s_jo_att)
 
         # calculate final loss
         # final_joint_attention_heatmap = F.interpolate(final_joint_attention_heatmap, (self.resize_height, self.resize_width), mode='bilinear')

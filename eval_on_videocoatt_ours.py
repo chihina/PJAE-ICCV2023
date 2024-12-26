@@ -123,11 +123,11 @@ if cuda:
     model_fusion.eval()
 
 # view learned fusion coeficient
-# fusion_weight = model_fusion.state_dict()['final_fusion_weight'].detach().cpu()
-# m = nn.Softmax()
-# fusion_weight = m(fusion_weight)
-# print(fusion_weight)
-# sys.exit()
+fusion_weight = model_fusion.state_dict()['final_fusion_weight'].detach().cpu()
+m = nn.Softmax()
+fusion_weight = m(fusion_weight)
+print(fusion_weight)
+sys.exit()
 
 print("===> Loading dataset")
 mode = cfg.exp_set.mode

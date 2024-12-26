@@ -217,7 +217,6 @@ for iteration, batch in enumerate(test_data_loader,1):
         break
 
     # init heatmaps
-    # num_people = batch['head_img'].shape[1]
     batch_size, frame_num, num_people = batch['head_img'].shape[0:3]
     x_axis_map = torch.arange(0, cfg.exp_set.resize_width, device=f'cuda:{gpus_list[0]}').reshape(1, -1)/(cfg.exp_set.resize_width)
     x_axis_map = torch.tile(x_axis_map, (cfg.exp_set.resize_height, 1))
@@ -286,17 +285,8 @@ for iteration, batch in enumerate(test_data_loader,1):
         out = {**out_head, **out_scene_feat, **out_attention, **batch}
 
     # set key frame index for evaluation
-    if cfg.exp_params.use_frame_type == 'all':
-        key_frame_idx = 4
-    elif cfg.exp_params.use_frame_type == 'mid':
-        key_frame_idx = 0
-    else:
-        assert False, f'Not implemented frame type: {cfg.exp_params.use_frame_type}'
-
+    key_frame_idx = 0
     img_gt = out['img_gt'].to('cpu').detach()[0][key_frame_idx]
-    # angle_dist = out['angle_dist'].to('cpu').detach()[0]
-    # distance_dist = out['distance_dist'].to('cpu').detach()[0]
-    # saliency_img = out['saliency_img'].to('cpu').detach()[0]
     head_vector = out['head_vector'].to('cpu').detach()[0][key_frame_idx].numpy()
     head_vector_gt = out['head_vector_gt'].to('cpu').detach()[0][key_frame_idx].numpy()
     head_feature = out['head_feature'].to('cpu').detach()[0][key_frame_idx]
@@ -318,6 +308,8 @@ for iteration, batch in enumerate(test_data_loader,1):
         ang_att_map = out['ang_att_map'].to('cpu').detach()[0]
 
     # redefine image size
+    resize_height = cfg.exp_set.resize_height
+    resize_width = cfg.exp_set.resize_width
     img = cv2.imread(img_path)
     original_height, original_width, _ = img.shape
     cfg.exp_set.resize_height = original_height
@@ -503,3 +495,6 @@ for iteration, batch in enumerate(test_data_loader,1):
     cv2.imwrite(os.path.join(save_image_dir_dic['final_jo_att_superimposed'], data_type_id, f'{mode}_{data_id}_final_jo_att_superimposed.png'), final_joint_attention_heatmap)
     cv2.imwrite(os.path.join(save_image_dir_dic['whole_image_gaze'], data_type_id, f'{mode}_{data_id}_final_jo_att_superimposed.png'), whole_image_gaze)
     cv2.imwrite(os.path.join(save_image_dir_dic['whole_image_action'], data_type_id, f'{mode}_{data_id}_final_jo_att_superimposed.png'), whole_image_action)
+
+    cfg.exp_set.resize_height = resize_height
+    cfg.exp_set.resize_width = resize_width

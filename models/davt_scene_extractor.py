@@ -200,7 +200,8 @@ class ModelSpatial(nn.Module):
         head_img = inp['head_img']
         head_bbox = inp['head_bbox']
 
-        batch_size, people_num, _, resize_head_height, resize_head_width = head_img.shape
+        # batch_size, people_num, _, resize_head_height, resize_head_width = head_img.shape
+        batch_size, frame_num, people_num, _, resize_head_height, resize_head_width = head_img.shape
         resousion_height, resousion_width = 224, 224
 
         head_bbox_flat = head_bbox.view(batch_size*people_num, 4)
