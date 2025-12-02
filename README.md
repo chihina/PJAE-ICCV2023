@@ -8,6 +8,19 @@ Project page: [https://toyota-ti.ac.jp/Lab/Denshi/iim/ukita/selection/ICCV2023-P
 
 ![Top page](https://github.com/chihina/Interaction-aware-Joint-Attention-Estimation-Using-People-Attributes/blob/master/ICCV2023-PJAE.png)
 
+# Citation
+
+```
+@inproceedings{DBLP:conf/iccv/NakataniKU23,
+  author       = {Chihiro Nakatani and
+                  Hiroaki Kawashima and
+                  Norimichi Ukita},
+  title        = {Interaction-aware Joint Attention Estimation Using People Attributes},
+  booktitle    = {ICCV},
+  year         = {2023},
+}
+```
+
 ## Environment
 python 3.6.9
 
